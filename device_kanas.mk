@@ -88,7 +88,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
 # need to supersede/override all instances.
 MEDIA_CONFIGS := \
 	device/samsung/kanas/configs/media/media_codecs.xml \
-	device/samsung/kanas/configs/media/media_profiles.xml
+	device/samsung/kanas/configs/media/media_profiles_V1_0.xml
 
 AUDIO_CONFIGS := \
 	device/samsung/kanas/configs/audio/audio_para
