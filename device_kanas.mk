@@ -73,6 +73,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	modemd
 
+# Sensors
+PRODUCT_PACKAGES += \
+	sensors.sc8830
+
 # ART device props
 PRODUCT_PROPERTY_OVERRIDES += \
 	ro.kernel.android.checkjni=0 \
