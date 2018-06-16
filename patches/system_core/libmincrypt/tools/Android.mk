@@ -1,4 +1,4 @@
-# Copyright (C) 2014 The CyanogenMod Project
+# Copyright (C) 2008 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,15 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This file is executed by build/envsetup.sh, and can use anything
-# defined in envsetup.sh.
-#
-# In particular, you can add lunch options with the add_lunch_combo
-# function: add_lunch_combo generic-eng
+LOCAL_PATH := $(call my-dir)
 
-# Apply patches first
-sh device/samsung/kanas/patches/apply.sh;
-
-for i in eng user userdebug; do
-add_lunch_combo lineage_kanas-${i};
-done
+include $(CLEAR_VARS)
+LOCAL_MODULE := dumpkey
+LOCAL_SRC_FILES := DumpPublicKey.java
+LOCAL_JAR_MANIFEST := DumpPublicKey.mf
+LOCAL_STATIC_JAVA_LIBRARIES := bouncycastle-host
+include $(BUILD_HOST_JAVA_LIBRARY)
