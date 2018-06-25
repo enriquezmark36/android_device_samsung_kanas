@@ -17,6 +17,6 @@
 #ifndef _BDROID_BUILDCFG_H
 #define _BDROID_BUILDCFG_H
 
-#define BTM_DEF_LOCAL_NAME   "SandroidTeam-Ih24n"
+#define BTM_DEF_LOCAL_NAME   "Galaxy Core II"
 
 #endif

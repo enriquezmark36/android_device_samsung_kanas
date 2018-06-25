@@ -1,0 +1,55 @@
+diff --git a/media/libstagefright/ACodec.cpp b/media/libstagefright/ACodec.cpp
+index 581bfba31..a18e1ce07 100644
+--- a/media/libstagefright/ACodec.cpp
++++ b/media/libstagefright/ACodec.cpp
+@@ -56,8 +56,10 @@
+ #include <OMX_AsString.h>
+ 
+ #ifdef USE_SAMSUNG_COLORFORMAT
++#ifndef SPRD_HARDWARE
+ #include <sec_format.h>
+ #endif
++#endif
+ 
+ #include "include/avc_utils.h"
+ 
+@@ -1315,6 +1317,10 @@ void ACodec::setNativeWindowColorFormat(OMX_COLOR_FORMATTYPE &eNativeColorFormat
+     if (!strcasecmp(mComponentName.c_str(), "OMX.SEC.AVC.Decoder")
+         || !strcasecmp(mComponentName.c_str(), "OMX.SEC.FP.AVC.Decoder")
+         || !strcasecmp(mComponentName.c_str(), "OMX.SEC.MPEG4.Decoder")
++        || !strcasecmp(mComponentName.c_str(), "OMX.sprd.mpeg4.decoder")
++        || !strcasecmp(mComponentName.c_str(), "OMX.sprd.h263.decoder")
++        || !strcasecmp(mComponentName.c_str(), "OMX.sprd.h264.decoder")
++        || !strcasecmp(mComponentName.c_str(), "OMX.sprd.vpx.decoder")
+         || !strcasecmp(mComponentName.c_str(), "OMX.Exynos.AVC.Decoder")) {
+         switch (eNativeColorFormat) {
+             case OMX_COLOR_FormatYUV420SemiPlanar:
+diff --git a/media/libstagefright/CameraSource.cpp b/media/libstagefright/CameraSource.cpp
+index f6b4741da..2bd34ea85 100644
+--- a/media/libstagefright/CameraSource.cpp
++++ b/media/libstagefright/CameraSource.cpp
+@@ -116,7 +116,7 @@ static int32_t getColorFormat(const char* colorFormat) {
+     }
+ 
+     if (!strcmp(colorFormat, CameraParameters::PIXEL_FORMAT_YUV420SP)) {
+-#ifdef USE_SAMSUNG_COLORFORMAT
++#if defined(USE_SAMSUNG_COLORFORMAT) && !defined(SPRD_HARDWARE)
+         static const int OMX_SEC_COLOR_FormatNV12LPhysicalAddress = 0x7F000002;
+         return OMX_SEC_COLOR_FormatNV12LPhysicalAddress;
+ #else
+diff --git a/media/libstagefright/OMXCodec.cpp b/media/libstagefright/OMXCodec.cpp
+index de00ff282..975acb8b3 100644
+--- a/media/libstagefright/OMXCodec.cpp
++++ b/media/libstagefright/OMXCodec.cpp
+@@ -270,6 +270,11 @@ uint32_t OMXCodec::getComponentQuirks(
+     if (info->hasQuirk("output-buffers-are-unreadable")) {
+         quirks |= kOutputBuffersAreUnreadable;
+     }
++#ifdef SPRD_HARDWARE
++    if (info->hasQuirk("needs-flush-before-disable")) {
++        quirks |= kNeedsFlushBeforeDisable;
++    }
++#endif
+ 
+     return quirks;
+ }
