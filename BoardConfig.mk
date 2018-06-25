@@ -33,6 +33,9 @@ BOARD_VENDOR := samsung
 # Some magic
 SOC_SCX35 := true
 
+# Enable privacy guard's su
+WITH_SU := true
+
 # Config u-boot
 TARGET_NO_BOOTLOADER := true
 
@@ -129,6 +132,9 @@ BOARD_SEPOLICY_DIRS += device/samsung/kanas/sepolicy
 # Low memory config
 MALLOC_IMPL := dlmalloc
 BOARD_USES_LEGACY_MMAP := true
+
+# Tell vold that we have a kernel based impl of exfat
+TARGET_KERNEL_HAVE_EXFAT := true
 
 # Enable dex-preoptimization to speed up the first boot sequence
 WITH_DEXPREOPT := true
