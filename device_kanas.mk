@@ -77,14 +77,6 @@ KEYLAYOUT_FILES := \
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(KEYLAYOUT_FILES),$(f):system/usr/keylayout/$(notdir $(f)))
 
-PRODUCT_PACKAGES += \
-	setup_fs \
-	e2fsck \
-	f2fstat \
-	fsck.f2fs \
-	fibmap.f2fs \
-	mkfs.f2fs
-
 # Bluetooth config
 BLUETOOTH_CONFIGS := \
 	device/samsung/kanas/configs/bluetooth/bt_vendor.conf
@@ -103,14 +95,16 @@ MEDIA_CONFIGS := \
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(MEDIA_CONFIGS),$(f):system/etc/$(notdir $(f)))
 
+PRODUCT_PACKAGES += \
+	e2fsck
+
 # HWC
 PRODUCT_PACKAGES += \
 	gralloc.sc8830 \
 	hwcomposer.sc8830 \
 	sprd_gsp.sc8830 \
 	libmemoryheapion \
-	libion_sprd \
-	libdither \
+	libion_sprd
 
 # Codecs
 PRODUCT_PACKAGES += \
@@ -149,9 +143,7 @@ PRODUCT_PACKAGES += \
 	audio_policy.sc8830 \
 	audio.r_submix.default \
 	audio.usb.default \
-	libaudio-resampler \
-	libatchannel_wrapper \
-	libtinyalsa
+	libaudio-resampler
 
 AUDIO_CONFIGS := \
 	device/samsung/kanas/configs/audio/audio_policy.conf \
@@ -165,7 +157,6 @@ PRODUCT_COPY_FILES += \
 
 # Shim libraries
 PRODUCT_PACKAGES += \
-	libstlport \
 	libril_shim \
 	libgps_shim \
 
@@ -192,22 +183,34 @@ WIFI_CONFIGS := \
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(WIFI_CONFIGS),$(f):system/etc/wifi/$(notdir $(f)))
 
-# Radio
-PRODUCT_PACKAGES += \
-	FMRadio \
-	radio.fm.default \
-
 # Memtrack
 PRODUCT_PACKAGES += \
 	memtrack.sc8830 \
 
 # Permissions
+PRODUCT_PACKAGES += platform.xml
 PERMISSION_XML_FILES := \
 	frameworks/native/data/etc/android.hardware.camera.front.xml \
 	frameworks/native/data/etc/android.hardware.camera.flash-autofocus.xml \
 
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(PERMISSION_XML_FILES),$(f):system/etc/permissions/$(notdir $(f)))
+
+# Some Lineageos Apps
+PRODUCT_PACKAGES += \
+       Gello \
+       Snap
+
+# Live Wallpapers
+PRODUCT_PACKAGES += \
+       LiveWallpapers \
+       LiveWallpapersPicker \
+       VisualizationWallpapers \
+       librs_jni
+
+# Camera config
+PRODUCT_PROPERTY_OVERRIDES += \
+       camera.disable_zsl_mode=1
 
 # Languages
 PRODUCT_PROPERTY_OVERRIDES += \
@@ -242,3 +245,9 @@ ADDITIONAL_DEFAULT_PROPERTIES += \
 	ro.debuggable=1 \
 	persist.sys.root_access=1 \
 	persist.service.adb.enable=1
+
+# These are the hardware-specific settings that are stored in system properties.
+# Note that the only such settings should be the ones that are too low-level to
+# be reachable from resources or other mechanisms.
+PRODUCT_PROPERTY_OVERRIDES += \
+       ro.zygote.disable_gl_preload=true
