@@ -194,12 +194,12 @@ PRODUCT_PACKAGES += \
 	gralloc.sc8830 \
 	hwcomposer.sc8830 \
 	sprd_gsp.sc8830 \
-	libmemoryheapion  \
-	libion_sprd
+	libmemoryheapion_sprd  \
+	libion
 
 # PRODUCT_PACKAGES += \
-# 	libmemoryheapion_sprd  \
-# 	libion
+# 	libmemoryheapion  \
+# 	libion_sprd
 
 # Camera
 PRODUCT_PACKAGES += \
