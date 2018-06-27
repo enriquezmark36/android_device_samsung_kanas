@@ -58,8 +58,7 @@ ROOTDIR_FILES := \
 	$(LOCAL_PATH)/rootdir/init.wifi.rc \
 	$(LOCAL_PATH)/rootdir/init.swap.rc \
 	$(LOCAL_PATH)/rootdir/ueventd.sc8830.rc \
-	$(LOCAL_PATH)/rootdir/fstab.sc8830 \
-	$(LOCAL_PATH)/rootdir/fstab.swap \
+	$(LOCAL_PATH)/rootdir/fstab.sc8830
 
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(ROOTDIR_FILES),$(f):root/$(notdir $(f)))
