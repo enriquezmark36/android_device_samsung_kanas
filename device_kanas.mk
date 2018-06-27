@@ -49,7 +49,6 @@ TARGET_SCREEN_WIDTH := 480
 ROOTDIR_FILES := \
 	$(LOCAL_PATH)/rootdir/init.rc \
 	$(LOCAL_PATH)/rootdir/init.board.rc \
-	$(LOCAL_PATH)/rootdir/init.storage.rc \
 	$(LOCAL_PATH)/rootdir/init.sc8830.rc \
 	$(LOCAL_PATH)/rootdir/init.sc8830.usb.rc \
 	$(LOCAL_PATH)/rootdir/init.sc8830_ss.rc \

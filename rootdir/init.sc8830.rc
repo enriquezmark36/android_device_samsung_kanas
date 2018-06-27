@@ -15,8 +15,10 @@ on early-init
     pipe 666 /dev/rpipe/ril.vt.2
 
 on init
+    # Shim libs for binary blobs
+    export LD_SHIM_LIBS /system/lib/hw/camera.sc8830.so|libmemoryheapion.so:/system/lib/hw/camera2.sc8830.so|libmemoryheapion.so:/system/lib/libril.so|libril_shim.so:/system/bin/gpsd|libgps_shim.so
+
     mkdir /productinfo 0771 system system
-    export LD_SHIM_LIBS /system/lib/hw/hwcomposer.sc8830.so|libmemoryheapion.so:/system/lib/hw/camera.sc8830.so|libmemoryheapion.so
 
 on fs
     mount_all /fstab.sc8830
@@ -69,6 +71,9 @@ on fs
     chmod 0664 /sys/class/sec/tsp/cmd
 
 on charger
+    chmod 0666 /dev/log/radio
+    chmod 0666 /dev/log/main
+    chmod 0666 /dev/log/event
     mount ext4 /dev/block/platform/sprd-sdhci.3/by-name/system /system ro,barrier=1 wait
     exec sfsck /dev/block/platform/sprd-sdhci.3/by-name/userdata ext4
     mount ext4 /dev/block/platform/sprd-sdhci.3/by-name/userdata /data noatime,nosuid,nodev,nomblk_io_submit wait,encryptable=footer,check
@@ -102,7 +107,9 @@ on early-boot
 
     # Support audio loopback test
     mkdir /dev/pipe 0755 system system
-    pipe 666 /dev/pipe/mmi.audio.ctrl
+    #pipe 666 /dev/pipe/mmi.audio.ctrl
+    exec -- /system/bin/mkfifo /dev/pipe/mmi.audio.ctrl
+    exec -- /system/bin/chmod 666 /dev/pipe/mmi.audio.ctrl
     # Support audio parameter stored
     mkdir /data/local/media 0775 media system
 
@@ -335,3 +342,8 @@ on property:ro.bootmode=charger
 service playlpm /system/bin/lpm
     class sec-charger
     critical
+
+service charger /sbin/healthd -c
+    class charger
+    critical
+    seclabel u:r:healthd:s0

@@ -12,7 +12,6 @@ import /init.${ro.zygote}.rc
 import /init.trace.rc
 # Include CM's extra init file
 import /init.cm.rc
-#import /init.swap.rc
 
 
 on early-init
@@ -523,9 +522,6 @@ on property:sys.init_log_level=*
     loglevel ${sys.init_log_level}
 
 on charger
-    chmod 0666 /dev/log/radio
-    chmod 0666 /dev/log/main
-    chmod 0666 /dev/log/event
     class_start charger
 
 on property:vold.decrypt=trigger_reset_main
@@ -563,6 +559,11 @@ on property:sys.sysctl.extra_free_kbytes=*
 on property:sys.sysctl.tcp_def_init_rwnd=*
     write /proc/sys/net/ipv4/tcp_default_init_rwnd ${sys.sysctl.tcp_def_init_rwnd}
 
+on property:security.perf_harden=0
+    write /proc/sys/kernel/perf_event_paranoid 1
+
+on property:security.perf_harden=1
+    write /proc/sys/kernel/perf_event_paranoid 3
 
 ## Daemon processes to be run by init.
 ##
@@ -589,11 +590,6 @@ service healthd /sbin/healthd
     critical
     seclabel u:r:healthd:s0
     group root system
-
-service charger /sbin/healthd -c
-    class charger
-    critical
-    seclabel u:r:healthd:s0
 
 service console /system/bin/sh
     class core
@@ -671,9 +667,8 @@ service drm /system/bin/drmserver
 service media /system/bin/mediaserver
     class main
     user media
-    group system audio camera inet net_bt net_bt_admin net_bw_acct drmrpc qcom_diag mediadrm radio sdcard_rw sdcard_r media_rw shell
+    group audio camera inet net_bt net_bt_admin net_bw_acct drmrpc mediadrm qcom_diag
     ioprio rt 4
-    setenv LD_SHIM_LIBS /system/lib/hw/camera.sc8830.so|libmemoryheapion.so:/system/lib/hw/camera2.sc8830.so|libmemoryheapion.so
 
 # One shot invocation to deal with encrypted volume.
 service defaultcrypto /system/bin/vdc --wait cryptfs mountdefaultencrypted
