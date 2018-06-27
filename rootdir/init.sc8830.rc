@@ -343,7 +343,7 @@ service playlpm /system/bin/lpm
     class sec-charger
     critical
 
-service charger /sbin/healthd -c
-    class charger
-    critical
-    seclabel u:r:healthd:s0
+#service charger /sbin/healthd -c
+#    class charger
+#    critical
+#    seclabel u:r:healthd:s0
