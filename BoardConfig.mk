@@ -130,7 +130,7 @@ TARGET_KERNEL_SOURCE := kernel/samsung/kanas
 # Init
 TARGET_NR_SVC_SUPP_GIDS := 24
 TARGET_PROVIDES_INIT_RC := true
-TARGET_NEEDS_PROP_INIT_HACK := true
+TARGET_NEEDS_PROP_INIT_HACK := false
 
 # Assert
 TARGET_OTA_ASSERT_DEVICE := kanas,kanas3g,kanas3gxx,kanas3gub,kanas3gnfcxx,kanas3gnfc,SM-G355H,SM-G355HN,SM-G355M
@@ -139,8 +139,11 @@ TARGET_OTA_ASSERT_DEVICE := kanas,kanas3g,kanas3gxx,kanas3gub,kanas3gnfcxx,kanas
 BOARD_SEPOLICY_DIRS += device/samsung/kanas/sepolicy
 
 # Low memory config
-MALLOC_IMPL := dlmalloc
-BOARD_USES_LEGACY_MMAP := true
+# On the second thought, dlmalloc causes more glitches
+# errors, execption etc... than the memory it can save
+# use jemalloc instead
+MALLOC_IMPL := jemalloc
+BOARD_USES_LEGACY_MMAP := false
 
 # Tell vold that we have a kernel based impl of exfat
 TARGET_KERNEL_HAVE_EXFAT := true
