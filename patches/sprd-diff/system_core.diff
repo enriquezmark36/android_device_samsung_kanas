@@ -1,0 +1,25 @@
+diff --git a/healthd/BatteryMonitor.cpp b/healthd/BatteryMonitor.cpp
+index 86a4fc629..73c9b4766 100644
+--- a/healthd/BatteryMonitor.cpp
++++ b/healthd/BatteryMonitor.cpp
+@@ -312,12 +312,18 @@ bool BatteryMonitor::update(void) {
+                                              name);
+                             }
+                             path.clear();
+-                            path.appendFormat("%s/%s/current_max", POWER_SUPPLY_SYSFS_PATH,
++                            path.appendFormat("%s/%s/current_now", POWER_SUPPLY_SYSFS_PATH,
+                                            name);
++                            if (access(path.string(), R_OK) != 0) {
++                                path.clear();
++                                path.appendFormat("%s/%s/current_max", POWER_SUPPLY_SYSFS_PATH,
++                                               name);
++                            }
+                             if (access(path.string(), R_OK) == 0) {
+                                 int maxChargingCurrent = getIntField(path);
+                                 if (props.maxChargingCurrent < maxChargingCurrent) {
+-                                       props.maxChargingCurrent = maxChargingCurrent;
++                                       // Convert mA(milliampere to uA(micro-ampere)
++                                       props.maxChargingCurrent = maxChargingCurrent * 1000;
+                                 }
+                            }
+                         }

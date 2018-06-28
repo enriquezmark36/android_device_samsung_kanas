@@ -20,12 +20,19 @@
 <!-- These resources are around just to allow their values to be customized -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
 
-    <!-- THESE VALUES ARE HORRIBLY WRONG AND MAKE NO SENSE -->
+    <!-- These would only work when the system_core.diff patch
+         has been applied  -->
 
     <!-- Threshold in micro amperes below which a charger is rated as "slow" -->
-    <integer name="config_chargingSlowlyThreshold">300</integer>
+    <!-- Default current is at 500 mA while the outlet charger/power bank
+         with the *appropiate* usb cable is at 700 mA. Not using the appropiate
+	 cable, I AFAIK, only sets at 500mA even if the kernel
+	 reports 700mA -->
+    <integer name="config_chargingSlowlyThreshold">700000</integer>
 
-    <!-- Threshold in micro amperes from which a charger is rated as "fast" -->
-    <integer name="config_chargingFastThreshold">600</integer>
+    <!-- Threshold in micro amperes above which a charger is rated as "fast" -->
+    <!-- Maximum current the kernel reports is at 2000 mA; -->
+    <!-- NOTE: There's actually no fast charging for SM-G355H. -->
+    <integer name="config_chargingFastThreshold">1000000</integer>
 
 </resources>
