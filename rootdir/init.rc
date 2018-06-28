@@ -143,29 +143,6 @@ on init
     write /dev/cpuctl/bg_non_interactive/cpu.rt_runtime_us 700000
     write /dev/cpuctl/bg_non_interactive/cpu.rt_period_us 1000000
 
-    # sets up initial cpusets for ActivityManager
-    mkdir /dev/cpuset
-    mount cpuset none /dev/cpuset
-
-    # this ensures that the cpusets are present and usable, but the device's
-    # init.rc must actually set the correct cpus
-    mkdir /dev/cpuset/foreground
-    write /dev/cpuset/foreground/cpus 0-3
-    write /dev/cpuset/foreground/mems 0
-    mkdir /dev/cpuset/foreground/boost
-    write /dev/cpuset/foreground/boost/cpus 0-3
-    write /dev/cpuset/foreground/boost/mems 0
-    mkdir /dev/cpuset/background
-    write /dev/cpuset/background/cpus 0-3
-    write /dev/cpuset/background/mems 0
-
-    # system-background is for system tasks that should only run on
-    # little cores, not on bigs
-    # to be used only by init, so don't change system-bg permissions
-    mkdir /dev/cpuset/system-background
-    write /dev/cpuset/system-background/cpus 0-3
-    write /dev/cpuset/system-background/mems 0
-
     # change permissions for all cpusets we'll touch at runtime
     chown system system /dev/cpuset
     chown system system /dev/cpuset/foreground

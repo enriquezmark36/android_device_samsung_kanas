@@ -36,6 +36,12 @@ SOC_SCX35 := true
 # Enable privacy guard's su
 WITH_SU := true
 
+# We're not on big.LITTLE processor
+# Actually, when it's empty/not defined it's true,
+# false otherwise.
+# You can set this to true and it means false
+ENABLE_CPUSETS := false
+
 # Config u-boot
 TARGET_NO_BOOTLOADER := true
 
