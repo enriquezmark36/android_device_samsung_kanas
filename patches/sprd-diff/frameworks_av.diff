@@ -2,15 +2,13 @@ diff --git a/media/libstagefright/OMXCodec.cpp b/media/libstagefright/OMXCodec.c
 index de00ff282..975acb8b3 100644
 --- a/media/libstagefright/OMXCodec.cpp
 +++ b/media/libstagefright/OMXCodec.cpp
-@@ -270,6 +270,11 @@ uint32_t OMXCodec::getComponentQuirks(
+@@ -270,6 +270,9 @@ uint32_t OMXCodec::getComponentQuirks(
      if (info->hasQuirk("output-buffers-are-unreadable")) {
          quirks |= kOutputBuffersAreUnreadable;
      }
-+#ifdef SPRD_HARDWARE
 +    if (info->hasQuirk("needs-flush-before-disable")) {
 +        quirks |= kNeedsFlushBeforeDisable;
 +    }
-+#endif
  
      return quirks;
  }
