@@ -4,9 +4,6 @@ on early-init
     chown system system /sys/class/input/event0/device/device/enable
     chmod 777 /sys/class/input/event0/device/device/enable
 
-    # Disable cpu hotplug until further notice
-    write /sys/devices/system/cpu/cpufreq/sprdemand/cpu_hotplug_disable 1
-
 on init
     #thermistor
     chown radio system /sys/devices/platform/sec-thermistor/temp_adc
