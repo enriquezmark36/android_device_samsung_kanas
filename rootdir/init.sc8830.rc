@@ -92,6 +92,10 @@ on post-fs
     chmod 0771 /productinfo
     insmod /system/lib/modules/mali.ko
 
+    # Slave bind mount /data/media/legacy for some applications
+    mkdir /data/media/legacy 0771 media_rw media_rw
+    mount none /data/media/0 /data/media/legacy slave bind rec
+
 on post-fs-data
     # Set indication (checked by vold) that we have finished this action
     setprop vold.post_fs_data_done 1
