@@ -237,6 +237,12 @@ on property:persist.modem.w.enable=1
     symlink /dev/spipe_w2 /dev/vbpipe2
     symlink /dev/spipe_w3 /dev/vbpipe3
     symlink /dev/spipe_w6 /dev/vbpipe6
+    symlink /dev/block/platform/sprd-sdhci.3/by-name/FIXNV1 /dev/block/platform/sprd-sdhci.3/by-name/fixnv2
+    symlink /dev/block/platform/sprd-sdhci.3/by-name/FIXNV2 /dev/block/platform/sprd-sdhci.3/by-name/fixnv1
+    symlink /dev/block/platform/sprd-sdhci.3/by-name/RUNTIMENV1 /dev/block/platform/sprd-sdhci.3/by-name/runtimenv1
+    symlink /dev/block/platform/sprd-sdhci.3/by-name/RUNTIMENV2 /dev/block/platform/sprd-sdhci.3/by-name/runtimenv2
+    symlink /dev/block/platform/sprd-sdhci.3/by-name/MODEM /dev/block/platform/sprd-sdhci.3/by-name/wmodem
+    symlink /dev/block/platform/sprd-sdhci.3/by-name/WDSP /dev/block/platform/sprd-sdhci.3/by-name/wdsp
     start nvitemd_w
     start refnotify_w
 
