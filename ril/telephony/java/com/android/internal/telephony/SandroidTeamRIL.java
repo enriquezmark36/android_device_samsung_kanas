@@ -29,6 +29,7 @@ import android.telephony.ModemActivityInfo;
 
 import com.android.internal.telephony.uicc.SpnOverride;
 import com.android.internal.telephony.RILConstants;
+import com.android.internal.telephony.uicc.IccUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
