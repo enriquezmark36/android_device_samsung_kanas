@@ -142,7 +142,7 @@ BOARD_SEPOLICY_DIRS += device/samsung/kanas/sepolicy
 # On the second thought, dlmalloc causes more glitches
 # errors, execption etc... than the memory it can save
 # use jemalloc instead
-MALLOC_IMPL := jemalloc
+# MALLOC_IMPL := jemalloc
 BOARD_USES_LEGACY_MMAP := false
 
 # Tell vold that we have a kernel based impl of exfat
