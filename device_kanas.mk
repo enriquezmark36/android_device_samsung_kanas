@@ -126,6 +126,11 @@ PRODUCT_PACKAGES += \
 	libomx_mp3dec_sprd.so \
 	libomx_vpxdec_hw_sprd.so
 
+# Camera can only use HALv1
+PRODUCT_PROPERTY_OVERRIDES += \
+	media.stagefright.legacyencoder=true \
+	media.stagefright.less-secure=true
+
 # Lights
 PRODUCT_PACKAGES += \
 	lights.sc8830
