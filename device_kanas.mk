@@ -116,10 +116,7 @@ MEDIA_CONFIGS := \
 	device/samsung/kanas/media/media_profiles.xml
 
 AUDIO_CONFIGS := \
-	device/samsung/kanas/configs/audio/audio_policy.conf \
-	device/samsung/kanas/configs/audio/audio_para \
-	device/samsung/kanas/configs/audio/codec_pga.xml \
-	device/samsung/kanas/configs/audio/tiny_hw.xml
+	device/samsung/kanas/configs/audio/audio_para
 
 # GPS_CONFIGS := \
 # 	device/samsung/kanas/configs/gps/gps.xml
