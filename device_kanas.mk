@@ -105,23 +105,12 @@ PRODUCT_PROPERTY_OVERRIDES += \
 
 # Configuration overrides: these are not bundled with an Android.mk since they
 # need to supersede/override all instances.
-# BLUETOOTH_CONFIGS := \
-# 	device/samsung/kanas/configs/bluetooth/bt_vendor.conf
-
 MEDIA_CONFIGS := \
 	device/samsung/kanas/configs/media/media_codecs.xml \
 	device/samsung/kanas/configs/media/media_profiles.xml
 
 AUDIO_CONFIGS := \
 	device/samsung/kanas/configs/audio/audio_para
-
-# GPS_CONFIGS := \
-# 	device/samsung/kanas/configs/gps/gps.xml
-#
-# WIFI_CONFIGS := \
-# 	device/samsung/kanas/configs/wifi/wpa_supplicant.conf \
-# 	device/samsung/kanas/configs/wifi/wpa_supplicant_overlay.conf \
-# 	device/samsung/kanas/configs/wifi/p2p_supplicant_overlay.conf
 
 INIT_FILES := \
 	device/samsung/kanas/configs/media/mediaserver.rc
@@ -130,6 +119,3 @@ PRODUCT_COPY_FILES += \
 	$(foreach f,$(MEDIA_CONFIGS),$(f):system/etc/$(notdir $(f))) \
 	$(foreach f,$(AUDIO_CONFIGS),$(f):system/etc/$(notdir $(f))) \
 	$(foreach f,$(INIT_FILES),$(f):system/etc/init/$(notdir $(f)))
-# 	$(foreach f,$(GPS_CONFIGS),$(f):system/etc/$(notdir $(f))) \
-# 	$(foreach f,$(WIFI_CONFIGS),$(f):system/etc/wifi/$(notdir $(f)))
-# 	$(foreach f,$(BLUETOOTH_CONFIGS),$(f):system/etc/bluetooth/$(notdir $(f))) \
