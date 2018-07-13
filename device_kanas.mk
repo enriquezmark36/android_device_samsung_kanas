@@ -65,22 +65,9 @@ PRODUCT_PROPERTY_OVERRIDES += \
 PRODUCT_PROPERTY_OVERRIDES += \
 	ro.sys.sdcardfs=true
 
-# Audio
-PRODUCT_PACKAGES += \
-	audio_policy.sc8830
-
 # Some Lineageos Apps
 PRODUCT_PACKAGES += \
        Snap
-
-# Languages
-PRODUCT_PROPERTY_OVERRIDES += \
-	ro.product.locale.language=en \
-	ro.product.locale.region=US
-
-# Override phone-hdpi-512-dalvik-heap to match value on stock
-PRODUCT_PROPERTY_OVERRIDES += \
-	dalvik.vm.heapgrowthlimit=48m
 
 # Modem
 PRODUCT_PACKAGES += \
@@ -96,12 +83,6 @@ PRODUCT_PROPERTY_OVERRIDES += \
 	dalvik.vm.image-dex2oat-Xms=48m \
 	dalvik.vm.image-dex2oat-Xmx=48m \
 	dalvik.vm.image-dex2oat-filter=speed
-
-# These are the hardware-specific settings that are stored in system properties.
-# Note that the only such settings should be the ones that are too low-level to
-# be reachable from resources or other mechanisms.
-PRODUCT_PROPERTY_OVERRIDES += \
-       ro.zygote.disable_gl_preload=true
 
 # Configuration overrides: these are not bundled with an Android.mk since they
 # need to supersede/override all instances.
