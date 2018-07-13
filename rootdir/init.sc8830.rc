@@ -72,8 +72,7 @@ on charger
     chmod 0666 /dev/log/main
     chmod 0666 /dev/log/event
     mount ext4 /dev/block/platform/sprd-sdhci.3/by-name/system /system ro,barrier=1 wait
-    exec sfsck /dev/block/platform/sprd-sdhci.3/by-name/userdata ext4
-    mount ext4 /dev/block/platform/sprd-sdhci.3/by-name/userdata /data noatime,nosuid,nodev,nomblk_io_submit wait,encryptable=footer,check
+    class_start sec-charger
     
 on post-fs
     # We restorecon /efs in case the efs partition has been reset.
@@ -268,16 +267,7 @@ service iprenew_bnep0 /system/bin/dhcpcd -n
     oneshot
 
 # LPM
-on property:ro.bootmode=charger
-	mount ext4 /dev/block/platform/sprd-sdhci.3/by-name/system /system  wait ro
-on property:ro.bootmode=charger
-    class_start sec-charger
-
 service playlpm /system/bin/lpm
     class sec-charger
     critical
-
-#service charger /sbin/healthd -c
-#    class charger
-#    critical
-#    seclabel u:r:healthd:s0
+    seclabel u:r:healthd:s0
