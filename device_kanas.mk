@@ -21,7 +21,6 @@ $(call inherit-product, vendor/samsung/kanas/kanas-vendor.mk)
 # Inherit from scx35-common device configuration
 $(call inherit-product, device/samsung/scx35-common/common.mk)
 
-
 # Overlay
 DEVICE_PACKAGE_OVERLAYS += device/samsung/kanas/overlay
 
@@ -30,19 +29,16 @@ TARGET_SCREEN_HEIGHT := 800
 TARGET_SCREEN_WIDTH := 480
 
 # Rootdir files
-ROOTDIR_FILES := \
-	$(LOCAL_PATH)/rootdir/init.sc8830.rc \
-	$(LOCAL_PATH)/rootdir/init.sc8830.usb.rc \
-	$(LOCAL_PATH)/rootdir/init.kanas3g_base.rc \
-	$(LOCAL_PATH)/rootdir/ueventd.sc8830.rc \
-	$(LOCAL_PATH)/rootdir/fstab.sc8830
+PRODUCT_PACKAGES += \
+	init.sc8830.rc \
+	init.sc8830.usb.rc \
+	init.kanas3g_base.rc \
+	ueventd.sc8830.rc \
+	fstab.sc8830
 
-PRODUCT_COPY_FILES += \
-	$(LOCAL_PATH)/rootdir/mediaserver.rc:system/etc/init/mediaserver.rc\
-	$(LOCAL_PATH)/rootdir/rild.rc:system/etc/init/rild.rc
-
-PRODUCT_COPY_FILES += \
-	$(foreach f,$(ROOTDIR_FILES),$(f):root/$(notdir $(f)))
+# RIL
+PRODUCT_PACKAGES += \
+	rild.rc
 
 # Keylayouts
 KEYLAYOUT_FILES := \
@@ -107,28 +103,33 @@ PRODUCT_PROPERTY_OVERRIDES += \
 PRODUCT_PROPERTY_OVERRIDES += \
        ro.zygote.disable_gl_preload=true
 
-# CONFIGS
+# Configuration overrides: these are not bundled with an Android.mk since they
+# need to supersede/override all instances.
 # BLUETOOTH_CONFIGS := \
 # 	device/samsung/kanas/configs/bluetooth/bt_vendor.conf
 
 MEDIA_CONFIGS := \
-	device/samsung/kanas/media/media_codecs.xml \
-	device/samsung/kanas/media/media_profiles.xml
+	device/samsung/kanas/configs/media/media_codecs.xml \
+	device/samsung/kanas/configs/media/media_profiles.xml
 
 AUDIO_CONFIGS := \
 	device/samsung/kanas/configs/audio/audio_para
 
 # GPS_CONFIGS := \
 # 	device/samsung/kanas/configs/gps/gps.xml
-
+#
 # WIFI_CONFIGS := \
 # 	device/samsung/kanas/configs/wifi/wpa_supplicant.conf \
 # 	device/samsung/kanas/configs/wifi/wpa_supplicant_overlay.conf \
 # 	device/samsung/kanas/configs/wifi/p2p_supplicant_overlay.conf
 
+INIT_FILES := \
+	device/samsung/kanas/configs/media/mediaserver.rc
+
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(MEDIA_CONFIGS),$(f):system/etc/$(notdir $(f))) \
-	$(foreach f,$(AUDIO_CONFIGS),$(f):system/etc/$(notdir $(f)))
+	$(foreach f,$(AUDIO_CONFIGS),$(f):system/etc/$(notdir $(f))) \
+	$(foreach f,$(INIT_FILES),$(f):system/etc/init/$(notdir $(f)))
 # 	$(foreach f,$(GPS_CONFIGS),$(f):system/etc/$(notdir $(f))) \
 # 	$(foreach f,$(WIFI_CONFIGS),$(f):system/etc/wifi/$(notdir $(f)))
 # 	$(foreach f,$(BLUETOOTH_CONFIGS),$(f):system/etc/bluetooth/$(notdir $(f))) \
