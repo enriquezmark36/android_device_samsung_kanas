@@ -60,6 +60,9 @@ BOARD_HAVE_SAMSUNG_WIFI := true
 USE_OVERLAY_COMPOSER_GPU := true
 NUM_FRAMEBUFFER_SURFACE_BUFFERS := 3
 USE_SPRD_DITHER := false
+# Custom patch needed; alters x/ydpi values reported by hwcomposer
+DEVICE_REPORT_XDPI := 240
+DEVICE_REPORT_YDPI := 240
 
 # Audio
 BOARD_USE_LIBATCHANNEL_WRAPPER := true
