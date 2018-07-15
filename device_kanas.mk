@@ -15,31 +15,15 @@
 # limitations under the License.
 #
 
-# Inherit from the common Open Source product configuration
-$(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
-
-# The gps config appropriate for this device
-$(call inherit-product, device/common/gps/gps_us_supl.mk)
-
-# Inherit from sprd-common device configuration
-$(call inherit-product, device/samsung/sprd-common/common.mk)
-
 # Inherit from vendor
 $(call inherit-product, vendor/samsung/kanas/kanas-vendor.mk)
 
-# Dalvik heap config
-$(call inherit-product, frameworks/native/build/phone-hdpi-512-dalvik-heap.mk)
+# Inherit from scx35-common device configuration
+$(call inherit-product, device/samsung/scx35-common/common.mk)
 
-# WiFi BCMDHD
-#$(call inherit-product, hardware/broadcom/wlan/bcmdhd/firmware/bcm4330/device-bcm.mk)
 
 # Overlay
 DEVICE_PACKAGE_OVERLAYS += device/samsung/kanas/overlay
-
-# AAPT configuration
-PRODUCT_AAPT_CONFIG := normal
-PRODUCT_AAPT_PREF_CONFIG := hdpi
-PRODUCT_AAPT_PREBUILT_DPI := hdpi mdpi ldpi
 
 # Boot animation
 TARGET_SCREEN_HEIGHT := 800
@@ -47,25 +31,18 @@ TARGET_SCREEN_WIDTH := 480
 
 # Rootdir files
 ROOTDIR_FILES := \
-	$(LOCAL_PATH)/rootdir/init.rc \
-	$(LOCAL_PATH)/rootdir/init.board.rc \
 	$(LOCAL_PATH)/rootdir/init.sc8830.rc \
 	$(LOCAL_PATH)/rootdir/init.sc8830.usb.rc \
-	$(LOCAL_PATH)/rootdir/init.sc8830_ss.rc \
-	$(LOCAL_PATH)/rootdir/init.kanas3g.rc \
 	$(LOCAL_PATH)/rootdir/init.kanas3g_base.rc \
-	$(LOCAL_PATH)/rootdir/init.wifi.rc \
-	$(LOCAL_PATH)/rootdir/init.swap.rc \
 	$(LOCAL_PATH)/rootdir/ueventd.sc8830.rc \
 	$(LOCAL_PATH)/rootdir/fstab.sc8830
 
 PRODUCT_COPY_FILES += \
-	$(foreach f,$(ROOTDIR_FILES),$(f):root/$(notdir $(f)))
+	$(LOCAL_PATH)/rootdir/mediaserver.rc:system/etc/init/mediaserver.rc\
+	$(LOCAL_PATH)/rootdir/rild.rc:system/etc/init/rild.rc
 
-# Recovery
 PRODUCT_COPY_FILES += \
-	$(LOCAL_PATH)/rootdir/init.recovery.sc8830.rc:root/init.recovery.sc8830.rc \
-	$(LOCAL_PATH)/rootdir/twrp.fstab:recovery/root/etc/twrp.fstab \
+	$(foreach f,$(ROOTDIR_FILES),$(f):root/$(notdir $(f)))
 
 # Keylayouts
 KEYLAYOUT_FILES := \
@@ -75,159 +52,39 @@ KEYLAYOUT_FILES := \
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(KEYLAYOUT_FILES),$(f):system/usr/keylayout/$(notdir $(f)))
 
-# Bluetooth config
-BLUETOOTH_CONFIGS := \
-	device/samsung/kanas/configs/bluetooth/bt_vendor.conf
-
-PRODUCT_COPY_FILES += \
-	$(foreach f,$(BLUETOOTH_CONFIGS),$(f):system/etc/bluetooth/$(notdir $(f)))
-
-# Media config
-MEDIA_CONFIGS := \
-	device/samsung/kanas/media/media_codecs.xml \
-	device/samsung/kanas/media/media_profiles.xml \
-	frameworks/av/media/libstagefright/data/media_codecs_google_audio.xml \
-	frameworks/av/media/libstagefright/data/media_codecs_google_video_le.xml \
-	frameworks/av/media/libstagefright/data/media_codecs_google_telephony.xml
-
-PRODUCT_COPY_FILES += \
-	$(foreach f,$(MEDIA_CONFIGS),$(f):system/etc/$(notdir $(f)))
-
-PRODUCT_PACKAGES += \
-	e2fsck
-
-# HWC
-PRODUCT_PACKAGES += \
-	gralloc.sc8830 \
-	hwcomposer.sc8830 \
-	sprd_gsp.sc8830 \
-	libmemoryheapion \
-	libion_sprd
+# WiFi
+$(call inherit-product, hardware/broadcom/wlan/bcmdhd/config/config-bcm.mk)
 
 # Codecs
 PRODUCT_PACKAGES += \
-	libstagefrighthw \
 	libstagefright_sprd_soft_mpeg4dec \
-	libstagefright_sprd_soft_h264dec \
-	libstagefright_sprd_mpeg4dec \
-	libstagefright_sprd_mpeg4enc \
-	libstagefright_sprd_h264dec \
-	libstagefright_sprd_h264enc \
-	libstagefright_sprd_vpxdec \
-	libstagefright_sprd_aacdec \
-	libstagefright_sprd_mp3dec \
-	libomx_aacdec_sprd.so \
-	libomx_avcdec_hw_sprd.so \
-	libomx_avcdec_sw_sprd.so \
-	libomx_avcenc_hw_sprd.so \
-	libomx_m4vh263dec_hw_sprd.so \
-	libomx_m4vh263dec_sw_sprd.so \
-	libomx_m4vh263enc_hw_sprd.so \
-	libomx_mp3dec_sprd.so \
-	libomx_vpxdec_hw_sprd.so
+	libstagefright_sprd_soft_h264dec
 
 # Camera can only use HALv1
 PRODUCT_PROPERTY_OVERRIDES += \
 	media.stagefright.legacyencoder=true \
 	media.stagefright.less-secure=true
 
-# Lights
-PRODUCT_PACKAGES += \
-	lights.sc8830
-
-# Bluetooth
-PRODUCT_PACKAGES += \
-	bluetooth.default \
-	libbluetooth_jni \
+# Sdcardfs
+PRODUCT_PROPERTY_OVERRIDES += \
+	ro.sys.sdcardfs=true
 
 # Audio
 PRODUCT_PACKAGES += \
-	audio.primary.sc8830 \
-	audio_policy.sc8830 \
-	audio.r_submix.default \
-	audio.usb.default \
-	libaudio-resampler
-
-AUDIO_CONFIGS := \
-	device/samsung/kanas/configs/audio/audio_policy.conf \
-	device/samsung/kanas/configs/audio/audio_hw.xml \
-	device/samsung/kanas/configs/audio/audio_para \
-	device/samsung/kanas/configs/audio/codec_pga.xml \
-	device/samsung/kanas/configs/audio/tiny_hw.xml \
-
-PRODUCT_COPY_FILES += \
-	$(foreach f,$(AUDIO_CONFIGS),$(f):system/etc/$(notdir $(f))) \
-
-# Shim libraries
-PRODUCT_PACKAGES += \
-	libril_shim \
-	libgps_shim \
-
-# GPS
-GPS_CONFIGS := \
-	device/samsung/kanas/configs/gps/gps.xml \
-
-PRODUCT_COPY_FILES += \
-	$(foreach f,$(GPS_CONFIGS),$(f):system/etc/$(notdir $(f)))
-
-# Nvitem
-NVITEM_CONFIGS := \
-	device/samsung/kanas/configs/nvitem/nvitem_td.cfg \
-	device/samsung/kanas/configs/nvitem/nvitem_w.cfg
-
-PRODUCT_COPY_FILES += \
-	$(foreach f,$(NVITEM_CONFIGS),$(f):system/etc/$(notdir $(f)))
-
-WIFI_CONFIGS := \
-	device/samsung/kanas/configs/wifi/wpa_supplicant.conf \
-	device/samsung/kanas/configs/wifi/wpa_supplicant_overlay.conf \
-	device/samsung/kanas/configs/wifi/p2p_supplicant_overlay.conf
-
-PRODUCT_COPY_FILES += \
-	$(foreach f,$(WIFI_CONFIGS),$(f):system/etc/wifi/$(notdir $(f)))
-
-# Memtrack
-PRODUCT_PACKAGES += \
-	memtrack.sc8830 \
-
-# Permissions
-PRODUCT_PACKAGES += platform.xml
-PERMISSION_XML_FILES := \
-	frameworks/native/data/etc/android.hardware.camera.front.xml \
-	frameworks/native/data/etc/android.hardware.camera.flash-autofocus.xml \
-
-PRODUCT_COPY_FILES += \
-	$(foreach f,$(PERMISSION_XML_FILES),$(f):system/etc/permissions/$(notdir $(f)))
+	audio_policy.sc8830
 
 # Some Lineageos Apps
 PRODUCT_PACKAGES += \
-       Gello \
        Snap
-
-# Live Wallpapers
-PRODUCT_PACKAGES += \
-       LiveWallpapers \
-       LiveWallpapersPicker \
-       VisualizationWallpapers \
-       librs_jni
-
-# Camera config
-PRODUCT_PROPERTY_OVERRIDES += \
-       camera.disable_zsl_mode=1
 
 # Languages
 PRODUCT_PROPERTY_OVERRIDES += \
 	ro.product.locale.language=en \
-	ro.product.locale.region=GB
+	ro.product.locale.region=US
 
 # Override phone-hdpi-512-dalvik-heap to match value on stock
 PRODUCT_PROPERTY_OVERRIDES += \
 	dalvik.vm.heapgrowthlimit=48m
-
-# Enable Google-specific location features, like NetworkLocationProvider and LocationCollector
-PRODUCT_PROPERTY_OVERRIDES += \
-	ro.com.google.locationfeatures=1 \
-	ro.com.google.networklocation=1
 
 # Modem
 PRODUCT_PACKAGES += \
@@ -239,22 +96,42 @@ PRODUCT_PROPERTY_OVERRIDES += \
 	dalvik.vm.checkjni=false \
 	dalvik.vm.dex2oat-Xms=8m \
 	dalvik.vm.dex2oat-Xmx=96m \
-	dalvik.vm.dex2oat-flags=--no-watch-dog \
 	dalvik.vm.dex2oat-filter=interpret-only \
 	dalvik.vm.image-dex2oat-Xms=48m \
 	dalvik.vm.image-dex2oat-Xmx=48m \
 	dalvik.vm.image-dex2oat-filter=speed
-
-# Enable insecure ADB for userdebug builds
-ADDITIONAL_DEFAULT_PROPERTIES += \
-	ro.secure=0 \
-	ro.adb.secure=0 \
-	ro.debuggable=1 \
-	persist.sys.root_access=1 \
-	persist.service.adb.enable=1
 
 # These are the hardware-specific settings that are stored in system properties.
 # Note that the only such settings should be the ones that are too low-level to
 # be reachable from resources or other mechanisms.
 PRODUCT_PROPERTY_OVERRIDES += \
        ro.zygote.disable_gl_preload=true
+
+# CONFIGS
+# BLUETOOTH_CONFIGS := \
+# 	device/samsung/kanas/configs/bluetooth/bt_vendor.conf
+
+MEDIA_CONFIGS := \
+	device/samsung/kanas/media/media_codecs.xml \
+	device/samsung/kanas/media/media_profiles.xml
+
+AUDIO_CONFIGS := \
+	device/samsung/kanas/configs/audio/audio_policy.conf \
+	device/samsung/kanas/configs/audio/audio_para \
+	device/samsung/kanas/configs/audio/codec_pga.xml \
+	device/samsung/kanas/configs/audio/tiny_hw.xml
+
+# GPS_CONFIGS := \
+# 	device/samsung/kanas/configs/gps/gps.xml
+
+# WIFI_CONFIGS := \
+# 	device/samsung/kanas/configs/wifi/wpa_supplicant.conf \
+# 	device/samsung/kanas/configs/wifi/wpa_supplicant_overlay.conf \
+# 	device/samsung/kanas/configs/wifi/p2p_supplicant_overlay.conf
+
+PRODUCT_COPY_FILES += \
+	$(foreach f,$(MEDIA_CONFIGS),$(f):system/etc/$(notdir $(f))) \
+	$(foreach f,$(AUDIO_CONFIGS),$(f):system/etc/$(notdir $(f)))
+# 	$(foreach f,$(GPS_CONFIGS),$(f):system/etc/$(notdir $(f))) \
+# 	$(foreach f,$(WIFI_CONFIGS),$(f):system/etc/wifi/$(notdir $(f)))
+# 	$(foreach f,$(BLUETOOTH_CONFIGS),$(f):system/etc/bluetooth/$(notdir $(f))) \

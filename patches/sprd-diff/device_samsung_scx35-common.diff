@@ -1,0 +1,12 @@
+diff --git a/Android.mk b/Android.mk
+index dd08aa5..0f46e72 100644
+--- a/Android.mk
++++ b/Android.mk
+@@ -16,6 +16,6 @@
+ 
+ LOCAL_PATH := $(call my-dir)
+ 
+-ifneq ($(filter grandprimeve3g coreprimeve3g core33g,$(TARGET_DEVICE)),)
++ifneq ($(filter grandprimeve3g coreprimeve3g core33g kanas,$(TARGET_DEVICE)),)
+ include $(call all-subdir-makefiles,$(LOCAL_PATH))
+ endif

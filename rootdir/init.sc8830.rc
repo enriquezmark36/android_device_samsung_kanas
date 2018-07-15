@@ -1,6 +1,8 @@
 import /init.board.rc
 import /init.sc8830.usb.rc
-import /init.sc8830_ss.rc
+import /init.kanas3g_base.rc
+import init.wifi.rc
+
 
 on early-init
     # set core dump resource limit
@@ -8,11 +10,6 @@ on early-init
 
     # coredump file will not be generated in release version
     write /proc/sys/kernel/core_pattern /dev/null
-# radio pipe
-    mkdir /dev/rpipe 0550 radio radio
-    pipe 666 /dev/rpipe/ril.vt.0
-    pipe 666 /dev/rpipe/ril.vt.1
-    pipe 666 /dev/rpipe/ril.vt.2
 
 on init
     # Shim libs for binary blobs
@@ -111,9 +108,7 @@ on early-boot
 
     # Support audio loopback test
     mkdir /dev/pipe 0755 system system
-    #pipe 666 /dev/pipe/mmi.audio.ctrl
-    exec -- /system/bin/mkfifo /dev/pipe/mmi.audio.ctrl
-    exec -- /system/bin/chmod 666 /dev/pipe/mmi.audio.ctrl
+    exec -- /system/bin/mknod -m 666 /dev/pipe/mmi.audio.ctrl p
     # Support audio parameter stored
     mkdir /data/local/media 0775 media system
 
@@ -203,6 +198,13 @@ on boot
     chmod 0666 /proc/pin_switch/bt_iis_sys_sel/cp2_iis0
     chmod 0666 /proc/pin_switch/bt_iis_sys_sel/ap_iis0
 
+# From init.board.rc
+    chmod 660 /sys/class/rfkill/rfkill0/state
+    chmod 660 /sys/class/rfkill/rfkill0/type
+    chown bluetooth bluetooth /sys/class/rfkill/rfkill0/state
+    chown bluetooth bluetooth /sys/class/rfkill/rfkill0/type
+    mkdir /data/system 0770 system system
+
 on property:ro.modem.t.count=1
     write /proc/sim/0 t
 
@@ -254,92 +256,14 @@ on property:persist.modem.t.enable=1
     start nvitemd_td
     start refnotify
 
-service modemd /system/bin/modemd
-    class core
-    user system
-    group system radio shell
-    oneshot
-
-service phoneserver_t /system/bin/phoneserver -m t
-    class core
-    user root
-    group radio system shell
-    disabled
-    oneshot
-
-service phoneserver_w /system/bin/phoneserver -m w
-    class core
-    user root
-    group radio system shell
-    disabled
-    oneshot
-
-#nvitemd
-service nvitemd_td /system/bin/nvitemd /dev/spipe_td1 /system/etc/nvitem_td.cfg FALSE
-    class core
-    user system
-    group system radio shell
-    disabled
-    oneshot
-
-service nvitemd_w /system/bin/nvitemd /dev/spipe_w1 /system/etc/nvitem_w.cfg FALSE
-    class core
-    user system
-    group system radio shell
-    disabled
-    oneshot
-
-service refnotify /system/bin/refnotify -t 0
+# From init.board.rc
+service dhcpcd_bnep0 /system/bin/dhcpcd -ABKL
     class main
-    user system
-    group system radio shell
     disabled
+    oneshot
 
-service refnotify_w /system/bin/refnotify -t 1
+service iprenew_bnep0 /system/bin/dhcpcd -n
     class main
-    user system
-    group system radio shell
-    disabled
-
-#create symlink
-service smd_symlink /system/bin/ext_symlink.sh -u
-    user root
-    disabled
-    oneshot
-
-#data on
-service data_on /system/bin/ext_data.sh  -u
-    user root
-    disabled
-    oneshot
-
-#data off
-service data_off /system/bin/ext_data.sh  -d
-    user root
-    disabled
-    oneshot
-
-#kill td app
-service kill_td_phone /system/bin/ext_kill.sh  -t
-    user root
-    disabled
-    oneshot
-
-#kill w app
-service kill_w_phone /system/bin/ext_kill.sh  -w
-    user root
-    disabled
-    oneshot
-
-#change owner
-service chown_service /system/bin/ext_chown.sh  -c
-    class main
-    user root
-    oneshot
-
-#set mac addr
-service set_mac /system/bin/ext_chown.sh  -e
-    user root
     disabled
     oneshot
 

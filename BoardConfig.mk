@@ -12,32 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Inherit from SPRD common configs
--include device/samsung/sprd-common/BoardConfigCommon.mk
+# Inherit from SCX35 common configs
+-include device/samsung/scx35-common/BoardConfigCommon.mk
 
 # Inherit from the proprietary version
 -include vendor/samsung/kanas/BoardConfigVendor.mk
 
 # Platform
-TARGET_ARCH := arm
-TARGET_BOARD_PLATFORM := sc8830
-TARGET_BOARD_PLATFORM_GPU := mali-400 MP
-TARGET_CPU_ABI := armeabi-v7a
-TARGET_CPU_ABI2 := armeabi
-TARGET_ARCH_VARIANT := armv7-a-neon
-TARGET_CPU_VARIANT := cortex-a7
 ARCH_ARM_HAVE_TLS_REGISTER := true
 TARGET_BOOTLOADER_BOARD_NAME := SC7735S
-BOARD_VENDOR := samsung
+TARGET_BOARD_PLATFORM_GPU := mali-400 MP
 
 # Some magic
 SOC_SCX35 := true
 
 # Enable privacy guard's su
 WITH_SU := true
-
-# Config u-boot
-TARGET_NO_BOOTLOADER := true
 
 # Img configuration
 BOARD_BOOTIMAGE_PARTITION_SIZE := 15728640
@@ -48,17 +38,6 @@ BOARD_CACHEIMAGE_PARTITION_SIZE := 125829120
 BOARD_FLASH_BLOCK_SIZE := 4096
 TARGET_USERIMAGES_USE_EXT4 := true
 BOARD_HAS_LARGE_FILESYSTEM := true
-
-# RIL
-BOARD_RIL_CLASS += ../../../device/samsung/kanas/ril
-COMMON_GLOBAL_CFLAGS += -DDISABLE_ASHMEM_TRACKING
-
-# Bluetooth
-BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR := device/samsung/kanas/bluetooth
-BOARD_BLUEDROID_VENDOR_CONF := device/samsung/kanas/bluetooth/libbt_vndcfg.txt
-
-# FM
-BOARD_HAVE_FMRADIO_BCM := false
 
 # Wifi
 BOARD_WLAN_DEVICE := bcmdhd
@@ -78,28 +57,16 @@ WIFI_BAND := 802_11_ABG
 BOARD_HAVE_SAMSUNG_WIFI := true
 
 # Graphics
-HWUI_COMPILE_FOR_PERF := true
-TARGET_REQUIRES_SYNCHRONOUS_SETSURFACE := true
 USE_OVERLAY_COMPOSER_GPU := true
-BOARD_EGL_NEEDS_HANDLE_VALUE := true
-TARGET_RUNNING_WITHOUT_SYNC_FRAMEWORK := true
+# TARGET_REQUIRES_SYNCHRONOUS_SETSURFACE := true
 NUM_FRAMEBUFFER_SURFACE_BUFFERS := 3
-COMMON_GLOBAL_CFLAGS += -DFORCE_SCREENSHOT_CPU_PATH
-
-# HWComposer
-USE_SPRD_HWCOMPOSER := true
+# TARGET_RUNNING_WITHOUT_SYNC_FRAMEWORK := true
+# BOARD_GLOBAL_CFLAGS += -DFORCE_SCREENSHOT_CPU_PATH
 USE_SPRD_DITHER := false
 
 # Audio
 BOARD_USE_LIBATCHANNEL_WRAPPER := true
 BOARD_USES_SS_VOIP := true
-
-# Media
-COMMON_GLOBAL_CFLAGS += -DBOARD_CANT_REALLOCATE_OMX_BUFFERS
-
-# Resolution
-TARGET_SCREEN_HEIGHT := 800
-TARGET_SCREEN_WIDTH := 480
 
 # Bootanimation
 TARGET_BOOTANIMATION_PRELOAD := true
@@ -107,43 +74,39 @@ TARGET_BOOTANIMATION_MULTITHREAD_DECODE := true
 TARGET_BOOTANIMATION_TEXTURE_CACHE := true
 
 # Board specific features
-BOARD_USE_SAMSUNG_COLORFORMAT := false
-COMMON_GLOBAL_CFLAGS += -DUSE_LEGACY_BLOBS
+# BOARD_GLOBAL_CFLAGS += -DUSE_LEGACY_BLOBS
 
-# Healthd
-BOARD_HAL_STATIC_LIBRARIES := libhealthd.sc8830
+# RIL
+BOARD_RIL_CLASS += ../../../device/samsung/kanas/ril
 
-# Charger
-BOARD_CHARGER_ENABLE_SUSPEND := true
-BOARD_NO_CHARGER_LED := true
-BOARD_CHARGING_MODE_BOOTING_LPM := /sys/class/power_supply/battery/batt_lp_charging
-CHARGING_ENABLED_PATH := /sys/class/power_supply/battery/batt_lp_charging
-BACKLIGHT_PATH := /sys/class/backlight/panel/brightness
+# Bluetooth
+# BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR := device/samsung/kanas/bluetooth
+# BOARD_BLUEDROID_VENDOR_CONF := device/samsung/kanas/bluetooth/libbt_vndcfg.txt
+## Common Overrides
+USE_BLUETOOTH_BCM4343 :=
 
 # Kernel
-BOARD_KERNEL_BASE := 0x00000000
 BOARD_KERNEL_CMDLINE := console=ttyS1,115200n8 androidboot.selinux=permissive androidboot.hardware=sc8830
 BOARD_KERNEL_PAGESIZE := 2048
 TARGET_KERNEL_CONFIG := sandroid_kanas_defconfig
 TARGET_KERNEL_SOURCE := kernel/samsung/kanas
+## Common overrides
+BOARD_KERNEL_SEPARATED_DT :=
+BOARD_CUSTOM_BOOTIMG_MK :=
+BOARD_MKBOOTIMG_ARGS :=
+BOARD_RAMDISK_OFFSET :=
+BOARD_KERNEL_TAGS_OFFSET :=
 
 # Init
-TARGET_NR_SVC_SUPP_GIDS := 24
-TARGET_PROVIDES_INIT_RC := true
-TARGET_NEEDS_PROP_INIT_HACK := false
+## Common overrides
+TARGET_INIT_VENDOR_LIB :=
+TARGET_UNIFIED_DEVICE :=
 
 # Assert
 TARGET_OTA_ASSERT_DEVICE := kanas,kanas3g,kanas3gxx,kanas3gub,kanas3gnfcxx,kanas3gnfc,SM-G355H,SM-G355HN,SM-G355M
 
-# SELinux
-BOARD_SEPOLICY_DIRS += device/samsung/kanas/sepolicy
-
 # Low memory config
-# On the second thought, dlmalloc causes more glitches
-# errors, execption etc... than the memory it can save
-# use jemalloc instead
-# MALLOC_IMPL := jemalloc
-BOARD_USES_LEGACY_MMAP := false
+MALLOC_SVELTE := true
 
 # Tell vold that we have a kernel based impl of exfat
 TARGET_KERNEL_HAVE_EXFAT := true
@@ -151,10 +114,6 @@ TARGET_KERNEL_HAVE_EXFAT := true
 # Enable dex-preoptimization to speed up the first boot sequence
 # WITH_DEXPREOPT := true
 # WITH_DEXPREOPT_PIC := true
-
-# Power
-TARGET_POWERHAL_VARIANT := sprd
-
 
 # Camera
 CAMERA_SUPPORT_SIZE := 5M
@@ -165,35 +124,12 @@ TARGET_BOARD_BACK_CAMERA_INTERFACE := ccir
 TARGET_BOARD_FRONT_CAMERA_INTERFACE := ccir
 TARGET_BOARD_CAMERA_CAF := true
 CONFIG_CAMERA_ISP := true
-COMMON_GLOBAL_CFLAGS += -DCONFIG_CAMERA_ISP
 TARGET_HAS_LEGACY_CAMERA_HAL1 := true
+TARGET_BOARD_CAMERA_ROTATION_CAPTURE := false
+TARGET_BOARD_CAMERA_HAL_VERSION := HAL1.0
+BOARD_GLOBAL_CFLAGS += -DCONFIG_CAMERA_ISP
 
 # Recovery
 BOARD_HAS_DOWNLOAD_MODE := true
 TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"
 TARGET_RECOVERY_FSTAB := device/samsung/kanas/rootdir/fstab.sc8830
-TARGET_RECOVERY_TWRP := false
-
-ifeq ($(TARGET_RECOVERY_TWRP),true)
-RECOVERY_VARIANT := twrp
-TARGET_USES_LOGD := true
-WITH_CM_CHARGER := false
-# TWRP
-TW_INTERNAL_STORAGE_PATH := "/data/media/0"
-TW_EXTERNAL_STORAGE_PATH := "/sdcard"
-TW_CUSTOM_CPU_TEMP_PATH := "/sys/devices/platform/sec-thermistor/temperature"
-TW_NO_REBOOT_BOOTLOADER := true
-TW_NO_USB_STORAGE := true
-TW_HAS_DOWNLOAD_MODE := true
-TW_USE_TOOLBOX := true
-TWRP_INCLUDE_LOGCAT := true
-TW_EXCLUDE_SUPERSU := true
-TW_EXCLUDE_ENCRYPTED_BACKUPS := true
-TW_THEME := portrait_mdpi
-TWHAVE_SELINUX := true
-RECOVERY_SDCARD_ON_DATA := true
-BOARD_USE_CUSTOM_RECOVERY_FONT := \"roboto_10x18.h\"
-# UMS
-BOARD_UMS_LUNFILE := "/sys/devices/virtual/android_usb/android0/f_mass_storage/lun/file"
-TARGET_USE_CUSTOM_LUN_FILE_PATH := "/sys/devices/virtual/android_usb/android0/f_mass_storage/lun/file"
-endif
