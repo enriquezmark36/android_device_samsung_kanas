@@ -80,8 +80,7 @@ TARGET_BOOTANIMATION_TEXTURE_CACHE := true
 BOARD_RIL_CLASS += ../../../device/samsung/kanas/ril
 
 # Bluetooth
-# BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR := device/samsung/kanas/bluetooth
-# BOARD_BLUEDROID_VENDOR_CONF := device/samsung/kanas/bluetooth/libbt_vndcfg.txt
+BOARD_CUSTOM_BT_CONFIG := device/samsung/kanas/bluetooth/libbt_vndcfg.txt
 ## Common Overrides
 USE_BLUETOOTH_BCM4343 :=
 
