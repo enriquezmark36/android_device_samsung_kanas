@@ -18,11 +18,11 @@
 # Inherit from vendor
 $(call inherit-product, vendor/samsung/kanas/kanas-vendor.mk)
 
+# Add our overlay first as a matter of precedence
+DEVICE_PACKAGE_OVERLAYS += device/samsung/kanas/overlay
+
 # Inherit from scx35-common device configuration
 $(call inherit-product, device/samsung/scx35-common/common.mk)
-
-# Overlay
-DEVICE_PACKAGE_OVERLAYS += device/samsung/kanas/overlay
 
 # Boot animation
 TARGET_SCREEN_HEIGHT := 800
