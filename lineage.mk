@@ -15,16 +15,16 @@
 #
 
 # Specify phone tech before including full_phone
-$(call inherit-product, vendor/cm/config/telephony.mk)
-
-# Custom unofficial build tag
-TARGET_UNOFFICIAL_BUILD_ID := SandroidTeam-Ih24n-Intan
+$(call inherit-product, vendor/lineage/config/telephony.mk)
 
 # Inherit some common CM stuff.
-$(call inherit-product, vendor/cm/config/common_full_phone.mk)
+$(call inherit-product, vendor/lineage/config/common_full_phone.mk)
 
 # Inherit device configuration
 $(call inherit-product, $(LOCAL_PATH)/device_kanas.mk)
+
+# Custom unofficial build tag
+TARGET_UNOFFICIAL_BUILD_ID := Built_by_$(shell whoami)
 
 # Override build date
 PRODUCT_BUILD_PROP_OVERRIDES += BUILD_UTC_DATE=0
