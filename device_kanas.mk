@@ -36,10 +36,6 @@ PRODUCT_PACKAGES += \
 	ueventd.sc8830.rc \
 	fstab.sc8830
 
-# RIL
-PRODUCT_PACKAGES += \
-	rild.rc
-
 # Keylayouts
 KEYLAYOUT_FILES := \
 	device/samsung/kanas/keylayouts/ist30xx_ts_input.kl \
@@ -96,10 +92,6 @@ MEDIA_CONFIGS := \
 AUDIO_CONFIGS := \
 	device/samsung/kanas/configs/audio/audio_para
 
-INIT_FILES := \
-	device/samsung/kanas/configs/media/mediaserver.rc
-
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(MEDIA_CONFIGS),$(f):system/vendor/etc/$(notdir $(f))) \
 	$(foreach f,$(AUDIO_CONFIGS),$(f):system/vendor/etc/$(notdir $(f))) \
-	$(foreach f,$(INIT_FILES),$(f):system/etc/init/$(notdir $(f)))
