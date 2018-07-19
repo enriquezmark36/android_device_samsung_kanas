@@ -73,9 +73,6 @@ TARGET_BOOTANIMATION_PRELOAD := true
 TARGET_BOOTANIMATION_MULTITHREAD_DECODE := true
 TARGET_BOOTANIMATION_TEXTURE_CACHE := true
 
-# RIL
-BOARD_RIL_CLASS += ../../../device/samsung/kanas/ril
-
 # Bluetooth
 BOARD_CUSTOM_BT_CONFIG := device/samsung/kanas/bluetooth/libbt_vndcfg.txt
 ## Common Overrides
