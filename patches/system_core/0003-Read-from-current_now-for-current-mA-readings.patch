@@ -1,4 +1,4 @@
-From 29d721f91656c1b600a564d680e76e3e424d9b40 Mon Sep 17 00:00:00 2001
+From ccf0674f3fa4d42d001a40f54a5b6aaedc3a4f01 Mon Sep 17 00:00:00 2001
 From: Mark Enriquez <enriquezmark36@gmail.com>
 Date: Tue, 17 Jul 2018 11:17:37 +0800
 Subject: [PATCH] Read from current_now for current(mA) readings
@@ -10,7 +10,7 @@ Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
  1 file changed, 13 insertions(+), 2 deletions(-)
 
 diff --git a/healthd/BatteryMonitor.cpp b/healthd/BatteryMonitor.cpp
-index b32343850..5871f7d89 100644
+index b32343850..c91d9764a 100644
 --- a/healthd/BatteryMonitor.cpp
 +++ b/healthd/BatteryMonitor.cpp
 @@ -303,9 +303,20 @@ bool BatteryMonitor::update(void) {
@@ -28,8 +28,8 @@ index b32343850..5871f7d89 100644
 +            if (access(path.string(), R_OK) != 0) {
 +                path.clear();
 +                path.appendFormat("%s/%s/current_max", POWER_SUPPLY_SYSFS_PATH,
-+                               name);
-+                // Revert to conversions; expecting micro-ampere
++                                  mChargerNames[i].string());
++                // Revert conversions; expect micro-ampere
 +                ChargingCurrent = 1;
 +            }
 +            ChargingCurrent *=
@@ -37,5 +37,5 @@ index b32343850..5871f7d89 100644
  
              path.clear();
 -- 
-2.18.0
+2.17.1
 
