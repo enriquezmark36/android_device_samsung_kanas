@@ -30,10 +30,6 @@ TARGET_SCREEN_WIDTH := 480
 
 # Rootdir files
 PRODUCT_PACKAGES += \
-	init.sc8830.rc \
-	init.sc8830.usb.rc \
-	init.kanas3g_base.rc \
-	ueventd.sc8830.rc \
 	fstab.sc8830
 
 # Keylayouts
