@@ -69,6 +69,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	sensors.sc8830
 
+# Graphics
+PRODUCT_PACKAGES += \
+	hwcomposer.sc8830
+
 # ART device props
 PRODUCT_PROPERTY_OVERRIDES += \
 	ro.kernel.android.checkjni=0 \
