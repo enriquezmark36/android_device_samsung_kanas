@@ -23,8 +23,4 @@
     <!-- Is the device capable of hot swapping an UICC Card -->
     <bool name="config_hotswapCapable">true</bool>
 
-    <!-- Whether to enable HumanInteractionController by default -->
-    <!-- When true, can make lock screen swipe more difficult specially
-         when x/ydpi is too small -->
-    <bool name="config_HICEnabledDefault">true</bool>
 </resources>
