@@ -57,7 +57,7 @@ WIFI_BAND := 802_11_ABG
 BOARD_HAVE_SAMSUNG_WIFI := true
 
 # Graphics
-USE_OVERLAY_COMPOSER_GPU := true
+USE_OVERLAY_COMPOSER_GPU := false
 NUM_FRAMEBUFFER_SURFACE_BUFFERS := 3
 USE_SPRD_DITHER := false
 # Custom patch needed; alters x/ydpi values reported by hwcomposer
