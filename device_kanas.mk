@@ -91,7 +91,6 @@ PRODUCT_PROPERTY_OVERRIDES += \
 # Configuration overrides: these are not bundled with an Android.mk since they
 # need to supersede/override all instances.
 MEDIA_CONFIGS := \
-	device/samsung/kanas/configs/media/media_codecs.xml \
 	device/samsung/kanas/configs/media/media_profiles_V1_0.xml
 
 AUDIO_CONFIGS := \
