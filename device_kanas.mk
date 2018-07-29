@@ -91,7 +91,11 @@ MEDIA_CONFIGS := \
 	device/samsung/kanas/configs/media/media_profiles_V1_0.xml
 
 AUDIO_CONFIGS := \
-	device/samsung/kanas/configs/audio/audio_para
+	device/samsung/kanas/configs/audio/audio_hw.xml \
+	device/samsung/kanas/configs/audio/audio_para \
+	device/samsung/kanas/configs/audio/audio_policy.conf\
+	device/samsung/kanas/configs/audio/codec_pga.xml \
+	device/samsung/kanas/configs/audio/tiny_hw.xml
 
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(MEDIA_CONFIGS),$(f):system/vendor/etc/$(notdir $(f))) \
