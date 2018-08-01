@@ -75,13 +75,7 @@ PRODUCT_PACKAGES += \
 
 # ART device props
 PRODUCT_PROPERTY_OVERRIDES += \
-	ro.kernel.android.checkjni=0 \
-	dalvik.vm.checkjni=false \
-	dalvik.vm.dex2oat-Xms=8m \
-	dalvik.vm.dex2oat-Xmx=96m \
 	dalvik.vm.dex2oat-filter=interpret-only \
-	dalvik.vm.image-dex2oat-Xms=48m \
-	dalvik.vm.image-dex2oat-Xmx=48m \
 	dalvik.vm.image-dex2oat-filter=speed
 
 # Configuration overrides: these are not bundled with an Android.mk since they
