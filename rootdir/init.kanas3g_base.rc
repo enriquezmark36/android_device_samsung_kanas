@@ -3,6 +3,7 @@ on early-init
     chown system system /sys/devices/platform/panel/backlight/panel/brightness
     chown system system /sys/class/input/event0/device/device/enable
     chmod 777 /sys/class/input/event0/device/device/enable
+    mount debugfs /sys/kernel/debug /sys/kernel/debug
 
 on init
     #thermistor
