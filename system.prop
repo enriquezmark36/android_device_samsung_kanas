@@ -61,7 +61,6 @@ ro.ril.gprsclass=10
 persist.radio.multisim.config=dsds
 ro.telephony.ril_class=SandroidTeamRIL
 ro.telephony.ril.config=setPrefNwTypeOnUnsolConnected,sim2gsmonly
-ro.telephony.ril.socket_name=rild,rild1,rild2
 ro.ril.telephony.mqanelements=6
 
 #Multiuser
