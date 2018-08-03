@@ -73,6 +73,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	modemd
 
+# MDNIE - modified for this device
+PRODUCT_PACKAGES += \
+	AdvancedDisplay-mod
+
 # ART device props
 PRODUCT_PROPERTY_OVERRIDES += \
 	dalvik.vm.dex2oat-filter=interpret-only \

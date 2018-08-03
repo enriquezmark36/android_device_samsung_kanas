@@ -35,6 +35,12 @@ on boot
     chown shell shell /sys/devices/platform/bcm_hsotgctrl_phy_mdio/TxCurrent
     chown shell shell /sys/devices/platform/bcm_hsotgctrl_phy_mdio/Squelch
 
+# mdnie
+	chown system media_rw /sys/class/mdnie/mdnie/scenario
+	chmod 0664 /sys/class/mdnie/mdnie/scenario
+	chown system system /sys/class/mdnie/mdnie/negative
+	chmod 0664 /sys/class/mdnie/mdnie/negative
+
 # <Sensors>
 # Accelerometer_sensor
 # permissions for sensors (accelerometer)
