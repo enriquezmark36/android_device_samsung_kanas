@@ -74,6 +74,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	hwcomposer.sc8830
 
+# MDNIE - modified for this device
+PRODUCT_PACKAGES += \
+	AdvancedDisplay-mod
+
 # ART device props
 PRODUCT_PROPERTY_OVERRIDES += \
 	ro.kernel.android.checkjni=0 \
