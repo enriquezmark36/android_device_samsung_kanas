@@ -21,6 +21,11 @@ $(call inherit-product, vendor/samsung/kanas/kanas-vendor.mk)
 # Add our overlay first as a matter of precedence
 DEVICE_PACKAGE_OVERLAYS += device/samsung/kanas/overlay
 
+# Thanks to Google's common kernel source
+# YACK should be capable of using sdcardfs on Android M and newer
+PRODUCT_PROPERTY_OVERRIDES += \
+	ro.sys.sdcardfs=true
+
 # Inherit from scx35-common device configuration
 $(call inherit-product, device/samsung/scx35-common/common.mk)
 
@@ -52,10 +57,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_PROPERTY_OVERRIDES += \
 	media.stagefright.legacyencoder=true \
 	media.stagefright.less-secure=true
-
-# Sdcardfs
-PRODUCT_PROPERTY_OVERRIDES += \
-	ro.sys.sdcardfs=true
 
 # Some Lineageos Apps
 PRODUCT_PACKAGES += \
