@@ -117,6 +117,8 @@ TARGET_HAS_LEGACY_CAMERA_HAL1 := true
 TARGET_BOARD_CAMERA_ROTATION_CAPTURE := false
 TARGET_BOARD_CAMERA_HAL_VERSION := HAL1.0
 BOARD_GLOBAL_CFLAGS += -DCONFIG_CAMERA_ISP
+# For Camera stock lib.I scream halp, I cannot get it to work yet :(
+TARGET_LD_SHIM_LIBS += /system/vendor/lib/hw/camera.sc8830.so|libmemoryheapion.so
 
 # Sensors
 TARGET_USES_SENSORS_WRAPPER := true
