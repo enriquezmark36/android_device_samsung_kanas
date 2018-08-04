@@ -85,8 +85,11 @@ PRODUCT_PROPERTY_OVERRIDES += \
 	dalvik.vm.image-dex2oat-Xmx=48m \
 	dalvik.vm.image-dex2oat-filter=speed
 
-# Configuration overrides: these are not bundled with an Android.mk since they
-# need to supersede/override all instances.
+# Prebuilt targets overrides:
+# These files are declared as prebuilt targets in some Android.mk files
+# but need some device specific modifications.
+# Creating a new target for these files would result in an error so we do this instead.
+# This would produce some warning about targets being overridden.
 MEDIA_CONFIGS := \
 	device/samsung/kanas/configs/media/media_profiles_V1_0.xml
 
@@ -97,6 +100,10 @@ AUDIO_CONFIGS := \
 	device/samsung/kanas/configs/audio/codec_pga.xml \
 	device/samsung/kanas/configs/audio/tiny_hw.xml
 
+INIT_FILES := \
+	device/samsung/kanas/rootdir/init.sc8830.rc
+
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(MEDIA_CONFIGS),$(f):system/vendor/etc/$(notdir $(f))) \
 	$(foreach f,$(AUDIO_CONFIGS),$(f):system/vendor/etc/$(notdir $(f))) \
+	$(foreach f,$(INIT_FILES),$(f):root/$(notdir $(f))) \
