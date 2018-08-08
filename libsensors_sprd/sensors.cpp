@@ -42,6 +42,8 @@
 #define SENSORS_ACCELERATION     (1<<ID_A)
 
 #define SENSORS_ACCELERATION_HANDLE     0
+#define SENSORS_LINEAR_ACCELERATION_HANDLE      1
+#define SENSORS_SIGNIFICANT_MOTION_HANDLE       2
 
 /*****************************************************************************/
 
@@ -53,6 +55,20 @@ static const struct sensor_t sSensorList[] = {
 		1, SENSORS_ACCELERATION_HANDLE, SENSOR_TYPE_ACCELEROMETER,
 		(GRAVITY_EARTH * 16.0f), (GRAVITY_EARTH * 16.0f)/1024.0f,
 		0.145f, 10000, 0,0, "", "", 0, 0, {0, 0},
+	},
+	{
+		"Linear Acceleration sensor (Accelerometer)",
+		"BOSCH",
+		1, SENSORS_LINEAR_ACCELERATION_HANDLE, SENSOR_TYPE_LINEAR_ACCELERATION,
+		(GRAVITY_EARTH * 2.0f), GRAVITY_EARTH/1024.0f, 0.20f, 10, 0, 0,
+		"", "", 0, 0, {0, 0},
+	},
+	{
+		"Significant motion sensor (Accelerometer)",
+		"BOSCH",
+		1, SENSORS_SIGNIFICANT_MOTION_HANDLE,
+		SENSOR_TYPE_SIGNIFICANT_MOTION, 1.0f, 1.0f, 0.20f, 0, 0, 0,
+		"", "", 0, SENSOR_FLAG_WAKE_UP | SENSOR_FLAG_ONE_SHOT_MODE, {0, 0},
 	},
 };
 
@@ -146,8 +162,11 @@ sensors_poll_context_t::~sensors_poll_context_t() {
 }
 
 int sensors_poll_context_t::handleToDriver(int handle) {
-	if (handle == ID_A)
-		return acc;
+	switch (handle) {
+		case ID_LA:
+		case ID_SM:
+		case ID_A: return acc;
+	}
 
 	return -EINVAL;
 }

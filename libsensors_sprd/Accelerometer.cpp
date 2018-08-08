@@ -31,6 +31,8 @@
 
 #define DEBUG 1
 
+//TODO: Check whether poll_delay is writable when enable is 0
+
 int write_sys_attribute(const char *path, const char *value, int bytes)
 {
 	int ifd, amt;
@@ -52,16 +54,27 @@ int write_sys_attribute(const char *path, const char *value, int bytes)
 
 Accelerometer::Accelerometer() :
 	SensorBase(NULL, ACC_INPUT_NAME),
-		mEnabled(1),
-		mDelay(10000),
+		mEnabled(0),
+		mDelay(60000000),
 		//mLayout(1),
     	mInputReader(32),
-    	mHasPendingEvent(false)
+		mPendingMask(0)
 {
-	mPendingEvent.version = sizeof(sensors_event_t);
-	mPendingEvent.sensor = ID_A;
-	mPendingEvent.type = SENSOR_TYPE_ACCELEROMETER;
-	memset(mPendingEvent.data, 0, sizeof(mPendingEvent.data));
+	memset(mGravity, 0, sizeof(float) * 3);
+	mPendingEvents[Main].version = sizeof(sensors_event_t);
+	mPendingEvents[Main].sensor = ID_A;
+	mPendingEvents[Main].type = SENSOR_TYPE_ACCELEROMETER;
+	memset(mPendingEvents[Main].data, 0, sizeof(((sensors_event_t *)NULL)->data));
+
+	mPendingEvents[SignificantMotion].version = sizeof(sensors_event_t);
+	mPendingEvents[SignificantMotion].sensor = ID_SM;
+	mPendingEvents[SignificantMotion].type = SENSOR_TYPE_SIGNIFICANT_MOTION;
+	memset(mPendingEvents[SignificantMotion].data, 0, sizeof(((sensors_event_t *)NULL)->data));
+
+	mPendingEvents[LinearAcceleration].version = sizeof(sensors_event_t);
+	mPendingEvents[LinearAcceleration].sensor = ID_LA;
+	mPendingEvents[LinearAcceleration].type = SENSOR_TYPE_LINEAR_ACCELERATION;
+	memset(mPendingEvents[LinearAcceleration].data, 0, sizeof(((sensors_event_t *)NULL)->data));
 
 	if (data_fd >= 0) {
 		strcpy(input_sysfs_path, "/sys/class/input/");
@@ -79,16 +92,17 @@ Accelerometer::Accelerometer() :
 
 Accelerometer::~Accelerometer()
 {
-	if (mEnabled) {
-		setEnable(0, 0);
+	if (mEnabled & (1<<Main)) {
+		setEnable(ID_A, 0);
+	}
+	if (mEnabled & (1<<LinearAcceleration)) {
+		setEnable(ID_LA, 0);
+	}
+	if (mEnabled & (1<<SignificantMotion)) {
+		setEnable(ID_SM, 0);
 	}
 
 	close_device();
-}
-
-bool Accelerometer::hasPendingEvents() const
-{
-	return mHasPendingEvent;
 }
 
 int Accelerometer::setEnable(int32_t handle, int enabled)
@@ -97,12 +111,38 @@ int Accelerometer::setEnable(int32_t handle, int enabled)
 	char buffer[2]={0,0};
 
 	/* handle check */
-	if (handle != ID_A) {
-		ALOGE("Accelerometer: Invalid handle (%d)", handle);
-		return -EINVAL;
+	switch (handle) {
+		case ID_A:
+			ALOGD("Accelerometer: enabled = %d", enabled);
+			if (enabled)
+				mEnabled |= (1<<Main);
+			else
+				mEnabled &= ~(1<<Main);
+		break;
+		case ID_SM:
+			ALOGD("Accelerometer: Significant Motion enabled = %d", enabled);
+			mPolls = 0; // we need to reset this
+			if (enabled)
+				mEnabled |= (1<<SignificantMotion);
+			else
+				mEnabled &= ~(1<<SignificantMotion);
+		break;
+		case ID_LA:
+			ALOGD("Accelerometer: Linear Acceleration enabled = %d", enabled);
+			if (enabled)
+				mEnabled |= (1<<LinearAcceleration);
+			else
+				mEnabled &= ~(1<<LinearAcceleration);
+		break;
+		default:
+			ALOGE("Accelerometer: Invalid handle (%d)", handle);
+			return -EINVAL;
+
 	}
-	buffer[0]= enabled ? '1':'0';
-	ALOGD("Accelerometer: enabled = %s", buffer);
+
+	buffer[0] = mEnabled ? '1':'0';
+	ALOGD("Accelerometer: Enabled Sensor (physical + logical) bitmask (%d)", mEnabled);
+
 	strcpy(&input_sysfs_path[input_sysfs_path_len], "enable");
 	err = write_sys_attribute(input_sysfs_path, buffer, 1);
 	if (err != 0) 
@@ -117,11 +157,17 @@ int Accelerometer::setDelay(int32_t handle, int64_t delay_ns)
 	int32_t us; 
 	char buffer[16];
 	int bytes;
+
 	/* handle check */
-	if (handle != ID_A) {
-		ALOGE("Accelerometer: Invalid handle (%d)", handle);
+	switch (handle) {
+		case ID_SM: return 0;
+		case ID_LA:
+		case ID_A: break;
+		default:
+			ALOGE("Accelerometer: Invalid handle (%d)", handle);
 		return -EINVAL;
 	}
+
 	if (mDelay != delay_ns) {
 		us = (int32_t)(delay_ns / 1000000);
 
@@ -139,25 +185,53 @@ int Accelerometer::setDelay(int32_t handle, int64_t delay_ns)
 
 int64_t Accelerometer::getDelay(int32_t handle)
 {
-	return (handle == ID_A) ? mDelay : 0;
+	return (handle == ID_A || handle == ID_LA) ? mDelay : 0;
 }
 
 int Accelerometer::getEnable(int32_t handle)
 {
-	return (handle == ID_A) ? mEnabled : 0;
+	switch (handle) {
+		case ID_A: return !!(mEnabled & (1<<Main));
+		case ID_LA: return !!(mEnabled & (1<<LinearAcceleration));
+		case ID_SM: return !!(mEnabled & (1<<SignificantMotion));
+	}
+	return 0;
+}
+
+bool Accelerometer::isMotionSignificant(timeval const& t)
+{
+	float acceleration = sqrtf(
+		mPendingEvents[LinearAcceleration].acceleration.z *
+		mPendingEvents[LinearAcceleration].acceleration.z +
+		mPendingEvents[LinearAcceleration].acceleration.y *
+		mPendingEvents[LinearAcceleration].acceleration.y +
+		mPendingEvents[LinearAcceleration].acceleration.x *
+		mPendingEvents[LinearAcceleration].acceleration.x);
+	float prevTime;
+
+	ALOGD("Accelerometer: Acceleration is %f", acceleration);
+
+	if (acceleration > movement_accel_threshold) {
+		prevTime = lastMovementTimeStamp;
+		lastMovementTimeStamp = t.tv_sec*1000 + t.tv_usec * 0.001;
+
+		if ((lastMovementTimeStamp - prevTime) < movement_time_window) {
+			mMovements++;
+			if (mMovements >= movements_needed) {
+				mMovements = 0;
+				return true;
+			}
+		}
+	} else {
+		mMovements = 0;
+	}
+	return false;
 }
 
 int Accelerometer::readEvents(sensors_event_t * data, int count)
 {
 	if (count < 1)
 		return -EINVAL;
-
-	if (mHasPendingEvent) {
-		mHasPendingEvent = false;
-		mPendingEvent.timestamp = getTimestamp();
-		*data = mPendingEvent;
-		return mEnabled ? 1 : 0;
-	}
 
 	ssize_t n = mInputReader.fill(data_fd);
 	if (n < 0)
@@ -187,20 +261,63 @@ int Accelerometer::readEvents(sensors_event_t * data, int count)
 	while (count && mInputReader.readEvent(&event)) {
 		int type = event->type;
 		if (type == EV_REL) {
-			float value = event->value;
+			float value = ACC_UNIT_CONVERSION(event->value);
 			if (event->code == EVENT_TYPE_ACCEL_X) {
-				mPendingEvent.acceleration.x = ACC_UNIT_CONVERSION(value);
+				mPendingEvents[Main].acceleration.x = value;
+				if (mEnabled & ((1 << LinearAcceleration) | (1 << SignificantMotion))) {
+					mGravity[0] = alpha * mGravity[0] + (1 - alpha) * value;
+					mPendingEvents[LinearAcceleration].acceleration.x =
+					        value - mGravity[0];
+				}
 			} else if (event->code == EVENT_TYPE_ACCEL_Y) {
-				mPendingEvent.acceleration.y = ACC_UNIT_CONVERSION(value);
+				mPendingEvents[Main].acceleration.y = value;
+				if (mEnabled & ((1 << LinearAcceleration) | (1 << SignificantMotion))) {
+					mGravity[1] = alpha * mGravity[1] + (1 - alpha) * value;
+					mPendingEvents[LinearAcceleration].acceleration.y =
+					        value - mGravity[1];
+				}
 			} else if (event->code == EVENT_TYPE_ACCEL_Z) {
-				mPendingEvent.acceleration.z = ACC_UNIT_CONVERSION(value);
+				mPendingEvents[Main].acceleration.z = value;
+				if (mEnabled & ((1 << LinearAcceleration) | (1 << SignificantMotion))) {
+					mGravity[2] = alpha * mGravity[2] + (1 - alpha) * value;
+					mPendingEvents[LinearAcceleration].acceleration.z =
+					        value - mGravity[2];
+				}
 			}
 		} else if (type == EV_SYN) {
-			mPendingEvent.timestamp = timevalToNano(event->time);
-			if (mEnabled) {
-				*data++ = mPendingEvent;
-				count--;
-				numEventReceived++;
+			for (int i = 0 ; count && i < numSensors ; i++) {
+				mPendingMask &= ~(1 << i); //switch off bit
+
+				// Ack event when sensor is enabled
+				if (mEnabled  & (1 << i)) {
+					// SMD needs some further processing
+					if (i == SignificantMotion) {
+						if (mPolls < linear_acceleration_convergence) {
+							ALOGD("Accelerometer: mPolls is currently %d", mPolls);
+							mPolls = 1 + (mPolls + 1) % 31;
+							continue;
+						} else {
+							ALOGD("Accelerometer: mPolls is now %d", mPolls);
+						}
+
+						mPolls = 0; //reset poll counter
+
+						if (isMotionSignificant(event->time)) {
+							mPendingEvents[i].data[0] = 1.0f;
+							ALOGD("Accelerometer: Significant motion detected");
+						} else {
+							continue; //ignore poll
+						}
+					}
+
+					*data++ = mPendingEvents[i];
+
+					count--;
+					numEventReceived++;
+				}
+
+				mPendingEvents[i].timestamp = timevalToNano(event->time);
+
 			}
 		} else {
 			ALOGE("Accelerometer: unknown event (type=%d, code=%d)",
@@ -222,7 +339,7 @@ int Accelerometer::batch(int handle, int flags, int64_t period_ns, int64_t timeo
 
 int Accelerometer::flush(int handle)
 {
-	if (mEnabled){
+	if (mEnabled) {
 		mFlushed |= (1 << handle);
 		ALOGD("Accelerometer: %s: handle: %d", __func__, handle);
 		return 0;
