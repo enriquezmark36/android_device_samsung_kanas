@@ -104,8 +104,7 @@ MALLOC_SVELTE := true
 TARGET_KERNEL_HAVE_EXFAT := true
 
 # Enable dex-preoptimization to speed up the first boot sequence
-# WITH_DEXPREOPT := true
-# WITH_DEXPREOPT_PIC := true
+WITH_DEXPREOPT := true
 
 # Camera
 CAMERA_SUPPORT_SIZE := 5M
