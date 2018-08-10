@@ -105,8 +105,7 @@ MALLOC_SVELTE := true
 TARGET_EXFAT_DRIVER := exfat
 
 # Enable dex-preoptimization to speed up the first boot sequence
-# WITH_DEXPREOPT := true
-# WITH_DEXPREOPT_PIC := true
+WITH_DEXPREOPT := true
 
 # Camera
 TARGET_BOARD_CAMERA_HAL_VERSION := HAL1.0
