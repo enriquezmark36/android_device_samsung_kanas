@@ -330,10 +330,11 @@ int Accelerometer::readEvents(sensors_event_t * data, int count)
 }
 
 int Accelerometer::batch(int handle, int flags, int64_t period_ns, int64_t timeout) {
-	(void)handle;
 	(void)flags;
-	(void)period_ns;
 	(void)timeout;
+	if (mEnabled) {
+		setDelay(handle, period_ns);
+	}
 	return 0;
 }
 
