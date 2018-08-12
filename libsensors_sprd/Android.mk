@@ -14,15 +14,17 @@
 
 
 LOCAL_PATH := $(call my-dir)
+
+ifneq ($(TARGET_USES_SENSORS_WRAPPER),true)
+
 # HAL module implemenation, not prelinked, and stored in
 # hw/<SENSORS_HARDWARE_MODULE_ID>.<ro.product.board>.so
 include $(CLEAR_VARS)
 
-LOCAL_MODULE := sensors.vendor.$(TARGET_BOARD_PLATFORM)
-
-LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)
-
+LOCAL_MODULE := sensors.$(TARGET_BOARD_PLATFORM)
+LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_MODULE_TAGS := optional
+LOCAL_VENDOR_MODULE := true
 
 LOCAL_CFLAGS := -DLOG_TAG=\"Sensors\" -Wall
 
@@ -37,3 +39,4 @@ LOCAL_SHARED_LIBRARIES := liblog libcutils libdl
 LOCAL_PRELINK_MODULE := false
 
 include $(BUILD_SHARED_LIBRARY)
+endif # TARGET_USES_SENSORS_WRAPPER
