@@ -278,21 +278,15 @@ static int device__close(struct hw_device_t *dev)
 static int device__activate(struct sensors_poll_device_t *dev,
         int handle, int enabled) {
     sensors_poll_context_t *ctx = (sensors_poll_context_t *)dev;
-    int result = ctx->activate(handle, enabled);
-
     ALOGD_IF(DEBUG, "+device__activate: handle=%d enabled=%d", handle, enabled);
-
-    return result;
+    return ctx->activate(handle, enabled);
 }
 
 static int device__setDelay(struct sensors_poll_device_t *dev,
         int handle, int64_t ns) {
     sensors_poll_context_t *ctx = (sensors_poll_context_t *)dev;
-    int result = ctx->setDelay(handle, ns);
-
-    ALOGD_IF(DEBUG, "device__setDelay: handle:%d , ns:%lld", handle, ns);
-
-    return result;
+    ALOGD_IF(DEBUG, "device__setDelay: handle:%d, ns:%lld", handle, ns);
+    return ctx->setDelay(handle, ns);
 }
 
 static int device__poll(struct sensors_poll_device_t *dev,
@@ -304,10 +298,13 @@ static int device__poll(struct sensors_poll_device_t *dev,
 static int device__batch(struct sensors_poll_device_1 *dev, int handle,
         int flags, int64_t period_ns, int64_t timeout) {
     sensors_poll_context_t* ctx = (sensors_poll_context_t*) dev;
+    ALOGD_IF(DEBUG, "device__batch: handle:%d , flags:%d period_ns:%lld timeout:%lld",
+             handle, flags, period_ns, timeout);
     return ctx->batch(handle, flags, period_ns, timeout);
 }
  static int device__flush(struct sensors_poll_device_1 *dev, int handle) {
     sensors_poll_context_t* ctx = (sensors_poll_context_t*) dev;
+    ALOGD_IF(DEBUG, "device__flush: handle:%d", handle);
     return ctx->flush(handle);
 }
 
