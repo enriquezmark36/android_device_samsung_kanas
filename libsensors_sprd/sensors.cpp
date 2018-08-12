@@ -64,7 +64,7 @@ static const struct sensor_t sSensorList[] = {
 		"", "", 0, 0, {0, 0},
 	},
 	{
-		"Significant motion sensor (Accelerometer)",
+		"Significant motion sensor",
 		"BOSCH",
 		1, SENSORS_SIGNIFICANT_MOTION_HANDLE,
 		SENSOR_TYPE_SIGNIFICANT_MOTION, 1.0f, 1.0f, 0.20f, 0, 0, 0,

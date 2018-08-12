@@ -22,12 +22,14 @@
 #include <dirent.h>
 #include <sys/select.h>
 #include <cutils/log.h>
+#include <string.h>
 
 #include "Accelerometer.h"
 
 #define ACC_UNIT_CONVERSION(value) ((value) * GRAVITY_EARTH / (1024.0f))
 #define ACC_INPUT_NAME  "accelerometer_sensor"
 #define LOG_TAG "Sensors"
+#define SIG_MOTION "en_sig_motion"
 
 #define DEBUG 1
 
@@ -57,8 +59,7 @@ Accelerometer::Accelerometer() :
 		mEnabled(0),
 		mDelay(60000000),
 		//mLayout(1),
-    	mInputReader(32),
-		mPendingMask(0)
+    	mInputReader(32)
 {
 	memset(mGravity, 0, sizeof(float) * 3);
 	mPendingEvents[Main].version = sizeof(sensors_event_t);
@@ -70,6 +71,8 @@ Accelerometer::Accelerometer() :
 	mPendingEvents[SignificantMotion].sensor = ID_SM;
 	mPendingEvents[SignificantMotion].type = SENSOR_TYPE_SIGNIFICANT_MOTION;
 	memset(mPendingEvents[SignificantMotion].data, 0, sizeof(((sensors_event_t *)NULL)->data));
+	/* Do this once and only send this multiple times; save I/O */
+	mPendingEvents[SignificantMotion].data[0] = 1;
 
 	mPendingEvents[LinearAcceleration].version = sizeof(sensors_event_t);
 	mPendingEvents[LinearAcceleration].sensor = ID_LA;
@@ -109,6 +112,7 @@ int Accelerometer::setEnable(int32_t handle, int enabled)
 {
 	int err = 0;
 	char buffer[2]={0,0};
+	char const *enable_file = "enable";
 
 	/* handle check */
 	switch (handle) {
@@ -121,7 +125,7 @@ int Accelerometer::setEnable(int32_t handle, int enabled)
 		break;
 		case ID_SM:
 			ALOGD("Accelerometer: Significant Motion enabled = %d", enabled);
-			mPolls = 0; // we need to reset this
+			enable_file = SIG_MOTION; // write to this file instead
 			if (enabled)
 				mEnabled |= (1<<SignificantMotion);
 			else
@@ -140,14 +144,12 @@ int Accelerometer::setEnable(int32_t handle, int enabled)
 
 	}
 
-	buffer[0] = mEnabled ? '1':'0';
-	ALOGD("Accelerometer: Enabled Sensor (physical + logical) bitmask (%d)", mEnabled);
+	ALOGD("Accelerometer: Enabled Sensors bitmask (%d)", mEnabled);
 
-	strcpy(&input_sysfs_path[input_sysfs_path_len], "enable");
+	buffer[0] = mEnabled ? '1':'0';
+	strcpy(&input_sysfs_path[input_sysfs_path_len], enable_file);
 	err = write_sys_attribute(input_sysfs_path, buffer, 1);
-	if (err != 0) 
-		return err;
-	
+
 	return err;
 }
 
@@ -196,36 +198,6 @@ int Accelerometer::getEnable(int32_t handle)
 		case ID_SM: return !!(mEnabled & (1<<SignificantMotion));
 	}
 	return 0;
-}
-
-bool Accelerometer::isMotionSignificant(timeval const& t)
-{
-	float acceleration = sqrtf(
-		mPendingEvents[LinearAcceleration].acceleration.z *
-		mPendingEvents[LinearAcceleration].acceleration.z +
-		mPendingEvents[LinearAcceleration].acceleration.y *
-		mPendingEvents[LinearAcceleration].acceleration.y +
-		mPendingEvents[LinearAcceleration].acceleration.x *
-		mPendingEvents[LinearAcceleration].acceleration.x);
-	float prevTime;
-
-	ALOGD("Accelerometer: Acceleration is %f", acceleration);
-
-	if (acceleration > movement_accel_threshold) {
-		prevTime = lastMovementTimeStamp;
-		lastMovementTimeStamp = t.tv_sec*1000 + t.tv_usec * 0.001;
-
-		if ((lastMovementTimeStamp - prevTime) < movement_time_window) {
-			mMovements++;
-			if (mMovements >= movements_needed) {
-				mMovements = 0;
-				return true;
-			}
-		}
-	} else {
-		mMovements = 0;
-	}
-	return false;
 }
 
 int Accelerometer::readEvents(sensors_event_t * data, int count)
@@ -284,40 +256,33 @@ int Accelerometer::readEvents(sensors_event_t * data, int count)
 					        value - mGravity[2];
 				}
 			}
+		} else if (type == EV_MSC && event->code == MSC_GESTURE) {
+			/* SMD sensor is a one shot sensor and disables itself
+			 * after firing. Make sure the bitmask exposes this behavior
+			 */
+			mEnabled &= ~(1<<SignificantMotion);
+			ALOGD_IF(DEBUG, "Accelerometer: Significant Motion occured!");
+
+			/* Because it only fires up one event, we can simply send it */
+			mPendingEvents[SignificantMotion].timestamp = timevalToNano(event->time);
+			*data++ = mPendingEvents[SignificantMotion];
+			count--;
+			numEventReceived++;
 		} else if (type == EV_SYN) {
-			for (int i = 0 ; count && i < numSensors ; i++) {
-				mPendingMask &= ~(1 << i); //switch off bit
+			// ACK event when sensor is enabled, ignore otherwise.
+			if (mEnabled & (1<<Main)) {
+				mPendingEvents[Main].timestamp = timevalToNano(event->time);
+				*data++ = mPendingEvents[Main];
 
-				// Ack event when sensor is enabled
-				if (mEnabled  & (1 << i)) {
-					// SMD needs some further processing
-					if (i == SignificantMotion) {
-						if (mPolls < linear_acceleration_convergence) {
-							ALOGD("Accelerometer: mPolls is currently %d", mPolls);
-							mPolls = 1 + (mPolls + 1) % 31;
-							continue;
-						} else {
-							ALOGD("Accelerometer: mPolls is now %d", mPolls);
-						}
+				count--;
+				numEventReceived++;
+			}
+			if (mEnabled & (1<<LinearAcceleration)) {
+				mPendingEvents[LinearAcceleration].timestamp = timevalToNano(event->time);
+				*data++ = mPendingEvents[LinearAcceleration];
 
-						mPolls = 0; //reset poll counter
-
-						if (isMotionSignificant(event->time)) {
-							mPendingEvents[i].data[0] = 1.0f;
-							ALOGD("Accelerometer: Significant motion detected");
-						} else {
-							continue; //ignore poll
-						}
-					}
-
-					*data++ = mPendingEvents[i];
-
-					count--;
-					numEventReceived++;
-				}
-
-				mPendingEvents[i].timestamp = timevalToNano(event->time);
-
+				count--;
+				numEventReceived++;
 			}
 		} else {
 			ALOGE("Accelerometer: unknown event (type=%d, code=%d)",
