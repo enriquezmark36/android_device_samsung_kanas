@@ -56,6 +56,10 @@ PRODUCT_PACKAGES += \
 	libstagefright_sprd_soft_mpeg4dec \
 	libstagefright_sprd_soft_h264dec
 
+# Reverse-engineered HAL driver
+PRODUCT_PACKAGES += \
+	sensors.sc8830
+
 # Camera can only use HALv1
 PRODUCT_PROPERTY_OVERRIDES += \
 	media.stagefright.legacyencoder=true \
