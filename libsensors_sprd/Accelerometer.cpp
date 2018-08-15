@@ -111,6 +111,7 @@ Accelerometer::~Accelerometer()
 int Accelerometer::setEnable(int32_t handle, int enabled)
 {
 	int err = 0;
+	int what = Main;
 	char buffer[2]={0,0};
 	char const *enable_file = "enable";
 
@@ -118,35 +119,31 @@ int Accelerometer::setEnable(int32_t handle, int enabled)
 	switch (handle) {
 		case ID_A:
 			ALOGD("Accelerometer: enabled = %d", enabled);
-			if (enabled)
-				mEnabled |= (1<<Main);
-			else
-				mEnabled &= ~(1<<Main);
+			what = Main;
 		break;
 		case ID_SM:
 			ALOGD("Accelerometer: Significant Motion enabled = %d", enabled);
 			enable_file = SIG_MOTION; // write to this file instead
-			if (enabled)
-				mEnabled |= (1<<SignificantMotion);
-			else
-				mEnabled &= ~(1<<SignificantMotion);
+			what = SignificantMotion;
 		break;
 		case ID_LA:
 			ALOGD("Accelerometer: Linear Acceleration enabled = %d", enabled);
-			if (enabled)
-				mEnabled |= (1<<LinearAcceleration);
-			else
-				mEnabled &= ~(1<<LinearAcceleration);
+			what = LinearAcceleration;
 		break;
 		default:
 			ALOGE("Accelerometer: Invalid handle (%d)", handle);
 			return -EINVAL;
 
 	}
+	if (enabled) {
+		mEnabled |= (1 << what);
+		buffer[0] = '1';
+	} else {
+		mEnabled &= ~(1 << what);
+		buffer[0] = '0';
+	}
 
 	ALOGD("Accelerometer: Enabled Sensors bitmask (%d)", mEnabled);
-
-	buffer[0] = mEnabled ? '1':'0';
 	strcpy(&input_sysfs_path[input_sysfs_path_len], enable_file);
 	err = write_sys_attribute(input_sysfs_path, buffer, 1);
 
