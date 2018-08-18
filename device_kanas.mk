@@ -196,7 +196,6 @@ PRODUCT_COPY_FILES += \
 
 # Some Lineageos Apps
 PRODUCT_PACKAGES += \
-       Gello \
        Snap
 
 # Live Wallpapers
