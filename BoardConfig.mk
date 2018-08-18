@@ -124,7 +124,7 @@ BACKLIGHT_PATH := /sys/class/backlight/panel/brightness
 BOARD_KERNEL_BASE := 0x00000000
 BOARD_KERNEL_CMDLINE := console=ttyS1,115200n8 androidboot.selinux=permissive androidboot.hardware=sc8830
 BOARD_KERNEL_PAGESIZE := 2048
-TARGET_KERNEL_CONFIG := sandroid_kanas_defconfig
+TARGET_KERNEL_CONFIG := impasta_kanas_cm14_1_defconfig
 TARGET_KERNEL_SOURCE := kernel/samsung/kanas
 
 # Init
