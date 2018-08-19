@@ -43,6 +43,9 @@ on boot
 # <Sensors>
 # Accelerometer_sensor
 # permissions for sensors (accelerometer)
+    chown system system /sys/class/input/input2/en_sig_motion
+    chmod 0664 /sys/class/input/input2/en_sig_motion
+
     chown system system /sys/class/input/input0/enable
     chown system system /sys/class/input/input0/delay
     chown system system /sys/class/input/input0/poll_delay
