@@ -196,7 +196,8 @@ PRODUCT_COPY_FILES += \
 
 # Some Lineageos Apps
 PRODUCT_PACKAGES += \
-       Snap
+       Snap \
+       AdvancedDisplay-mod \
 
 # Live Wallpapers
 PRODUCT_PACKAGES += \
