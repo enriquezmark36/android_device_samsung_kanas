@@ -53,18 +53,9 @@ PRODUCT_PACKAGES += \
 	libstagefright_sprd_soft_mpeg4dec \
 	libstagefright_sprd_soft_h264dec
 
-# Camera can only use HALv1
-PRODUCT_PROPERTY_OVERRIDES += \
-	media.stagefright.legacyencoder=true \
-	media.stagefright.less-secure=true
-
 # Some Lineageos Apps
 PRODUCT_PACKAGES += \
        Snap
-
-# Modem
-PRODUCT_PACKAGES += \
-	modemd
 
 # Sensors
 PRODUCT_PACKAGES += \
@@ -77,17 +68,6 @@ PRODUCT_PACKAGES += \
 # MDNIE - modified for this device
 PRODUCT_PACKAGES += \
 	AdvancedDisplay-mod
-
-# ART device props
-PRODUCT_PROPERTY_OVERRIDES += \
-	ro.kernel.android.checkjni=0 \
-	dalvik.vm.checkjni=false \
-	dalvik.vm.dex2oat-Xms=8m \
-	dalvik.vm.dex2oat-Xmx=96m \
-	dalvik.vm.dex2oat-filter=interpret-only \
-	dalvik.vm.image-dex2oat-Xms=48m \
-	dalvik.vm.image-dex2oat-Xmx=48m \
-	dalvik.vm.image-dex2oat-filter=speed
 
 # Prebuilt targets overrides:
 # These files are declared as prebuilt targets in some Android.mk files
