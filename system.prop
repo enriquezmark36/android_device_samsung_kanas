@@ -56,8 +56,8 @@ ro.ril.gprsclass=10
 persist.radio.multisim.config=none
 ro.telephony.ril_class=SandroidTeamRIL
 ro.telephony.ril.config=setPrefNwTypeOnUnsolConnected
+ro.telephony.ril.socket_name=rild,rild1,rild2
 ro.ril.telephony.mqanelements=6
-
 ro.product.partitionpath=/dev/block/platform/sprd-sdhci.3/by-name/
 
 persist.sys.sprd.modemreset=1
