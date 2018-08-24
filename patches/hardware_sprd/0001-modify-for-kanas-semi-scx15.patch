@@ -1,0 +1,636 @@
+From 6df6f9abd00a402f45c54041374efa82659c80fc Mon Sep 17 00:00:00 2001
+From: ih24n69 <muhammadihsan69@gmail.com>
+Date: Thu, 30 Mar 2017 13:46:27 +0700
+Subject: [PATCH 1/6] modify for kanas(semi scx15)
+
+Change-Id: I4c0f79df25ee8730623addf49944fefd41bfa275
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ audio/Android.mk                              |  6 +-
+ audio/scx15/eng_audio.h                       |  1 +
+ gralloc/Android.mk                            |  4 +-
+ gralloc/scx15/dump_bmp.cpp                    |  2 +
+ gralloc/scx15/framebuffer_device.cpp          |  6 +-
+ gralloc/scx15/gralloc_priv.h                  | 19 ++++
+ hwcomposer/Android.mk                         |  4 +-
+ hwcomposer/sc8830/Android.mk                  |  2 +
+ hwcomposer/scx15/Android.mk                   | 87 ++++++++-----------
+ hwcomposer/scx15/SprdUtil.cpp                 | 20 +----
+ hwcomposer/scx15/sc8830/Android.mk            |  2 +-
+ libcamera/Android.mk                          |  4 +
+ libcamera/scx15/Camera.mk                     |  2 +-
+ libcamera/scx15/Camera2.mk                    |  2 +-
+ libcamera/scx15/Camera_Utest.mk               |  2 +-
+ libcamera/scx15/Camera_Utest2.mk              |  2 +-
+ libmemoryheapion/Android.mk                   |  6 +-
+ libmemoryheapion/scx15/Android.mk             |  6 +-
+ libmemoryheapion/scx15/MemoryHeapIon.cpp      |  2 +-
+ libstagefrighthw/Android.mk                   |  6 +-
+ libstagefrighthw/scx15/Android.mk             |  2 +-
+ omx_components/video/Android.mk               |  6 +-
+ omx_components/video/avc_sprd/Android.mk      | 18 ++--
+ .../video/avc_sprd/sc8830/dec/Android.mk      |  2 +-
+ .../video/avc_sprd/scx15/Android.mk           |  2 +-
+ .../video/avc_sprd/scx15/enc/Android.mk       |  2 +-
+ .../video/m4v_h263_sprd/sc8830/dec/Android.mk |  2 +-
+ .../video/vpx_sprd/sc8830/dec/Android.mk      |  2 +-
+ power/Android.mk                              |  4 -
+ 29 files changed, 113 insertions(+), 112 deletions(-)
+
+diff --git a/audio/Android.mk b/audio/Android.mk
+index 862b1dd..0658ad8 100644
+--- a/audio/Android.mk
++++ b/audio/Android.mk
+@@ -19,8 +19,8 @@ supported_boards := \
+ 	sc8830 \
+ 	scx15 \
+ 
+-ifeq ($(SOC_SCX30G_V2),true)
+-include $(call all-named-subdir-makefiles,sc8830)
+-else ifneq (,$(filter $(supported_boards),$(TARGET_BOARD_PLATFORM)))
++ifeq ($(SOC_SCX35),true)
+ include $(call all-named-subdir-makefiles,scx15)
++else ifneq (,$(filter $(supported_boards),$(TARGET_BOARD_PLATFORM)))
++include $(call all-named-subdir-makefiles,sc8830)
+ endif
+diff --git a/audio/scx15/eng_audio.h b/audio/scx15/eng_audio.h
+index 0e28e64..3b56995 100644
+--- a/audio/scx15/eng_audio.h
++++ b/audio/scx15/eng_audio.h
+@@ -3,6 +3,7 @@
+ 
+ #include <system/audio.h>
+ 
++
+ #define NAME_LEN_MAX                            16
+ #define EQ_BAND_MAX				8
+ #define EQ_MODE_MAX                             6
+diff --git a/gralloc/Android.mk b/gralloc/Android.mk
+index b07f946..c0c55e2 100644
+--- a/gralloc/Android.mk
++++ b/gralloc/Android.mk
+@@ -21,8 +21,8 @@ supported_boards := \
+ 	sc8830 \
+ 	scx15 \
+ 
+-ifeq ($(SOC_SCX30G_V2),true)
+-include $(call all-named-subdir-makefiles,scx30g_v2)
++ifeq ($(SOC_SCX35),true)
++include $(call all-named-subdir-makefiles,scx15)
+ else ifneq (,$(filter $(supported_boards),$(TARGET_BOARD_PLATFORM)))
+ include $(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM))
+ endif
+diff --git a/gralloc/scx15/dump_bmp.cpp b/gralloc/scx15/dump_bmp.cpp
+index 7a2b40e..be3d982 100644
+--- a/gralloc/scx15/dump_bmp.cpp
++++ b/gralloc/scx15/dump_bmp.cpp
+@@ -8,6 +8,8 @@
+ #include <linux/fb.h>
+ #include <sys/stat.h>
+ 
++#include "gralloc_priv.h"
++
+ 
+ #define BI_RGB          0
+ #define BI_BITFIELDS    3
+diff --git a/gralloc/scx15/framebuffer_device.cpp b/gralloc/scx15/framebuffer_device.cpp
+index cbfe434..99d7b52 100644
+--- a/gralloc/scx15/framebuffer_device.cpp
++++ b/gralloc/scx15/framebuffer_device.cpp
+@@ -83,10 +83,10 @@ uint32_t dither_open(uint32_t w, uint32_t h)
+ 
+         memset(dither, 0, sizeof(struct dither_info));
+ 
+-        fp = fopen("/sys/module/mali/parameters/gpu_cur_freq", "r");
++        fp = fopen("/sys/module/mali/parameters/gpu_freq_cur", "r");
+         if(fp == NULL)
+         {
+-            AERR( "can not open /sys/module/mali/parameters/gpu_cur_freq %x", fp);
++            AERR( "can not open /sys/module/mali/parameters/gpu_freq_cur %x", fp);
+             free (dither);
+             dither = NULL;
+             return 0;
+@@ -230,7 +230,7 @@ static bool fb_is_dither_enable(struct dither_info *dither, private_handle_t con
+ 
+     if(fp == NULL)
+     {
+-        AERR( "can not open /sys/module/mali/parameters/gpu_cur_freq %x", fp);
++        AERR( "can not open /sys/module/mali/parameters/gpu_freq_cur %x", fp);
+     }
+     else
+     {
+diff --git a/gralloc/scx15/gralloc_priv.h b/gralloc/scx15/gralloc_priv.h
+index 421c8f6..dbf2efb 100644
+--- a/gralloc/scx15/gralloc_priv.h
++++ b/gralloc/scx15/gralloc_priv.h
+@@ -36,6 +36,25 @@
+ #define GRALLOC_ARM_DMA_BUF_MODULE 1
+ #else
+ 
++enum {
++    GRALLOC_USAGE_OVERLAY_BUFFER        = 0x01000000,
++    GRALLOC_USAGE_VIDEO_BUFFER          = 0x02000000,
++    GRALLOC_USAGE_CAMERA_BUFFER         = 0x04000000,
++};
++
++enum {
++    HAL_PIXEL_FORMAT_YCbCr_422_P        = 0x12,
++    HAL_PIXEL_FORMAT_YCbCr_420_P        = 0x13,
++    HAL_PIXEL_FORMAT_YCbCr_420_I        = 0x15,
++    HAL_PIXEL_FORMAT_CbYCrY_422_I       = 0x16,
++    HAL_PIXEL_FORMAT_CbYCrY_420_I       = 0x17,
++    HAL_PIXEL_FORMAT_YCbCr_420_SP_TILED = 0x18,
++    HAL_PIXEL_FORMAT_YCbCr_420_SP       = 0x19,
++    HAL_PIXEL_FORMAT_YCrCb_420_SP_TILED = 0x1A,
++    HAL_PIXEL_FORMAT_YCrCb_422_SP       = 0x1B,
++    HAL_PIXEL_FORMAT_YCrCb_420_P        = 0x1C,
++};
++
+ /* NOTE:
+  * If your framebuffer device driver is integrated with UMP, you will have to
+  * change this IOCTL definition to reflect your integration with the framebuffer
+diff --git a/hwcomposer/Android.mk b/hwcomposer/Android.mk
+index c8da16e..c0c55e2 100644
+--- a/hwcomposer/Android.mk
++++ b/hwcomposer/Android.mk
+@@ -21,6 +21,8 @@ supported_boards := \
+ 	sc8830 \
+ 	scx15 \
+ 
+-ifneq (,$(filter $(supported_boards),$(TARGET_BOARD_PLATFORM)))
++ifeq ($(SOC_SCX35),true)
++include $(call all-named-subdir-makefiles,scx15)
++else ifneq (,$(filter $(supported_boards),$(TARGET_BOARD_PLATFORM)))
+ include $(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM))
+ endif
+diff --git a/hwcomposer/sc8830/Android.mk b/hwcomposer/sc8830/Android.mk
+index 340f74c..f5dd666 100644
+--- a/hwcomposer/sc8830/Android.mk
++++ b/hwcomposer/sc8830/Android.mk
+@@ -22,6 +22,8 @@ ifeq ($(USE_SPRD_HWCOMPOSER),true)
+ 
+ include $(CLEAR_VARS)
+ 
++LOCAL_CFLAGS := -Werror
++
+ LOCAL_MODULE := hwcomposer.$(TARGET_BOARD_PLATFORM)
+ 
+ LOCAL_MODULE_RELATIVE_PATH := hw
+diff --git a/hwcomposer/scx15/Android.mk b/hwcomposer/scx15/Android.mk
+index 428edba..1e03968 100644
+--- a/hwcomposer/scx15/Android.mk
++++ b/hwcomposer/scx15/Android.mk
+@@ -22,6 +22,8 @@ ifeq ($(USE_SPRD_HWCOMPOSER),true)
+ 
+ include $(CLEAR_VARS)
+ 
++LOCAL_CFLAGS := -Wno-error -Wno-error=unused-parameter -Wno-error=return-type
++
+ LOCAL_MODULE := hwcomposer.$(TARGET_BOARD_PLATFORM)
+ 
+ LOCAL_MODULE_RELATIVE_PATH := hw
+@@ -57,7 +59,7 @@ LOCAL_SRC_FILES := \
+ 	dump.cpp \
+ 
+ LOCAL_C_INCLUDES := \
+-	$(LOCAL_PATH)/../../gralloc/$(TARGET_BOARD_PLATFORM) \
++	$(LOCAL_PATH)/../../gralloc/scx15 \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video/ \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/
+ 
+@@ -77,73 +79,58 @@ LOCAL_CFLAGS += \
+ #RGB565 format buffer to display, also can save 4 screen size
+ #buffer memory, but it will reduce the image quality.
+ 
+-ifneq (,$(filter sc8830 scx15,$(TARGET_BOARD_PLATFORM)))
++ifeq ($(strip $(TARGET_BOARD_PLATFORM)),sc8830)
+ DEVICE_WITH_GSP := true
+ DEVICE_OVERLAYPLANE_BORROW_PRIMARYPLANE_BUFFER := true
+-endif
+-
+-ifeq ($(TARGET_BOARD_PLATFORM),sc8830)
+-DEVICE_DIRECT_DISPLAY_SINGLE_OSD_LAYER := true
+ DEVICE_USE_FB_HW_VSYNC := true
+ endif
+-
+-ifeq ($(TARGET_BOARD_PLATFORM),scx15)
++ifeq ($(strip $(TARGET_BOARD_PLATFORM)),scx15)
++DEVICE_WITH_GSP := true
++DEVICE_OVERLAYPLANE_BORROW_PRIMARYPLANE_BUFFER := true
+ #DEVICE_PRIMARYPLANE_USE_RGB565 := true
+ #DEVICE_DYNAMIC_RELEASE_PLANEBUFFER := true
+ endif
+ 
+-ifeq ($(DEVICE_USE_FB_HW_VSYNC),true)
+-LOCAL_CFLAGS += -DUSE_FB_HW_VSYNC
++ifeq ($(strip $(DEVICE_USE_FB_HW_VSYNC)),true)
++	LOCAL_CFLAGS += -DUSE_FB_HW_VSYNC
+ endif
+ 
+-ifeq ($(DEVICE_WITH_GSP),true)
+-
+-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libcamera/sc8830/inc
+-
+-#LOCAL_CFLAGS += -DVIDEO_LAYER_USE_RGB
+-# PROCESS_VIDEO_USE_GSP : protecting sc8830 code
+-LOCAL_CFLAGS += -DPROCESS_VIDEO_USE_GSP
+-LOCAL_CFLAGS += -DGSP_OUTPUT_USE_YUV420
+-LOCAL_CFLAGS += -DGSP_SCALING_UP_TWICE
+-# LOCAL_CFLAGS += -D_DMA_COPY_OSD_LAYER
+-#
+-# if GSP has not IOMMU, DIRECT_DISPLAY_SINGLE_OSD_LAYER need contiguous physcial address;
+-# if GSP has IOMMU, we can open DIRECT_DISPLAY_SINGLE_OSD_LAYER.
+-ifeq ($(strip $(DEVICE_DIRECT_DISPLAY_SINGLE_OSD_LAYER)),true)
+-LOCAL_CFLAGS += -DDIRECT_DISPLAY_SINGLE_OSD_LAYER
+-endif
+-
+-ifeq ($(strip $(TARGET_BOARD_PLATFORM)),sc8830)
+-ifneq ($(strip $(DEVICE_GSP_NOT_SCALING_UP_TWICE)),true) # when on tshark, if cpy2_pa is exist, we dont support scaling-up-twice feature
+-endif
+-endif
+-
+-ifeq ($(TARGET_BOARD_PLATFORM),scx15)
+-LOCAL_CFLAGS += -DGSP_ADDR_TYPE_PHY
+-endif
++ifeq ($(strip $(DEVICE_WITH_GSP)),true)
++	LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libcamera/sc8830/inc	
++	#LOCAL_CFLAGS += -DVIDEO_LAYER_USE_RGB
++	# PROCESS_VIDEO_USE_GSP : protecting sc8830 code
++	LOCAL_CFLAGS += -DPROCESS_VIDEO_USE_GSP
++	LOCAL_CFLAGS += -DGSP_OUTPUT_USE_YUV420
++	LOCAL_CFLAGS += -DGSP_SCALING_UP_TWICE
++	# LOCAL_CFLAGS += -D_DMA_COPY_OSD_LAYER
++	#
++	# DIRECT_DISPLAY_SINGLE_OSD_LAYER need contiguous physcial address.
++	# At present, this condition cannot be satisfied.
++        #LOCAL_CFLAGS += -DDIRECT_DISPLAY_SINGLE_OSD_LAYER
+ 
+-endif # DEVICE_WITH_GSP
++	ifeq ($(strip $(TARGET_BOARD_PLATFORM)),sc8830)
++	LOCAL_CFLAGS += -DGSP_ADDR_TYPE_PHY
++        LOCAL_CLFAGS += -DHWC_SUPPORT
++	endif
+ 
+-ifeq ($(DEVICE_PRIMARYPLANE_USE_RGB565),true)
+-LOCAL_CFLAGS += -DPRIMARYPLANE_USE_RGB565
++	ifeq ($(strip $(TARGET_BOARD_PLATFORM)),scx15)
++	LOCAL_CFLAGS += -DGSP_ADDR_TYPE_PHY
++	#LOCAL_CFLAGS += -DGSP_ADDR_TYPE_IOVA
++	#LOCAL_CFLAGS += -DGSP_BLEND_2_LAYERS
++	#LOCAL_CFLAGS += -DGSP_ENDIAN_IMPROVEMENT
++	endif
+ endif
+ 
+-ifeq ($(DEVICE_OVERLAYPLANE_BORROW_PRIMARYPLANE_BUFFER),true)
+-LOCAL_CFLAGS += -DBORROW_PRIMARYPLANE_BUFFER
++ifeq ($(strip $(DEVICE_PRIMARYPLANE_USE_RGB565)), true)
++	LOCAL_CFLAGS += -DPRIMARYPLANE_USE_RGB565
+ endif
+ 
+-ifeq ($(DEVICE_DYNAMIC_RELEASE_PLANEBUFFER),true)
+-LOCAL_CFLAGS += -DDYNAMIC_RELEASE_PLANEBUFFER
++ifeq ($(strip $(DEVICE_OVERLAYPLANE_BORROW_PRIMARYPLANE_BUFFER)), true)
++	LOCAL_CFLAGS += -DBORROW_PRIMARYPLANE_BUFFER
+ endif
+ 
+-# For Virtual Display
+-# HWC need do the Hardware copy and format convertion
+-# FORCE_ADJUST_ACCELERATOR: for a better performance of Virtual Display,
+-# we forcibly make sure the GSP/GPP device to be used by Virtual Display.
+-# and disable the GSP/GPP on Primary Display.
+-ifeq ($(TARGET_FORCE_HWC_FOR_VIRTUAL_DISPLAYS),true)
+-LOCAL_CFLAGS += -DFORCE_HWC_COPY_FOR_VIRTUAL_DISPLAYS
+-#LOCAL_CFLAGS += -DFORCE_ADJUST_ACCELERATOR
++ifeq ($(strip $(DEVICE_DYNAMIC_RELEASE_PLANEBUFFER)), true)
++	LOCAL_CFLAGS += -DDYNAMIC_RELEASE_PLANEBUFFER
+ endif
+ 
+ # OVERLAY_COMPOSER_GPU_CONFIG: Enable or disable OVERLAY_COMPOSER_GPU
+diff --git a/hwcomposer/scx15/SprdUtil.cpp b/hwcomposer/scx15/SprdUtil.cpp
+index dea42d3..ec90874 100644
+--- a/hwcomposer/scx15/SprdUtil.cpp
++++ b/hwcomposer/scx15/SprdUtil.cpp
+@@ -588,25 +588,6 @@ int SprdUtil::composerLayers(SprdHWLayer *l1, SprdHWLayer *l2, private_handle_t*
+             gsp_cfg_info.layer0_info.pitch = private_h1->width;
+             gsp_cfg_info.layer0_info.layer_en = 1;
+ 
+-#if 0 //add for test//
+-            {
+-                struct private_handle_t *pH = (struct private_handle_t *)l1->getAndroidLayer()->handle;
+-                if (pH)
+-                {
+-                    Rect bounds(pH->width, pH->height);
+-                    void* vaddr = NULL;
+-
+-                    GraphicBufferMapper::get().lock((buffer_handle_t)pH, GRALLOC_USAGE_SW_READ_OFTEN, bounds, &vaddr);
+-
+-                    if(vaddr > 0)
+-                    {
+-                        ALOGI_IF(mDebugFlag,"composerLayers[%d],test, set white framework in y plane",__LINE__);
+-                        test_set_y((char*)vaddr,private_h1->width,private_h1->height);
+-                    }
+-                    GraphicBufferMapper::get().unlock((buffer_handle_t)pH);
+-                }
+-            }
+-#endif
+             ALOGI_IF(mDebugFlag,"GSP process layer1 L%d,L1 des_w %d des_h %d",__LINE__, FBRect1->w, FBRect1->h);
+ 
+             ALOGI_IF(mDebugFlag,"GSP process layer1 L%d,L1 [x%d,y%d,w%d,h%d,p%d] r%d [x%d,y%d,w%d,h%d]",__LINE__,
+@@ -629,6 +610,7 @@ int SprdUtil::composerLayers(SprdHWLayer *l1, SprdHWLayer *l2, private_handle_t*
+     } else {
+         ALOGI_IF(mDebugFlag,"GSP find layer1 do not exists. L%d,L1 == NULL ",__LINE__);
+     }
++			
+ 
+     if(l2)
+     {
+diff --git a/hwcomposer/scx15/sc8830/Android.mk b/hwcomposer/scx15/sc8830/Android.mk
+index c0fac28..b9c6767 100755
+--- a/hwcomposer/scx15/sc8830/Android.mk
++++ b/hwcomposer/scx15/sc8830/Android.mk
+@@ -36,7 +36,7 @@ LOCAL_SRC_FILES := \
+ 	gsp_hal.cpp \
+ 
+ LOCAL_C_INCLUDES += \
+-	$(LOCAL_PATH)/../../../gralloc/$(TARGET_BOARD_PLATFORM) \
++	$(LOCAL_PATH)/../../../gralloc/scx15 \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video/ \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/ \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/ \
+diff --git a/libcamera/Android.mk b/libcamera/Android.mk
+index 9b60944..67795b7 100644
+--- a/libcamera/Android.mk
++++ b/libcamera/Android.mk
+@@ -25,6 +25,10 @@ ifneq (,$(filter $(supported_boards),$(TARGET_BOARD_PLATFORM)))
+ include $(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM))
+ endif
+ 
++ifeq ($(SOC_SCX35),true)
++include $(call all-named-subdir-makefiles,scx15)
++endif
++
+ ifeq ($(SOC_SCX30G_V2),true)
+ include $(call all-named-subdir-makefiles,sc8830)
+ endif
+diff --git a/libcamera/scx15/Camera.mk b/libcamera/scx15/Camera.mk
+index 564d3ea..1ab68a3 100644
+--- a/libcamera/scx15/Camera.mk
++++ b/libcamera/scx15/Camera.mk
+@@ -27,7 +27,7 @@ LOCAL_C_INCLUDES := \
+         external/sqlite/dist \
+ 	system/media/camera/include \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/source/include/video \
+-	hardware/sprd/gralloc/$(TARGET_BOARD_PLATFORM) \
++	hardware/sprd/gralloc/scx15 \
+ 
+ LOCAL_ADDITIONAL_DEPENDENCIES += \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+diff --git a/libcamera/scx15/Camera2.mk b/libcamera/scx15/Camera2.mk
+index 0cb0ecc..b0d28b4 100644
+--- a/libcamera/scx15/Camera2.mk
++++ b/libcamera/scx15/Camera2.mk
+@@ -27,7 +27,7 @@ LOCAL_C_INCLUDES := \
+         external/sqlite/dist \
+ 	system/media/camera/include \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/source/include/video \
+-	hardware/sprd/gralloc/$(TARGET_BOARD_PLATFORM) \
++	hardware/sprd/gralloc/scx15 \
+ 
+ LOCAL_ADDITIONAL_DEPENDENCIES += \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+diff --git a/libcamera/scx15/Camera_Utest.mk b/libcamera/scx15/Camera_Utest.mk
+index 421f0a6..cbf0116 100644
+--- a/libcamera/scx15/Camera_Utest.mk
++++ b/libcamera/scx15/Camera_Utest.mk
+@@ -27,7 +27,7 @@ LOCAL_C_INCLUDES := \
+         external/sqlite/dist \
+ 	system/media/camera/include \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/source/include/video \
+-	hardware/sprd/gralloc/$(TARGET_BOARD_PLATFORM) \
++	hardware/sprd/gralloc/scx15 \
+ 
+ LOCAL_SRC_FILES:= \
+ 	sc8830/src/SprdOEMCamera.c \
+diff --git a/libcamera/scx15/Camera_Utest2.mk b/libcamera/scx15/Camera_Utest2.mk
+index 2610604c..1624b1a 100644
+--- a/libcamera/scx15/Camera_Utest2.mk
++++ b/libcamera/scx15/Camera_Utest2.mk
+@@ -27,7 +27,7 @@ LOCAL_C_INCLUDES := \
+         external/sqlite/dist \
+ 	system/media/camera/include \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/source/include/video \
+-	hardware/sprd/gralloc/$(TARGET_BOARD_PLATFORM) \
++	hardware/sprd/gralloc/scx15 \
+ 
+ LOCAL_ADDITIONAL_DEPENDENCIES += \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+diff --git a/libmemoryheapion/Android.mk b/libmemoryheapion/Android.mk
+index 862b1dd..0d7a65a 100644
+--- a/libmemoryheapion/Android.mk
++++ b/libmemoryheapion/Android.mk
+@@ -19,8 +19,8 @@ supported_boards := \
+ 	sc8830 \
+ 	scx15 \
+ 
+-ifeq ($(SOC_SCX30G_V2),true)
+-include $(call all-named-subdir-makefiles,sc8830)
+-else ifneq (,$(filter $(supported_boards),$(TARGET_BOARD_PLATFORM)))
++ifeq ($(SOC_SCX35),true)
+ include $(call all-named-subdir-makefiles,scx15)
++else ifneq (,$(filter $(supported_boards),$(TARGET_BOARD_PLATFORM)))
++include $(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM))
+ endif
+diff --git a/libmemoryheapion/scx15/Android.mk b/libmemoryheapion/scx15/Android.mk
+index 8dea391..e9de10c 100644
+--- a/libmemoryheapion/scx15/Android.mk
++++ b/libmemoryheapion/scx15/Android.mk
+@@ -22,7 +22,7 @@ include $(CLEAR_VARS)
+ LOCAL_MODULE := libmemoryheapion
+ 
+ LOCAL_SRC_FILES := \
+-	MemoryHeapIon_SPRD.cpp
++	MemoryHeapIon.cpp
+ 
+ LOCAL_ADDITIONAL_DEPENDENCIES += \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+@@ -30,6 +30,10 @@ LOCAL_ADDITIONAL_DEPENDENCIES += \
+ LOCAL_C_INCLUDES += \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ 
++ifdef ($(TARGET_BOARD_PLATFORM),sc8810)
++LOCAL_CFLAGS += -DSC8810_BOARD
++endif
++
+ LOCAL_EXPORT_C_INCLUDE_DIRS := \
+ 	$(LOCAL_PATH)/ \
+ 
+diff --git a/libmemoryheapion/scx15/MemoryHeapIon.cpp b/libmemoryheapion/scx15/MemoryHeapIon.cpp
+index 42f13b9..610aecb 100644
+--- a/libmemoryheapion/scx15/MemoryHeapIon.cpp
++++ b/libmemoryheapion/scx15/MemoryHeapIon.cpp
+@@ -498,4 +498,4 @@ MemoryHeapIon::~MemoryHeapIon()
+ }
+ 
+ // ---------------------------------------------------------------------------
+-}; // namespace android
+\ No newline at end of file
++}; // namespace android
+diff --git a/libstagefrighthw/Android.mk b/libstagefrighthw/Android.mk
+index 862b1dd..0d7a65a 100644
+--- a/libstagefrighthw/Android.mk
++++ b/libstagefrighthw/Android.mk
+@@ -19,8 +19,8 @@ supported_boards := \
+ 	sc8830 \
+ 	scx15 \
+ 
+-ifeq ($(SOC_SCX30G_V2),true)
+-include $(call all-named-subdir-makefiles,sc8830)
+-else ifneq (,$(filter $(supported_boards),$(TARGET_BOARD_PLATFORM)))
++ifeq ($(SOC_SCX35),true)
+ include $(call all-named-subdir-makefiles,scx15)
++else ifneq (,$(filter $(supported_boards),$(TARGET_BOARD_PLATFORM)))
++include $(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM))
+ endif
+diff --git a/libstagefrighthw/scx15/Android.mk b/libstagefrighthw/scx15/Android.mk
+index cffa7de..ad32e81 100644
+--- a/libstagefrighthw/scx15/Android.mk
++++ b/libstagefrighthw/scx15/Android.mk
+@@ -31,7 +31,7 @@ LOCAL_C_INCLUDES := \
+ 	frameworks/native/include/media/openmax \
+ 	frameworks/native/include/media/hardware \
+ 	$(LOCAL_PATH)/include \
+-	$(LOCAL_PATH)/../../gralloc/$(TARGET_BOARD_PLATFORM) \
++	$(LOCAL_PATH)/../../gralloc/scx15 \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video/ \
+ 
+ LOCAL_EXPORT_C_INCLUDE_DIRS := \
+diff --git a/omx_components/video/Android.mk b/omx_components/video/Android.mk
+index 4b150a6..c0c55e2 100644
+--- a/omx_components/video/Android.mk
++++ b/omx_components/video/Android.mk
+@@ -21,6 +21,8 @@ supported_boards := \
+ 	sc8830 \
+ 	scx15 \
+ 
+-ifneq (,$(filter $(supported_boards),$(TARGET_BOARD_PLATFORM)))
+-include $(call all-makefiles-under,$(LOCAL_PATH))
++ifeq ($(SOC_SCX35),true)
++include $(call all-named-subdir-makefiles,scx15)
++else ifneq (,$(filter $(supported_boards),$(TARGET_BOARD_PLATFORM)))
++include $(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM))
+ endif
+diff --git a/omx_components/video/avc_sprd/Android.mk b/omx_components/video/avc_sprd/Android.mk
+index e7791e8..8c8980d 100644
+--- a/omx_components/video/avc_sprd/Android.mk
++++ b/omx_components/video/avc_sprd/Android.mk
+@@ -24,15 +24,15 @@ include_makefiles := \
+ 
+ # TODO Sync sc8830 and scx15 encoder codes
+ 
+-ifeq (sc8830,$(TARGET_BOARD_PLATFORM))
+-ifeq ($(SOC_SCX30G_V2),true) # For scx30g_v2 board (sc8830)
+-include_makefiles += $(call all-named-subdir-makefiles,scx30g_v2)
+-else
+-include_makefiles += $(call all-named-subdir-makefiles,sc8830)
+-endif
+-endif
+-
+-ifeq (scx15,$(TARGET_BOARD_PLATFORM))
++#ifeq (sc8830,$(TARGET_BOARD_PLATFORM))
++#ifeq ($(SOC_SCX30G_V2),true) # For scx30g_v2 board (sc8830)
++#include_makefiles += $(call all-named-subdir-makefiles,scx30g_v2)
++#else
++#include_makefiles += $(call all-named-subdir-makefiles,sc8830)
++#endif
++#endif
++
++ifeq (true,$(SOC_SCX35))
+ include_makefiles += $(call all-named-subdir-makefiles,scx15 sc8830/dec)
+ endif
+ 
+diff --git a/omx_components/video/avc_sprd/sc8830/dec/Android.mk b/omx_components/video/avc_sprd/sc8830/dec/Android.mk
+index 9a951ef..bdd7d05 100644
+--- a/omx_components/video/avc_sprd/sc8830/dec/Android.mk
++++ b/omx_components/video/avc_sprd/sc8830/dec/Android.mk
+@@ -12,7 +12,7 @@ LOCAL_C_INCLUDES := \
+ 	frameworks/native/include/ui \
+ 	frameworks/native/include/utils \
+ 	frameworks/native/include/media/hardware \
+-	$(LOCAL_PATH)/../../../../../gralloc/$(TARGET_BOARD_PLATFORM) \
++	$(LOCAL_PATH)/../../../../../gralloc/scx15 \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video 
+ 
+ LOCAL_ADDITIONAL_DEPENDENCIES += \
+diff --git a/omx_components/video/avc_sprd/scx15/Android.mk b/omx_components/video/avc_sprd/scx15/Android.mk
+index 1db27f5..4799c7c 100644
+--- a/omx_components/video/avc_sprd/scx15/Android.mk
++++ b/omx_components/video/avc_sprd/scx15/Android.mk
+@@ -17,6 +17,6 @@
+ 
+ LOCAL_PATH := $(call my-dir)
+ 
+-ifeq ($(TARGET_BOARD_PLATFORM),scx15)
++ifeq ($(TARGET_BOARD_PLATFORM), sc8830 scx15)
+ include $(call all-makefiles-under,$(LOCAL_PATH))
+ endif
+diff --git a/omx_components/video/avc_sprd/scx15/enc/Android.mk b/omx_components/video/avc_sprd/scx15/enc/Android.mk
+index fd9d29b..5c5897e 100644
+--- a/omx_components/video/avc_sprd/scx15/enc/Android.mk
++++ b/omx_components/video/avc_sprd/scx15/enc/Android.mk
+@@ -10,7 +10,7 @@ LOCAL_C_INCLUDES := \
+ 	frameworks/native/include/media/openmax \
+ 	frameworks/native/include/media/hardware \
+ 	frameworks/native/include \
+-	$(LOCAL_PATH)/../../../../../gralloc/$(TARGET_BOARD_PLATFORM) \
++	$(LOCAL_PATH)/../../../../../gralloc/scx15 \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video
+ 
+ LOCAL_ADDITIONAL_DEPENDENCIES += \
+diff --git a/omx_components/video/m4v_h263_sprd/sc8830/dec/Android.mk b/omx_components/video/m4v_h263_sprd/sc8830/dec/Android.mk
+index e230d09..e1fd351 100644
+--- a/omx_components/video/m4v_h263_sprd/sc8830/dec/Android.mk
++++ b/omx_components/video/m4v_h263_sprd/sc8830/dec/Android.mk
+@@ -12,7 +12,7 @@ LOCAL_C_INCLUDES := \
+ 	frameworks/native/include/ui \
+ 	frameworks/native/include/utils \
+ 	frameworks/native/include/media/hardware \
+-	$(LOCAL_PATH)/../../../../../gralloc/$(TARGET_BOARD_PLATFORM) \
++	$(LOCAL_PATH)/../../../../../gralloc/scx15 \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video
+ 
+ LOCAL_ADDITIONAL_DEPENDENCIES += \
+diff --git a/omx_components/video/vpx_sprd/sc8830/dec/Android.mk b/omx_components/video/vpx_sprd/sc8830/dec/Android.mk
+index 54bbaea..e6708a5 100644
+--- a/omx_components/video/vpx_sprd/sc8830/dec/Android.mk
++++ b/omx_components/video/vpx_sprd/sc8830/dec/Android.mk
+@@ -12,7 +12,7 @@ LOCAL_C_INCLUDES := \
+ 	frameworks/native/include/ui \
+ 	frameworks/native/include/utils \
+ 	frameworks/native/include/media/hardware \
+-	$(LOCAL_PATH)/../../../../../gralloc/$(TARGET_BOARD_PLATFORM) \
++	$(LOCAL_PATH)/../../../../../gralloc/scx15 \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video
+ 
+ LOCAL_ADDITIONAL_DEPENDENCIES += \
+diff --git a/power/Android.mk b/power/Android.mk
+index 7b85b2f..c807c9a 100644
+--- a/power/Android.mk
++++ b/power/Android.mk
+@@ -13,8 +13,6 @@
+ # limitations under the License.
+ 
+ 
+-ifeq ($(TARGET_POWERHAL_VARIANT),sprd)
+-
+ LOCAL_PATH := $(call my-dir)
+ 
+ # HAL module implemenation stored in
+@@ -27,5 +25,3 @@ LOCAL_SRC_FILES := power.c
+ LOCAL_MODULE := power.$(TARGET_BOARD_PLATFORM)
+ LOCAL_MODULE_TAGS := optional
+ include $(BUILD_SHARED_LIBRARY)
+-
+-endif # TARGET_POWERHAL_VARIANT
+-- 
+2.18.0
+

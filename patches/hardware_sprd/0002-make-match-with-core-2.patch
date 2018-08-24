@@ -1,0 +1,38 @@
+From 2c0ab1185b7bb708c1a6b311ded933ed71d2f94c Mon Sep 17 00:00:00 2001
+From: ih24n69 <muhammadihsan69@gmail.com>
+Date: Tue, 4 Apr 2017 15:00:32 +0700
+Subject: [PATCH 2/6] make match with core 2
+
+---
+ gralloc/scx15/framebuffer_device.cpp | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/gralloc/scx15/framebuffer_device.cpp b/gralloc/scx15/framebuffer_device.cpp
+index 99d7b52..cbfe434 100644
+--- a/gralloc/scx15/framebuffer_device.cpp
++++ b/gralloc/scx15/framebuffer_device.cpp
+@@ -83,10 +83,10 @@ uint32_t dither_open(uint32_t w, uint32_t h)
+ 
+         memset(dither, 0, sizeof(struct dither_info));
+ 
+-        fp = fopen("/sys/module/mali/parameters/gpu_freq_cur", "r");
++        fp = fopen("/sys/module/mali/parameters/gpu_cur_freq", "r");
+         if(fp == NULL)
+         {
+-            AERR( "can not open /sys/module/mali/parameters/gpu_freq_cur %x", fp);
++            AERR( "can not open /sys/module/mali/parameters/gpu_cur_freq %x", fp);
+             free (dither);
+             dither = NULL;
+             return 0;
+@@ -230,7 +230,7 @@ static bool fb_is_dither_enable(struct dither_info *dither, private_handle_t con
+ 
+     if(fp == NULL)
+     {
+-        AERR( "can not open /sys/module/mali/parameters/gpu_freq_cur %x", fp);
++        AERR( "can not open /sys/module/mali/parameters/gpu_cur_freq %x", fp);
+     }
+     else
+     {
+-- 
+2.18.0
+

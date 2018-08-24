@@ -1,40 +1,54 @@
-From 5038a7f861c0078f71862a080902b645d6d1fb11 Mon Sep 17 00:00:00 2001
+From 5221b65c148392b5607f2665845d91d56d224d41 Mon Sep 17 00:00:00 2001
 From: Mark Enriquez <enriquezmark36@gmail.com>
 Date: Mon, 25 Jun 2018 10:14:08 +0800
-Subject: [PATCH] Use scx15 versions on the sc8830 kanas
+Subject: [PATCH 4/6] Use scx15 versions on the sc8830 kanas
 
+This would finalize the patch set.
+
+Change-Id: Iac04eda4b17dbed86bf2df825510619f2f9238c0
 Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
 ---
+ audio/sc8830/eng_audio.h                      |   1 +
  hwcomposer/scx15/Android.mk                   |  20 +-
  hwcomposer/scx15/sc8830/Android.mk            |  15 +-
  libcamera/scx15/Camera.mk                     |  28 +--
  libcamera/scx15/Camera2.mk                    |  28 +--
  libcamera/scx15/Camera_Utest.mk               |  29 +--
  libcamera/scx15/Camera_Utest2.mk              |  29 +--
- libion_sprd/scx15/Android.mk                  |  34 ++-
+ libion_sprd/scx15/Android.mk                  |  36 +++-
  .../scx15/kernel-headers/kanas/linux/ion.h    | 204 ++++++++++++++++++
  libmemoryheapion/scx15/Android.mk             |  15 +-
- libmemoryheapion/scx15/MemoryHeapIon.cpp      |   2 +-
- libmemoryheapion/scx15/MemoryHeapIon.h        |   2 +-
  .../scx15/kernel-headers/linux/ion.h          | 204 ++++++++++++++++++
  .../scx15/kernel-headers/video/ion_sprd.h     |  99 +++++++++
  libstagefrighthw/scx15/Android.mk             |  18 +-
- omx_components/video/avc_sprd/Android.mk      |   2 -
  .../video/avc_sprd/sc8830/dec/Android.mk      |  25 +--
  .../avc_sprd/sc8830/dec/SPRDAVCDecoder.cpp    |   6 +-
  .../video/avc_sprd/sc8830/dec/avc_dec_api.h   |   6 +
  .../video/avc_sprd/scx15/enc/Android.mk       |  21 +-
+ .../video/colorformat_switcher/Android.mk     |   9 +-
  .../video/m4v_h263_sprd/sc8830/dec/Android.mk |  24 +--
  .../sc8830/dec/SPRDMPEG4Decoder.cpp           |   4 +
  .../video/m4v_h263_sprd/sc8830/enc/Android.mk |   4 +
  .../sc8830/enc/SPRDMPEG4Encoder.cpp           |   4 +
  .../sc8830/enc/m4v_h263_enc_api.h             |   7 +-
  .../video/vpx_sprd/sc8830/dec/Android.mk      |  23 +-
- 25 files changed, 659 insertions(+), 194 deletions(-)
+ 24 files changed, 667 insertions(+), 192 deletions(-)
  create mode 100644 libion_sprd/scx15/kernel-headers/kanas/linux/ion.h
  create mode 100644 libmemoryheapion/scx15/kernel-headers/linux/ion.h
  create mode 100644 libmemoryheapion/scx15/kernel-headers/video/ion_sprd.h
 
+diff --git a/audio/sc8830/eng_audio.h b/audio/sc8830/eng_audio.h
+index a060f9b..8d48b23 100644
+--- a/audio/sc8830/eng_audio.h
++++ b/audio/sc8830/eng_audio.h
+@@ -1,6 +1,7 @@
+ #ifndef __ENG_AUDIO_H__
+ #define __ENG_AUDIO_H__
+ 
++#include <system/audio.h>
+ 
+ #define NAME_LEN_MAX                            16
+ #define EQ_BAND_MAX				8
 diff --git a/hwcomposer/scx15/Android.mk b/hwcomposer/scx15/Android.mk
 index bb0827a..d909f14 100644
 --- a/hwcomposer/scx15/Android.mk
@@ -312,7 +326,7 @@ index 8847b6f..facac06 100644
  
  LOCAL_ADDITIONAL_DEPENDENCIES += \
 diff --git a/libion_sprd/scx15/Android.mk b/libion_sprd/scx15/Android.mk
-index 7bd637b..5ed31d6 100644
+index 7bd637b..08b324f 100644
 --- a/libion_sprd/scx15/Android.mk
 +++ b/libion_sprd/scx15/Android.mk
 @@ -21,16 +21,25 @@ include $(CLEAR_VARS)
@@ -346,6 +360,15 @@ index 7bd637b..5ed31d6 100644
  
  LOCAL_SRC_FILES := \
  	ion.c
+@@ -43,7 +52,7 @@ LOCAL_SHARED_LIBRARIES := \
+ 
+ LOCAL_POST_INSTALL_CMD := \
+ 	$(hide) mkdir -p $(TARGET_OUT_SHARED_LIBRARIES); \
+-	ln -sf $(LOCAL_MODULE).so $(TARGET_OUT_SHARED_LIBRARIES)/libion.so
++	mv -f $(TARGET_OUT_SHARED_LIBRARIES)/$(LOCAL_MODULE).so $(TARGET_OUT_SHARED_LIBRARIES)/libion.so
+ 
+ include $(BUILD_SHARED_LIBRARY)
+ 
 @@ -51,13 +60,20 @@ include $(CLEAR_VARS)
  
  LOCAL_MODULE := iontest_sprd
@@ -610,28 +633,6 @@ index e298894..8ab35fc 100644
  
  LOCAL_SHARED_LIBRARIES := \
  	libbinder \
-diff --git a/libmemoryheapion/scx15/MemoryHeapIon.cpp b/libmemoryheapion/scx15/MemoryHeapIon.cpp
-index 42f13b9..610aecb 100644
---- a/libmemoryheapion/scx15/MemoryHeapIon.cpp
-+++ b/libmemoryheapion/scx15/MemoryHeapIon.cpp
-@@ -498,4 +498,4 @@ MemoryHeapIon::~MemoryHeapIon()
- }
- 
- // ---------------------------------------------------------------------------
--}; // namespace android
-\ No newline at end of file
-+}; // namespace android
-diff --git a/libmemoryheapion/scx15/MemoryHeapIon.h b/libmemoryheapion/scx15/MemoryHeapIon.h
-index 2cb8181..3e155f4 100644
---- a/libmemoryheapion/scx15/MemoryHeapIon.h
-+++ b/libmemoryheapion/scx15/MemoryHeapIon.h
-@@ -68,4 +68,4 @@ private:
- // ---------------------------------------------------------------------------
- }; // namespace android
- 
--#endif // ANDROID_MEMORY_HEAP_ION_H
-\ No newline at end of file
-+#endif // ANDROID_MEMORY_HEAP_ION_H
 diff --git a/libmemoryheapion/scx15/kernel-headers/linux/ion.h b/libmemoryheapion/scx15/kernel-headers/linux/ion.h
 new file mode 100644
 index 0000000..bc04d1d
@@ -985,19 +986,6 @@ index 35a62fb..321fa7b 100644
  LOCAL_EXPORT_C_INCLUDE_DIRS := \
  	$(LOCAL_PATH)/include \
  
-diff --git a/omx_components/video/avc_sprd/Android.mk b/omx_components/video/avc_sprd/Android.mk
-index 4cd9e3c..7eb2f71 100644
---- a/omx_components/video/avc_sprd/Android.mk
-+++ b/omx_components/video/avc_sprd/Android.mk
-@@ -22,8 +22,6 @@ ifneq (,$(filter scx15 sc8830,$(TARGET_BOARD_PLATFORM)))
- include_makefiles := \
- 	$(LOCAL_PATH)/thumbnail/Android.mk \
- 
--# TODO Sync sc8830 and scx15 encoder codes
--
- ifeq (sc8830,$(TARGET_BOARD_PLATFORM))
- ifeq ($(SOC_SCX35),true)
- include_makefiles += $(call all-named-subdir-makefiles,scx15 sc8830/dec)
 diff --git a/omx_components/video/avc_sprd/sc8830/dec/Android.mk b/omx_components/video/avc_sprd/sc8830/dec/Android.mk
 index 3394d40..300ca83 100644
 --- a/omx_components/video/avc_sprd/sc8830/dec/Android.mk
@@ -1142,6 +1130,27 @@ index 36ec31c..578b060 100644
  
  LOCAL_ADDITIONAL_DEPENDENCIES += \
  	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+diff --git a/omx_components/video/colorformat_switcher/Android.mk b/omx_components/video/colorformat_switcher/Android.mk
+index 0c6c9d1..993a69a 100644
+--- a/omx_components/video/colorformat_switcher/Android.mk
++++ b/omx_components/video/colorformat_switcher/Android.mk
+@@ -26,8 +26,15 @@ LOCAL_MODULE := libcolorformat_switcher
+ 
+ LOCAL_MODULE_TAGS := optional
+ 
++ifeq ($(SOC_SCX35),true)
++LOCAL_C_INCLUDES += \
++	$(TOP)/hardware/sprd/gralloc/scx15
++else
++LOCAL_C_INCLUDES += \
++	$(TOP)/hardware/sprd/gralloc/sc8830
++endif
++
+ LOCAL_C_INCLUDES += \
+-	$(TOP)/hardware/sprd/gralloc/scx15 \
+ 	$(TOP)/frameworks/av/include/media/ \
+ 	$(TOP)/frameworks/native/include/media/openmax
+ 
 diff --git a/omx_components/video/m4v_h263_sprd/sc8830/dec/Android.mk b/omx_components/video/m4v_h263_sprd/sc8830/dec/Android.mk
 index f6be67a..930632b 100644
 --- a/omx_components/video/m4v_h263_sprd/sc8830/dec/Android.mk
