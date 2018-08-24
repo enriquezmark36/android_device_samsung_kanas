@@ -48,7 +48,7 @@ for patch in **/*.patch; do
 	else
 		echo No
 		echo -e "Trying to apply patch $(basename "$patch") to '$repo_to_patch'"
-		if ! git am --whitespace=fix $absolute_patch_path; then
+		if ! git am --ignore-whitespace $absolute_patch_path; then
 			echo "!!!!!!!!!!!! Failed, aborting git am !!!!!!!!!!!!!!"
 			git am --abort
 		fi
