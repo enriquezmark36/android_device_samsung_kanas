@@ -1,0 +1,43 @@
+From 445af586d8dedc7a273c52fe4d1a50cb143a8532 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Fri, 24 Aug 2018 18:41:05 +0800
+Subject: [PATCH 6/6] OMX: sc8830: avc_dec: Increase input buffer size for
+ 1080p videos
+
+This allows playback of some 1080p videos with large frame data size.
+But, you may still get an ion allocation error if it gets too large
+Fortunately, a workaround exists to allow ion to reserve a larger chunk
+of contiguous memory but it requires a patched kernel.
+
+Change-Id: Id87182a7d31762efe2eb555c944cb13f45cde1e9
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ .../video/avc_sprd/sc8830/dec/SPRDAVCDecoder.cpp         | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/omx_components/video/avc_sprd/sc8830/dec/SPRDAVCDecoder.cpp b/omx_components/video/avc_sprd/sc8830/dec/SPRDAVCDecoder.cpp
+index 354a098..9fbad92 100644
+--- a/omx_components/video/avc_sprd/sc8830/dec/SPRDAVCDecoder.cpp
++++ b/omx_components/video/avc_sprd/sc8830/dec/SPRDAVCDecoder.cpp
+@@ -624,11 +624,16 @@ OMX_ERRORTYPE SPRDAVCDecoder::internalSetParameter(
+             change_ddr_freq();
+         }
+ 
+-        if (!((mWidth < 1280 && mHeight < 720) || (mWidth < 720 && mHeight < 1280))) {
++        long area = mHeight * mWidth;
++        if (area >= 2073600 /*1920 * 1080*/) {
++            PortInfo *port = editPortInfo(kInputPortIndex);
++            if(port->mDef.nBufferSize < 1566720)
++                port->mDef.nBufferSize = 1566720 /* 1920*1088*3/4 */;
++        } else if (area >= 921600 /* 1280*720 */) {
+             PortInfo *port = editPortInfo(kInputPortIndex);
+             if(port->mDef.nBufferSize < 384*1024)
+                 port->mDef.nBufferSize = 384*1024;
+-        } else if (!((mWidth < 720 && mHeight < 480) || (mWidth < 480 && mHeight < 720))) {
++        } else if (area >= 345600 /* 720*480 */) {
+             PortInfo *port = editPortInfo(kInputPortIndex);
+             if(port->mDef.nBufferSize < 256*1024)
+                 port->mDef.nBufferSize = 256*1024;
+-- 
+2.18.0
+
