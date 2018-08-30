@@ -21,7 +21,7 @@ $(call inherit-product, $(LOCAL_PATH)/device_kanas.mk)
 $(call inherit-product, vendor/cm/config/telephony.mk)
 
 # Custom unofficial build tag
-TARGET_UNOFFICIAL_BUILD_ID := SandroidTeam-Ih24n-Intan
+TARGET_UNOFFICIAL_BUILD_ID := HomeBuilt_$(shell whoami)
 
 # Inherit some common CM stuff.
 $(call inherit-product, vendor/cm/config/common_full_phone.mk)
