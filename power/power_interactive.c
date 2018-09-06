@@ -46,6 +46,7 @@
 #define HISPEED_FREQ_PATH "/hispeed_freq"
 
 #define MAX_FREQ_PATH     "/cpufreq/scaling_max_freq"
+#define MIN_FREQ_PATH     "/cpufreq/scaling_min_freq"
 
 #define PARAM_MAXLEN      10
 
@@ -58,12 +59,15 @@ struct samsung_power_module {
     int boostpulse_fd;
     char hispeed_freq[PARAM_MAXLEN];
     char max_freq[PARAM_MAXLEN];
+    char min_freq[PARAM_MAXLEN];
 };
 
 enum power_profile_e {
     PROFILE_POWER_SAVE = 0,
     PROFILE_BALANCED,
     PROFILE_HIGH_PERFORMANCE,
+    PROFILE_BIAS_POWER_SAVE,
+    PROFILE_BIAS_PERFORMANCE,
     PROFILE_MAX
 };
 
@@ -216,17 +220,24 @@ static void set_power_profile(struct samsung_power_module *samsung_pwr,
 
     switch (profile) {
         case PROFILE_POWER_SAVE:
+            // Limit to min freq
+            cpu_sysfs_write(MAX_FREQ_PATH, samsung_pwr->min_freq);
+            ALOGV("%s: set powersave mode", __func__);
+            break;
+        case PROFILE_BIAS_POWER_SAVE:
             // Grab value set by init.*.rc
             cpu_interactive_read(HISPEED_FREQ_PATH, samsung_pwr->hispeed_freq);
             // Limit to hispeed freq
             cpu_sysfs_write(MAX_FREQ_PATH, samsung_pwr->hispeed_freq);
-            ALOGV("%s: set powersave mode", __func__);
+            ALOGV("%s: set efficiency mode", __func__);
             break;
         case PROFILE_BALANCED:
             // Restore normal max freq
             cpu_sysfs_write(MAX_FREQ_PATH, samsung_pwr->max_freq);
             ALOGV("%s: set balanced mode", __func__);
             break;
+        case PROFILE_BIAS_PERFORMANCE:
+            ALOGV("%s: set quick mode [fake] ", __func__);
         case PROFILE_HIGH_PERFORMANCE:
             // Restore normal max freq
             cpu_sysfs_write(MAX_FREQ_PATH, samsung_pwr->max_freq);
@@ -248,6 +259,7 @@ static void init_cpufreqs(struct samsung_power_module *samsung_pwr)
 {
     cpu_interactive_read(HISPEED_FREQ_PATH, samsung_pwr->hispeed_freq);
     cpu_sysfs_read(MAX_FREQ_PATH, samsung_pwr->max_freq);
+    cpu_sysfs_read(MIN_FREQ_PATH, samsung_pwr->min_freq);
 }
 
 static void boost_open(struct samsung_power_module *samsung_pwr)
@@ -288,6 +300,7 @@ static void samsung_power_init(struct power_module *module)
 
     ALOGI("Initialized settings:");
     ALOGI("max_freq: %s", samsung_pwr->max_freq);
+    ALOGI("min_freq: %s", samsung_pwr->min_freq);
     ALOGI("hispeed_freq: %s", samsung_pwr->hispeed_freq);
     ALOGI("boostpulse_fd: %d", samsung_pwr->boostpulse_fd);
 }
