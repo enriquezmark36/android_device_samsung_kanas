@@ -323,7 +323,7 @@ static void samsung_power_hint(struct power_module *module,
 
     switch (hint) {
         case POWER_HINT_VSYNC:
-            ALOGV("%s: POWER_HINT_VSYNC", __func__);
+            ALOGV("%s: POWER_HINT_VSYNC: %d", __func__, (int) *((intptr_t *)data));
             break;
         case POWER_HINT_INTERACTION:
             ALOGV("%s: POWER_HINT_INTERACTION", __func__);
@@ -342,6 +342,9 @@ static void samsung_power_hint(struct power_module *module,
             ALOGV("%s: POWER_HINT_SET_PROFILE", __func__);
             int profile = *((intptr_t *)data);
             set_power_profile(samsung_pwr, profile);
+            break;
+        case POWER_HINT_LAUNCH_BOOST:
+            ALOGV("%s: POWER_HINT_LAUNCH_BOOST", __func__);
             break;
         default:
             ALOGW("%s: Unknown power hint: %d", __func__, hint);
