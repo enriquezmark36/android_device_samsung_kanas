@@ -171,6 +171,7 @@ on boot
     chown system system /sys/class/graphics/fb0/dynamic_pclk
     chown system system /sys/class/graphics/fb0/dynamic_fps
     chown system system /sys/class/graphics/fb0/dynamic_mipi_clk
+    chown system system /sys/devices/virtual/dispc/dispc/fps
 
 # <Sensors>
 # Accelerometer_sensor

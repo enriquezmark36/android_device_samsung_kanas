@@ -48,6 +48,8 @@
 #define MAX_FREQ_PATH     "/cpufreq/scaling_max_freq"
 #define MIN_FREQ_PATH     "/cpufreq/scaling_min_freq"
 
+#define LCD_FPS_PATH     "/sys/devices/virtual/dispc/dispc/fps"
+
 #define PARAM_MAXLEN      10
 
 #define ARRAY_SIZE(a)     sizeof(a) / sizeof(a[0])
@@ -203,6 +205,26 @@ static void send_boostpulse(int boostpulse_fd)
  *** POWER FUNCTIONS
  **********************************************************/
 
+static void set_lcd_fps(int profile)
+{
+    switch (profile) {
+        case PROFILE_POWER_SAVE:
+        case PROFILE_BIAS_POWER_SAVE:
+            // Reduce the refresh rate of the lcd
+            ALOGV("%s: Reduce refresh rate to 45fps", __func__);
+            sysfs_write(LCD_FPS_PATH, "45");
+            break;
+        case PROFILE_BALANCED:
+        case PROFILE_BIAS_PERFORMANCE:
+        case PROFILE_HIGH_PERFORMANCE:
+            // Restore back to 60fps
+            ALOGV("%s: Restore refresh rate back to 60fps", __func__);
+            sysfs_write(LCD_FPS_PATH, "60");
+            break;
+    }
+        return;
+}
+
 static void set_power_profile(struct samsung_power_module *samsung_pwr,
                               int profile)
 {
@@ -248,6 +270,7 @@ static void set_power_profile(struct samsung_power_module *samsung_pwr,
             return;
     }
 
+    set_lcd_fps(profile);
     current_power_profile = profile;
 }
 
