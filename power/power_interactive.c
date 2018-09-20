@@ -49,6 +49,9 @@
 #define MIN_FREQ_PATH     "/cpufreq/scaling_min_freq"
 
 #define LCD_FPS_PATH     "/sys/devices/virtual/dispc/dispc/fps"
+#define GPU_MAX_FREQ_PATH "/sys/power/gpufreq_max_limit"
+#define GPU_MIN_FREQ_PATH "/sys/power/gpufreq_min_limit"
+#define GPU_FREQ_CHECK    "/sys/module/mali/parameters/mali_max_pp_cores_group_1"
 
 #define PARAM_MAXLEN      10
 
@@ -59,6 +62,7 @@ struct samsung_power_module {
     pthread_mutex_t lock;
     int boost_fd;
     int boostpulse_fd;
+    int limit_gpu_freq;
     char hispeed_freq[PARAM_MAXLEN];
     char max_freq[PARAM_MAXLEN];
     char min_freq[PARAM_MAXLEN];
@@ -225,6 +229,42 @@ static void set_lcd_fps(int profile)
         return;
 }
 
+static void limit_gpu_frequency(struct samsung_power_module *samsung_pwr,
+                                int profile)
+{
+    if (!samsung_pwr->limit_gpu_freq)
+        return;
+
+    switch (profile) {
+        case PROFILE_POWER_SAVE:
+                ALOGV("%s: Set GPU freq range [0Hz, 64MHz]", __func__);
+                sysfs_write(GPU_MAX_FREQ_PATH, "64000");
+                sysfs_write(GPU_MIN_FREQ_PATH, "-1");
+            break;
+        case PROFILE_BIAS_POWER_SAVE:
+                ALOGV("%s: Set GPU freq range [0Hz, 128MHz]", __func__);
+                sysfs_write(GPU_MAX_FREQ_PATH, "128000");
+                sysfs_write(GPU_MIN_FREQ_PATH, "-1");
+            break;
+        case PROFILE_BALANCED:
+                ALOGV("%s: Set GPU freq range [0Hz, 256MHz]", __func__);
+                sysfs_write(GPU_MAX_FREQ_PATH, "256000");
+                sysfs_write(GPU_MIN_FREQ_PATH, "-1");
+            break;
+        case PROFILE_BIAS_PERFORMANCE:
+                ALOGV("%s: Set GPU freq range [128MHz, 312MHz]", __func__);
+                sysfs_write(GPU_MAX_FREQ_PATH, "312000");
+                sysfs_write(GPU_MIN_FREQ_PATH, "128000");
+            break;
+        case PROFILE_HIGH_PERFORMANCE:
+                ALOGV("%s: Set GPU freq range [312MHz, 312MHz]", __func__);
+                sysfs_write(GPU_MAX_FREQ_PATH, "312000");
+                sysfs_write(GPU_MIN_FREQ_PATH, "312000");
+            break;
+    }
+        return;
+}
+
 static void set_power_profile(struct samsung_power_module *samsung_pwr,
                               int profile)
 {
@@ -271,6 +311,7 @@ static void set_power_profile(struct samsung_power_module *samsung_pwr,
     }
 
     set_lcd_fps(profile);
+    limit_gpu_frequency(samsung_pwr, profile);
     current_power_profile = profile;
 }
 
@@ -314,6 +355,7 @@ static void boostpulse_open(struct samsung_power_module *samsung_pwr)
 static void samsung_power_init(struct power_module *module)
 {
     struct samsung_power_module *samsung_pwr = (struct samsung_power_module *) module;
+    char gpu_cores[PARAM_MAXLEN];
 
     init_cpufreqs(samsung_pwr);
 
@@ -321,11 +363,19 @@ static void samsung_power_init(struct power_module *module)
     boost_open(samsung_pwr);
     boostpulse_open(samsung_pwr);
 
+    // Check if we should limit gpu frequency
+    sysfs_read(GPU_FREQ_CHECK, gpu_cores, PARAM_MAXLEN);
+    if (gpu_cores[0] = '4') // only enable this feature on 4 pp cores
+        samsung_pwr->limit_gpu_freq = 1;
+    else
+        samsung_pwr->limit_gpu_freq = 0;
+
     ALOGI("Initialized settings:");
     ALOGI("max_freq: %s", samsung_pwr->max_freq);
     ALOGI("min_freq: %s", samsung_pwr->min_freq);
     ALOGI("hispeed_freq: %s", samsung_pwr->hispeed_freq);
     ALOGI("boostpulse_fd: %d", samsung_pwr->boostpulse_fd);
+    ALOGI("Limit gpu frequency: %s", samsung_pwr->limit_gpu_freq ? "Yes" : "No");
 }
 
 /**********************************************************
