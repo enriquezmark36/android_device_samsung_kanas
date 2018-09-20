@@ -154,7 +154,9 @@ WITH_DEXPREOPT := true
 # WITH_DEXPREOPT_PIC := true
 
 # Power
-TARGET_POWERHAL_VARIANT := sprd
+# This give 4 power profiles.
+# Comment this out to get the default behavior
+TARGET_POWERHAL_VARIANT := interactive
 
 
 # Camera
