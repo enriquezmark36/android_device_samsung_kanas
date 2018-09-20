@@ -1,21 +1,21 @@
 ### Device tree for Samsung Galaxy Core 2 SM-G355H
 
-## Building instructions
-Hopefully, this can be useful to you.
+## Preamble
+The developer doesn't seem to have released his cm 13 ROM yet so I tried to make my own tree based on what the developer has published on his github repo. I aim to make this as complete as possible, so I made a guide. Hopefully, this tree can be useful to you.
 
 ### Prerequisites
 1. Your LineageOS compilation/building guide. You can search some from Google
 2. About 55 GB of free space
-   * About 15 GB for the checked out source and 28 GB for building
    * About 12 GB or more for the download from 'repo sync'
-3. Follow your guide until the 'repo sync' step, then do the instructions below.
+   * About 15 GB for the checked out source and 28 GB for building
+3. Follow your guide until before the 'repo sync' step, then do the instructions below.
 
 ### Instructions for using this tree
 1. Make sure you've completed the 'repo init' step at least once.
 2. Create the directory `.repo/local_manifests/`.
    * You may do a `mkdir -p .repo/local_manifests/` on Linux to create this.
    * ".repo" directory is a 'hidden folder' so you might need to configure your file manager to show hidden files and directories.
-3. Create the file local_manifest.xml in that directory and copy-paste this:
+3. Create the file `local_manifest.xml` in that directory and copy-paste this:
 
 
 
@@ -60,8 +60,20 @@ Hopefully, this can be useful to you.
    * It's where your ".repo" folder is located.
 5. Run `device/samsung/kanas/patches/apply.sh`
    * This will apply some patches
+   * When this fails, consider filing a new issue on this github repo.
 6. Follow the rest of your guide after the `repo sync` step.
    * When asked what is our device or code name, it's "lineage_kanas-userdebug".
    * It may also say to extract binary blobs by running `extract-files.sh`. You may safely ignore this. Dude, trust me. There's no "extract-files.sh" anyway.
 
+##### Notes
+* There's a weird bug that causes problems like reboots and no signal with dual SIM configurations.
+* Dual SIM configurations also causes high idle battery drain regardless if only 1 SIM card is inserted.
+* To alleviate these issues, you may try switching to 2G and using only 1 SIM card:
+   1. Run `adb shell setprop persist.radio.multisim.config none` with the phone connected to a computer. This shall prevent Android from using the second SIM slot.
+   2. Reboot or restart the phone.
+   3. Set the Preferred Network to 2G in the Settings.
+* The modified SamsungPowerHAL module is built by default. If you want the old behavior of only having the powersave mode, please check the comments above the line `TARGET_POWERHAL_VARIANT` in the BoardConfig.mk file on the way how to reverse it.
 
+## Very Short Credits
+* @remilia15 for this person's answers and the repos this tree depends on
+* @ih24n69 for his cm 12.1 and 13 trees and his hardware repo; the developer in preamble
