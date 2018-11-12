@@ -198,6 +198,10 @@ PERMISSION_XML_FILES := \
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(PERMISSION_XML_FILES),$(f):system/etc/permissions/$(notdir $(f)))
 
+# Custom Power HAL module
+PRODUCT_PACKAGES += \
+	power.sc8830
+
 # Some Lineageos Apps
 PRODUCT_PACKAGES += \
        Snap \
