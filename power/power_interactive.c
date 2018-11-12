@@ -30,7 +30,7 @@
 #include <sys/types.h>
 
 #define LOG_TAG "SamsungPowerHAL"
- #define LOG_NDEBUG 0
+// #define LOG_NDEBUG 0
 #include <utils/Log.h>
 
 #include <hardware/hardware.h>
