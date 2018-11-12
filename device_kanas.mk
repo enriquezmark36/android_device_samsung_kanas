@@ -179,7 +179,6 @@ PRODUCT_PACKAGES += \
 	memtrack.sc8830 \
 
 # Permissions
-PRODUCT_PACKAGES += platform.xml
 PERMISSION_XML_FILES := \
 	frameworks/native/data/etc/android.hardware.camera.front.xml \
 	frameworks/native/data/etc/android.hardware.camera.flash-autofocus.xml \
@@ -195,13 +194,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
        Snap \
        AdvancedDisplay-mod \
-
-# Live Wallpapers
-PRODUCT_PACKAGES += \
-       LiveWallpapers \
-       LiveWallpapersPicker \
-       VisualizationWallpapers \
-       librs_jni
 
 # Camera config
 PRODUCT_PROPERTY_OVERRIDES += \
