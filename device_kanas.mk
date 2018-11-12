@@ -18,9 +18,6 @@
 # Inherit from the common Open Source product configuration
 $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
 
-# The gps config appropriate for this device
-$(call inherit-product, device/common/gps/gps_us_supl.mk)
-
 # Inherit from sprd-common device configuration
 $(call inherit-product, device/samsung/sprd-common/common.mk)
 
