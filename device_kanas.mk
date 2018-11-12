@@ -157,14 +157,6 @@ PRODUCT_COPY_FILES += \
 # Shim libraries
 PRODUCT_PACKAGES += \
 	libril_shim \
-	libgps_shim \
-
-# GPS
-GPS_CONFIGS := \
-	device/samsung/kanas/configs/gps/gps.xml \
-
-PRODUCT_COPY_FILES += \
-	$(foreach f,$(GPS_CONFIGS),$(f):system/etc/$(notdir $(f)))
 
 # Nvitem
 NVITEM_CONFIGS := \
