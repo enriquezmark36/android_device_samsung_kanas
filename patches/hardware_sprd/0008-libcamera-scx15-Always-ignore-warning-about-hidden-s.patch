@@ -1,0 +1,53 @@
+From c1724ec4eaba3ca95d331ca04001d591a9b5b499 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Tue, 13 Nov 2018 19:43:50 +0800
+Subject: [PATCH 8/8] libcamera: scx15: Always ignore warning about hidden
+ symbols referenced by DSO
+
+When using some other toolchain that imposes a werror in the linking stage,
+this warning is treated as an error preventing a successfull build.
+
+warning: hidden symbol '__aeabi_unwind_cpp_pr0'
+warning: hidden symbol '__aeabi_unwind_cpp_pr1'
+
+Unfortunately, this stems from libisp.so which is a prebuilt library.
+So,there's not much we can do about this warning but ignore it.
+
+Change-Id: Id03d37cbdc28076a74c0fb03cc63537939ed826a
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ libcamera/scx15/Camera.mk  | 3 +++
+ libcamera/scx15/Camera2.mk | 3 +++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/libcamera/scx15/Camera.mk b/libcamera/scx15/Camera.mk
+index 6e8e035..f6d76b5 100644
+--- a/libcamera/scx15/Camera.mk
++++ b/libcamera/scx15/Camera.mk
+@@ -260,6 +260,9 @@ ifdef CONFIG_CAMERA_ISP
+ LOCAL_SHARED_LIBRARIES += libisp
+ endif
+ 
++# Ignore all warnings about the hidden symbols
++LOCAL_LDFLAGS += -Wl,--no-fatal-warnings
++
+ include $(BUILD_SHARED_LIBRARY)
+ 
+ ifeq ($(strip $(sc8830like)),1)
+diff --git a/libcamera/scx15/Camera2.mk b/libcamera/scx15/Camera2.mk
+index b22211e..9b1fbc9 100644
+--- a/libcamera/scx15/Camera2.mk
++++ b/libcamera/scx15/Camera2.mk
+@@ -257,6 +257,9 @@ ifdef CONFIG_CAMERA_ISP
+ LOCAL_SHARED_LIBRARIES += libisp
+ endif
+ 
++# Ignore all warnings about the hidden symbols
++LOCAL_LDFLAGS += -Wl,--no-fatal-warnings
++
+ include $(BUILD_SHARED_LIBRARY)
+ 
+ ifeq ($(strip $(sc8830like)),1)
+-- 
+2.19.1
+
