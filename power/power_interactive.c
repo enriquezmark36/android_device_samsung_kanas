@@ -365,7 +365,7 @@ static void samsung_power_init(struct power_module *module)
 
     // Check if we should limit gpu frequency
     sysfs_read(GPU_FREQ_CHECK, gpu_cores, PARAM_MAXLEN);
-    if (gpu_cores[0] = '4') // only enable this feature on 4 pp cores
+    if (gpu_cores[0] == '4') // only enable this feature on 4 pp cores
         samsung_pwr->limit_gpu_freq = 1;
     else
         samsung_pwr->limit_gpu_freq = 0;
