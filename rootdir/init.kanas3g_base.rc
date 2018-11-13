@@ -366,3 +366,15 @@ service at_distributor /system/bin/at_distributor
     class late_start
     user root
     group radio misc log
+
+# Interactive governor parameters tuning for better power and performance
+on property:dev.bootcomplete=1
+    write /sys/devices/system/cpu/cpufreq/interactive/above_hispeed_delay 25000
+    write /sys/devices/system/cpu/cpufreq/interactive/go_hispeed_load 90
+    write /sys/devices/system/cpu/cpufreq/interactive/hispeed_freq 1000000
+    write /sys/devices/system/cpu/cpufreq/interactive/io_is_busy 1
+    write /sys/devices/system/cpu/cpufreq/interactive/min_sample_time 40000
+    write /sys/devices/system/cpu/cpufreq/interactive/target_loads 85
+    write /sys/devices/system/cpu/cpufreq/interactive/timer_rate 40000
+    write /sys/devices/system/cpu/cpufreq/interactive/timer_slack 40000
+    write /sys/devices/system/cpu/cpufreq/interactive/boostpulse_duration 0
