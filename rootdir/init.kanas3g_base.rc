@@ -367,3 +367,15 @@ service iprenew_p2p /system/bin/dhcpcd -n
     class main
     disabled
     oneshot
+
+# Interactive governor parameters tuning for better power and performance
+on property:dev.bootcomplete=1
+    write /sys/devices/system/cpu/cpufreq/interactive/above_hispeed_delay 25000
+    write /sys/devices/system/cpu/cpufreq/interactive/go_hispeed_load 90
+    write /sys/devices/system/cpu/cpufreq/interactive/hispeed_freq 1000000
+    write /sys/devices/system/cpu/cpufreq/interactive/io_is_busy 1
+    write /sys/devices/system/cpu/cpufreq/interactive/min_sample_time 40000
+    write /sys/devices/system/cpu/cpufreq/interactive/target_loads 85
+    write /sys/devices/system/cpu/cpufreq/interactive/timer_rate 40000
+    write /sys/devices/system/cpu/cpufreq/interactive/timer_slack 40000
+    write /sys/devices/system/cpu/cpufreq/interactive/boostpulse_duration 0
