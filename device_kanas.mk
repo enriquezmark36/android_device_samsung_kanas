@@ -18,9 +18,6 @@
 # Inherit from the common Open Source product configuration
 $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
 
-# The gps config appropriate for this device
-$(call inherit-product, device/common/gps/gps_us_supl.mk)
-
 # Inherit from sprd-common device configuration
 $(call inherit-product, device/samsung/sprd-common/common.mk)
 
@@ -160,14 +157,6 @@ PRODUCT_COPY_FILES += \
 # Shim libraries
 PRODUCT_PACKAGES += \
 	libril_shim \
-	libgps_shim \
-
-# GPS
-GPS_CONFIGS := \
-	device/samsung/kanas/configs/gps/gps.xml \
-
-PRODUCT_COPY_FILES += \
-	$(foreach f,$(GPS_CONFIGS),$(f):system/etc/$(notdir $(f)))
 
 # Nvitem
 NVITEM_CONFIGS := \
@@ -190,7 +179,6 @@ PRODUCT_PACKAGES += \
 	memtrack.sc8830 \
 
 # Permissions
-PRODUCT_PACKAGES += platform.xml
 PERMISSION_XML_FILES := \
 	frameworks/native/data/etc/android.hardware.camera.front.xml \
 	frameworks/native/data/etc/android.hardware.camera.flash-autofocus.xml \
@@ -198,17 +186,14 @@ PERMISSION_XML_FILES := \
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(PERMISSION_XML_FILES),$(f):system/etc/permissions/$(notdir $(f)))
 
+# Custom Power HAL module
+PRODUCT_PACKAGES += \
+	power.sc8830
+
 # Some Lineageos Apps
 PRODUCT_PACKAGES += \
        Snap \
        AdvancedDisplay-mod \
-
-# Live Wallpapers
-PRODUCT_PACKAGES += \
-       LiveWallpapers \
-       LiveWallpapersPicker \
-       VisualizationWallpapers \
-       librs_jni
 
 # Camera config
 PRODUCT_PROPERTY_OVERRIDES += \
@@ -223,10 +208,6 @@ PRODUCT_PROPERTY_OVERRIDES += \
 PRODUCT_PROPERTY_OVERRIDES += \
 	ro.com.google.locationfeatures=1 \
 	ro.com.google.networklocation=1
-
-# Modem
-PRODUCT_PACKAGES += \
-	modemd
 
 # ART device props
 PRODUCT_PROPERTY_OVERRIDES += \
