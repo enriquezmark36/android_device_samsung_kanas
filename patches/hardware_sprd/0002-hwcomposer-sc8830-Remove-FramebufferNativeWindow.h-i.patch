@@ -1,0 +1,29 @@
+From c8fe5466560d99a474da3aac70294dcdb997b603 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Sun, 15 Jul 2018 16:09:22 +0800
+Subject: [PATCH 2/6] hwcomposer: sc8830: Remove FramebufferNativeWindow.h
+ include
+
+It's obsolete.
+
+Change-Id: Ie9568c6c2f5bb369df760fbd6bba434045d5e770
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ hwcomposer/sc8830/OverlayComposer/OverlayNativeWindow.h | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/hwcomposer/sc8830/OverlayComposer/OverlayNativeWindow.h b/hwcomposer/sc8830/OverlayComposer/OverlayNativeWindow.h
+index fe3e72c..1f8727d 100644
+--- a/hwcomposer/sc8830/OverlayComposer/OverlayNativeWindow.h
++++ b/hwcomposer/sc8830/OverlayComposer/OverlayNativeWindow.h
+@@ -33,7 +33,6 @@
+ #ifndef _OVERLAY_NATIVEWINDOW_H_
+ #define _OVERLAY_NATIVEWINDOW_H_
+ 
+-#include <ui/FramebufferNativeWindow.h>
+ #include <ui/ANativeObjectBase.h>
+ #include <ui/Fence.h>
+ #include "gralloc_priv.h"
+-- 
+2.19.0
+

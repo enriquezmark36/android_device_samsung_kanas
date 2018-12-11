@@ -1,0 +1,40 @@
+From 75479d1e0dee02394dfab75b55bffd45d8aa76a9 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Sun, 29 Jul 2018 15:06:16 +0800
+Subject: [PATCH 5/6] OMX: sc8830: Increase input buffer size for 1080p videos
+
+This allows playback of some 1080p videos whose frame is just large in file size.
+But, you may still get ion alloc error if it gets too large. (can be fixed in the kernel)
+
+Change-Id: Ifb40cd915c00bc4e0a4be96a3e970bab1f46234b
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ .../video/avc_sprd/sc8830/dec/SPRDAVCDecoder.cpp         | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/omx_components/video/avc_sprd/sc8830/dec/SPRDAVCDecoder.cpp b/omx_components/video/avc_sprd/sc8830/dec/SPRDAVCDecoder.cpp
+index fecf1c8..1f7a883 100644
+--- a/omx_components/video/avc_sprd/sc8830/dec/SPRDAVCDecoder.cpp
++++ b/omx_components/video/avc_sprd/sc8830/dec/SPRDAVCDecoder.cpp
+@@ -624,11 +624,16 @@ OMX_ERRORTYPE SPRDAVCDecoder::internalSetParameter(
+             change_ddr_freq();
+         }
+ 
+-        if (!((mWidth < 1280 && mHeight < 720) || (mWidth < 720 && mHeight < 1280))) {
++        long area = mHeight * mWidth;
++        if (area >= 2073600 /*1920 * 1080*/) {
++            PortInfo *port = editPortInfo(kInputPortIndex);
++            if(port->mDef.nBufferSize < 1566720)
++                port->mDef.nBufferSize = 1566720 /* 1920*1088*3/4 */;
++        } else if (area >= 921600 /* 1280*720 */) {
+             PortInfo *port = editPortInfo(kInputPortIndex);
+             if(port->mDef.nBufferSize < 384*1024)
+                 port->mDef.nBufferSize = 384*1024;
+-        } else if (!((mWidth < 720 && mHeight < 480) || (mWidth < 480 && mHeight < 720))) {
++        } else if (area >= 345600 /* 720*480 */) {
+             PortInfo *port = editPortInfo(kInputPortIndex);
+             if(port->mDef.nBufferSize < 256*1024)
+                 port->mDef.nBufferSize = 256*1024;
+-- 
+2.19.0
+

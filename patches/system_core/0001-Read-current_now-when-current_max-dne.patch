@@ -1,3 +1,14 @@
+From bf40139d38ebeb193ba733a26de0bcc6a4d22688 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Fri, 21 Sep 2018 15:16:35 +0800
+Subject: [PATCH] Read current_now when current_max dne
+
+Change-Id: Iecb6829a5bc67ba10eb85e2fd769ff45d9b5978a
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ healthd/BatteryMonitor.cpp | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
+
 diff --git a/healthd/BatteryMonitor.cpp b/healthd/BatteryMonitor.cpp
 index d2088eefb..cddfd6601 100644
 --- a/healthd/BatteryMonitor.cpp
@@ -25,3 +36,6 @@ index d2088eefb..cddfd6601 100644
                                            (access(path.string(), R_OK) == 0) ? getIntField(path) : 0;
  
                              path.clear();
+-- 
+2.19.0
+
