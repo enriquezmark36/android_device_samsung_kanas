@@ -25,7 +25,7 @@ $(call inherit-product, device/samsung/sprd-common/common.mk)
 $(call inherit-product, vendor/samsung/kanas/kanas-vendor.mk)
 
 # Dalvik heap config
-$(call inherit-product, frameworks/native/build/phone-hdpi-512-dalvik-heap.mk)
+$(call inherit-product, frameworks/native/build/phone-xhdpi-1024-dalvik-heap.mk)
 
 # WiFi BCMDHD
 #$(call inherit-product, hardware/broadcom/wlan/bcmdhd/firmware/bcm4330/device-bcm.mk)
