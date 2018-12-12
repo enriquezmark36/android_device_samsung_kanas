@@ -77,6 +77,11 @@ BOARD_CUSTOM_BT_CONFIG := device/samsung/kanas/bluetooth/libbt_vndcfg.txt
 ## Common Overrides
 USE_BLUETOOTH_BCM4343 :=
 
+# Power
+# This give 4 power profiles.
+# Comment this out to get the default behavior
+TARGET_POWERHAL_VARIANT := interactive
+
 # Kernel
 BOARD_KERNEL_CMDLINE := console=ttyS1,115200n8 androidboot.selinux=permissive androidboot.hardware=sc8830
 BOARD_KERNEL_PAGESIZE := 2048
