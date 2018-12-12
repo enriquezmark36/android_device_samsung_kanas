@@ -69,5 +69,5 @@ fw.max_users=5
 
 # zRAM
 ro.config.zram.compressor=lz4
-ro.config.zram.disksize=192M
+ro.config.zram.disksize=350M
 ro.config.swappiness=100
