@@ -45,7 +45,7 @@ The developer doesn't seem to have released his cm 13 ROM yet so I tried to make
 
 	<project path="vendor/samsung/kanas" name="enriquezmark36/android_vendor_samsung_kanas" remote="github" revision="cm-13.0"/>
 	<project path="device/samsung/kanas" name="enriquezmark36/android_device_samsung_kanas" remote="github" revision="cm-13.0"/>
-	<project path="kernel/samsung/kanas" name="enriquezmark36/android_kernel_samsung_kanas" remote="github" revision="yack-testing"/>
+	<project path="kernel/samsung/kanas" name="enriquezmark36/android_kernel_samsung_kanas" remote="github" revision="yack_testing"/>
 
 	<project path="external/stlport" name="LineageOS/android_external_stlport" revision="cm-13.0" remote="github" />
 	<project path="packages/apps/SamsungServiceMode" name="LineageOS/android_packages_apps_SamsungServiceMode" revision="cm-13.0" remote="github" />
