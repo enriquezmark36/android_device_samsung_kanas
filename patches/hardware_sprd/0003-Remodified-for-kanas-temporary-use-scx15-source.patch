@@ -1,9 +1,8 @@
-From ac501af20c9da0c071081d8d5f4a486767fd7e8d Mon Sep 17 00:00:00 2001
+From 0ca06bb148db8c733df0224e0fa370bc0d12054c Mon Sep 17 00:00:00 2001
 From: ih24n69 <muhammadihsan69@gmail.com>
 Date: Mon, 28 Aug 2017 01:25:53 +0700
-Subject: [PATCH 3/6] Remodified for kanas, temporary use scx15 source
+Subject: Remodified for kanas, temporary use scx15 source
 
-Change-Id: I8b8416d812faf244ef8f857a6fccf0b0c13e69ed
 Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
 ---
  audio/Android.mk                              |   6 +-
@@ -16,18 +15,18 @@ Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
  hwcomposer/scx15/Android.mk                   | 104 ++++++++++++------
  hwcomposer/scx15/SprdUtil.cpp                 |  20 +++-
  hwcomposer/scx15/sc8830/Android.mk            |  12 ++
+ libcamera/Android.mk                          |   6 +-
  libcamera/scx15/Camera.mk                     |  23 ++++
  libcamera/scx15/Camera2.mk                    |  23 ++++
  libcamera/scx15/Camera_Utest.mk               |  24 ++++
  libcamera/scx15/Camera_Utest2.mk              |  24 ++++
- libion_sprd/scx15/Android.mk                  |   2 +-
  libmemoryheapion/Android.mk                   |   6 +-
  libmemoryheapion/scx15/Android.mk             |   4 -
  libmemoryheapion/scx15/MemoryHeapIon.cpp      |   2 +-
  libstagefrighthw/Android.mk                   |   6 +-
  libstagefrighthw/scx15/Android.mk             |  13 +++
  omx_components/video/Android.mk               |   6 +-
- omx_components/video/avc_sprd/Android.mk      |  22 ++--
+ omx_components/video/avc_sprd/Android.mk      |  20 ++--
  .../video/avc_sprd/sc8830/dec/Android.mk      |  16 +++
  .../video/avc_sprd/scx15/Android.mk           |   6 +-
  .../video/avc_sprd/scx15/enc/Android.mk       |  13 +++
@@ -36,7 +35,7 @@ Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
  omx_components/video/vpx_sprd/Android.mk      |   8 +-
  .../video/vpx_sprd/sc8830/dec/Android.mk      |  16 +++
  power/Android.mk                              |   4 +
- 30 files changed, 313 insertions(+), 80 deletions(-)
+ 30 files changed, 314 insertions(+), 81 deletions(-)
 
 diff --git a/audio/Android.mk b/audio/Android.mk
 index 0658ad8..862b1dd 100644
@@ -97,7 +96,7 @@ index c0c55e2..361b3f3 100644
  endif
 +endif
 diff --git a/gralloc/sc8830/gralloc_priv.h b/gralloc/sc8830/gralloc_priv.h
-index 3ec274f..41adb5e 100644
+index 8764802..41d39a9 100644
 --- a/gralloc/sc8830/gralloc_priv.h
 +++ b/gralloc/sc8830/gralloc_priv.h
 @@ -54,6 +54,7 @@ enum {
@@ -125,7 +124,7 @@ index c0c55e2..fe1c814 100644
  endif
 +endif
 diff --git a/hwcomposer/sc8830/Android.mk b/hwcomposer/sc8830/Android.mk
-index f5dd666..340f74c 100644
+index 67873c5..81c53dc 100644
 --- a/hwcomposer/sc8830/Android.mk
 +++ b/hwcomposer/sc8830/Android.mk
 @@ -22,8 +22,6 @@ ifeq ($(USE_SPRD_HWCOMPOSER),true)
@@ -204,28 +203,6 @@ index 1e03968..bb0827a 100644
 -	LOCAL_CFLAGS += -DUSE_FB_HW_VSYNC
 +ifeq ($(DEVICE_USE_FB_HW_VSYNC),true)
 +LOCAL_CFLAGS += -DUSE_FB_HW_VSYNC
-+endif
-+
-+ifeq ($(DEVICE_WITH_GSP),true)
-+
-+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libcamera/sc8830/inc
-+
-+#LOCAL_CFLAGS += -DVIDEO_LAYER_USE_RGB
-+# PROCESS_VIDEO_USE_GSP : protecting sc8830 code
-+LOCAL_CFLAGS += -DPROCESS_VIDEO_USE_GSP
-+LOCAL_CFLAGS += -DGSP_OUTPUT_USE_YUV420
-+LOCAL_CFLAGS += -DGSP_SCALING_UP_TWICE
-+# LOCAL_CFLAGS += -D_DMA_COPY_OSD_LAYER
-+#
-+# if GSP has not IOMMU, DIRECT_DISPLAY_SINGLE_OSD_LAYER need contiguous physcial address;
-+# if GSP has IOMMU, we can open DIRECT_DISPLAY_SINGLE_OSD_LAYER.
-+ifeq ($(strip $(DEVICE_DIRECT_DISPLAY_SINGLE_OSD_LAYER)),true)
-+LOCAL_CFLAGS += -DDIRECT_DISPLAY_SINGLE_OSD_LAYER
-+endif
-+
-+ifeq ($(strip $(TARGET_BOARD_PLATFORM)),sc8830)
-+ifneq ($(strip $(DEVICE_GSP_NOT_SCALING_UP_TWICE)),true) # when on tshark, if cpy2_pa is exist, we dont support scaling-up-twice feature
-+endif
  endif
  
 -ifeq ($(strip $(DEVICE_WITH_GSP)),true)
@@ -240,19 +217,13 @@ index 1e03968..bb0827a 100644
 -	# DIRECT_DISPLAY_SINGLE_OSD_LAYER need contiguous physcial address.
 -	# At present, this condition cannot be satisfied.
 -        #LOCAL_CFLAGS += -DDIRECT_DISPLAY_SINGLE_OSD_LAYER
-+ifeq ($(TARGET_BOARD_PLATFORM),scx15)
-+LOCAL_CFLAGS += -DGSP_ADDR_TYPE_PHY
-+endif
-+
-+ifeq ($(strip $(SOC_SCX35)),true)
-+LOCAL_CFLAGS += -DGSP_ADDR_TYPE_PHY
-+endif
++ifeq ($(DEVICE_WITH_GSP),true)
  
 -	ifeq ($(strip $(TARGET_BOARD_PLATFORM)),sc8830)
 -	LOCAL_CFLAGS += -DGSP_ADDR_TYPE_PHY
 -        LOCAL_CLFAGS += -DHWC_SUPPORT
 -	endif
-+endif # DEVICE_WITH_GSP
++LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libcamera/sc8830/inc
  
 -	ifeq ($(strip $(TARGET_BOARD_PLATFORM)),scx15)
 -	LOCAL_CFLAGS += -DGSP_ADDR_TYPE_PHY
@@ -260,24 +231,52 @@ index 1e03968..bb0827a 100644
 -	#LOCAL_CFLAGS += -DGSP_BLEND_2_LAYERS
 -	#LOCAL_CFLAGS += -DGSP_ENDIAN_IMPROVEMENT
 -	endif
-+ifeq ($(DEVICE_PRIMARYPLANE_USE_RGB565),true)
-+LOCAL_CFLAGS += -DPRIMARYPLANE_USE_RGB565
++#LOCAL_CFLAGS += -DVIDEO_LAYER_USE_RGB
++# PROCESS_VIDEO_USE_GSP : protecting sc8830 code
++LOCAL_CFLAGS += -DPROCESS_VIDEO_USE_GSP
++LOCAL_CFLAGS += -DGSP_OUTPUT_USE_YUV420
++LOCAL_CFLAGS += -DGSP_SCALING_UP_TWICE
++# LOCAL_CFLAGS += -D_DMA_COPY_OSD_LAYER
++#
++# if GSP has not IOMMU, DIRECT_DISPLAY_SINGLE_OSD_LAYER need contiguous physcial address;
++# if GSP has IOMMU, we can open DIRECT_DISPLAY_SINGLE_OSD_LAYER.
++ifeq ($(strip $(DEVICE_DIRECT_DISPLAY_SINGLE_OSD_LAYER)),true)
++LOCAL_CFLAGS += -DDIRECT_DISPLAY_SINGLE_OSD_LAYER
  endif
  
 -ifeq ($(strip $(DEVICE_PRIMARYPLANE_USE_RGB565)), true)
 -	LOCAL_CFLAGS += -DPRIMARYPLANE_USE_RGB565
-+ifeq ($(DEVICE_OVERLAYPLANE_BORROW_PRIMARYPLANE_BUFFER),true)
-+LOCAL_CFLAGS += -DBORROW_PRIMARYPLANE_BUFFER
++ifeq ($(strip $(TARGET_BOARD_PLATFORM)),sc8830)
++ifneq ($(strip $(DEVICE_GSP_NOT_SCALING_UP_TWICE)),true) # when on tshark, if cpy2_pa is exist, we dont support scaling-up-twice feature
++endif
  endif
  
 -ifeq ($(strip $(DEVICE_OVERLAYPLANE_BORROW_PRIMARYPLANE_BUFFER)), true)
 -	LOCAL_CFLAGS += -DBORROW_PRIMARYPLANE_BUFFER
-+ifeq ($(DEVICE_DYNAMIC_RELEASE_PLANEBUFFER),true)
-+LOCAL_CFLAGS += -DDYNAMIC_RELEASE_PLANEBUFFER
++ifeq ($(TARGET_BOARD_PLATFORM),scx15)
++LOCAL_CFLAGS += -DGSP_ADDR_TYPE_PHY
  endif
  
 -ifeq ($(strip $(DEVICE_DYNAMIC_RELEASE_PLANEBUFFER)), true)
 -	LOCAL_CFLAGS += -DDYNAMIC_RELEASE_PLANEBUFFER
++ifeq ($(strip $(SOC_SCX35)),true)
++LOCAL_CFLAGS += -DGSP_ADDR_TYPE_PHY
++endif
++
++endif # DEVICE_WITH_GSP
++
++ifeq ($(DEVICE_PRIMARYPLANE_USE_RGB565),true)
++LOCAL_CFLAGS += -DPRIMARYPLANE_USE_RGB565
++endif
++
++ifeq ($(DEVICE_OVERLAYPLANE_BORROW_PRIMARYPLANE_BUFFER),true)
++LOCAL_CFLAGS += -DBORROW_PRIMARYPLANE_BUFFER
++endif
++
++ifeq ($(DEVICE_DYNAMIC_RELEASE_PLANEBUFFER),true)
++LOCAL_CFLAGS += -DDYNAMIC_RELEASE_PLANEBUFFER
++endif
++
 +# For Virtual Display
 +# HWC need do the Hardware copy and format convertion
 +# FORCE_ADJUST_ACCELERATOR: for a better performance of Virtual Display,
@@ -356,6 +355,24 @@ index b9c6767..94ff16d 100755
  LOCAL_ADDITIONAL_DEPENDENCIES += \
  	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr \
  
+diff --git a/libcamera/Android.mk b/libcamera/Android.mk
+index 9c0e62c..76b5687 100644
+--- a/libcamera/Android.mk
++++ b/libcamera/Android.mk
+@@ -26,9 +26,9 @@ include $(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM))
+ endif
+ 
+ ifeq ($(SOC_SCX35),true)
+-include $(call all-named-subdir-makefiles,sc8830)
++include $(call all-named-subdir-makefiles,scx15)
+ endif
+ 
+-ifeq ($(SOC_SCX35),true)
+-include $(call all-makefiles-under,scx15)
++ifeq ($(SOC_SCX30G_V2),true)
++include $(call all-makefiles-under,sc8830)
+ endif
+\ No newline at end of file
 diff --git a/libcamera/scx15/Camera.mk b/libcamera/scx15/Camera.mk
 index 1ab68a3..d67bb0f 100644
 --- a/libcamera/scx15/Camera.mk
@@ -522,19 +539,6 @@ index 1624b1a..8847b6f 100644
  LOCAL_ADDITIONAL_DEPENDENCIES += \
  	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
  
-diff --git a/libion_sprd/scx15/Android.mk b/libion_sprd/scx15/Android.mk
-index b9c7e1b..7bd637b 100644
---- a/libion_sprd/scx15/Android.mk
-+++ b/libion_sprd/scx15/Android.mk
-@@ -43,7 +43,7 @@ LOCAL_SHARED_LIBRARIES := \
- 
- LOCAL_POST_INSTALL_CMD := \
- 	$(hide) mkdir -p $(TARGET_OUT_SHARED_LIBRARIES); \
--	mv -f $(TARGET_OUT_SHARED_LIBRARIES)/$(LOCAL_MODULE).so $(TARGET_OUT_SHARED_LIBRARIES)/libion.so
-+	ln -sf $(LOCAL_MODULE).so $(TARGET_OUT_SHARED_LIBRARIES)/libion.so
- 
- include $(BUILD_SHARED_LIBRARY)
- 
 diff --git a/libmemoryheapion/Android.mk b/libmemoryheapion/Android.mk
 index 0d7a65a..862b1dd 100644
 --- a/libmemoryheapion/Android.mk
@@ -640,7 +644,7 @@ index c0c55e2..4b150a6 100644
 +include $(call all-makefiles-under,$(LOCAL_PATH))
  endif
 diff --git a/omx_components/video/avc_sprd/Android.mk b/omx_components/video/avc_sprd/Android.mk
-index 8c8980d..4cd9e3c 100644
+index 8ed5495..4cd9e3c 100644
 --- a/omx_components/video/avc_sprd/Android.mk
 +++ b/omx_components/video/avc_sprd/Android.mk
 @@ -24,15 +24,19 @@ include_makefiles := \
@@ -648,14 +652,12 @@ index 8c8980d..4cd9e3c 100644
  # TODO Sync sc8830 and scx15 encoder codes
  
 -#ifeq (sc8830,$(TARGET_BOARD_PLATFORM))
--#ifeq ($(SOC_SCX30G_V2),true) # For scx30g_v2 board (sc8830)
--#include_makefiles += $(call all-named-subdir-makefiles,scx30g_v2)
+-#ifeq ($(SOC_SCX30G_V2),true) # For scx30g2 board (sc8830)
+-#include_makefiles += $(call all-named-subdir-makefiles,scx30g2)
 -#else
 -#include_makefiles += $(call all-named-subdir-makefiles,sc8830)
 -#endif
 -#endif
--
--ifeq (true,$(SOC_SCX35))
 +ifeq (sc8830,$(TARGET_BOARD_PLATFORM))
 +ifeq ($(SOC_SCX35),true)
 +include_makefiles += $(call all-named-subdir-makefiles,scx15 sc8830/dec)
@@ -667,7 +669,8 @@ index 8c8980d..4cd9e3c 100644
 +endif
 +endif
 +endif
-+
+ 
+-ifeq (true,$(SOC_SCX35))
 +ifeq (scx15,$(TARGET_BOARD_PLATFORM))
  include_makefiles += $(call all-named-subdir-makefiles,scx15 sc8830/dec)
  endif
@@ -801,15 +804,15 @@ index e1fd351..f6be67a 100644
  	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
  
 diff --git a/omx_components/video/vpx_sprd/Android.mk b/omx_components/video/vpx_sprd/Android.mk
-index 2dfc084..9c784da 100644
+index 48d1a28..9c784da 100644
 --- a/omx_components/video/vpx_sprd/Android.mk
 +++ b/omx_components/video/vpx_sprd/Android.mk
 @@ -18,11 +18,5 @@
  LOCAL_PATH := $(call my-dir)
  
  ifneq (,$(filter scx15 sc8830,$(TARGET_BOARD_PLATFORM)))
--ifeq ($(SOC_SCX30G_V2),true) # For scx30g_v2 board (sc8830)
--include_makefiles += $(call all-named-subdir-makefiles,scx30g_v2)
+-ifeq ($(SOC_SCX30G_V2),true) # For scx30g2 board (sc8830)
+-include_makefiles += $(call all-named-subdir-makefiles,scx30g2)
 -else
 -include_makefiles += $(call all-named-subdir-makefiles,sc8830)
 +include $(call all-named-subdir-makefiles,sc8830)
@@ -872,5 +875,5 @@ index c807c9a..7b85b2f 100644
 +
 +endif # TARGET_POWERHAL_VARIANT
 -- 
-2.18.0
+2.19.1
 

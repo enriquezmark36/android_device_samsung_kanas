@@ -1,8 +1,7 @@
-From 445af586d8dedc7a273c52fe4d1a50cb143a8532 Mon Sep 17 00:00:00 2001
+From 9114fde573454e34e6d168f069fcf9e647ba2a7f Mon Sep 17 00:00:00 2001
 From: Mark Enriquez <enriquezmark36@gmail.com>
 Date: Fri, 24 Aug 2018 18:41:05 +0800
-Subject: [PATCH 6/6] OMX: sc8830: avc_dec: Increase input buffer size for
- 1080p videos
+Subject: OMX: sc8830: avc_dec: Increase input buffer size for 1080p videos
 
 This allows playback of some 1080p videos with large frame data size.
 But, you may still get an ion allocation error if it gets too large
@@ -39,5 +38,5 @@ index 354a098..9fbad92 100644
              if(port->mDef.nBufferSize < 256*1024)
                  port->mDef.nBufferSize = 256*1024;
 -- 
-2.18.0
+2.19.1
 

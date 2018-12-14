@@ -1,7 +1,7 @@
-From 2c0ab1185b7bb708c1a6b311ded933ed71d2f94c Mon Sep 17 00:00:00 2001
+From 6703a83e7ff445b5f041fb44c19c540cb59ce654 Mon Sep 17 00:00:00 2001
 From: ih24n69 <muhammadihsan69@gmail.com>
 Date: Tue, 4 Apr 2017 15:00:32 +0700
-Subject: [PATCH 2/6] make match with core 2
+Subject: make match with core 2
 
 ---
  gralloc/scx15/framebuffer_device.cpp | 6 +++---
@@ -34,5 +34,5 @@ index 99d7b52..cbfe434 100644
      else
      {
 -- 
-2.18.0
+2.19.1
 

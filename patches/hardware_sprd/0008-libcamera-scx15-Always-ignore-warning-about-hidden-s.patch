@@ -1,8 +1,8 @@
-From c1724ec4eaba3ca95d331ca04001d591a9b5b499 Mon Sep 17 00:00:00 2001
+From fe6d6dfe2f50ed3c229d636d0a5ec1bcbfd7f03b Mon Sep 17 00:00:00 2001
 From: Mark Enriquez <enriquezmark36@gmail.com>
 Date: Tue, 13 Nov 2018 19:43:50 +0800
-Subject: [PATCH 8/8] libcamera: scx15: Always ignore warning about hidden
- symbols referenced by DSO
+Subject: libcamera: scx15: Always ignore warning about hidden symbols
+ referenced by DSO
 
 When using some other toolchain that imposes a werror in the linking stage,
 this warning is treated as an error preventing a successfull build.
