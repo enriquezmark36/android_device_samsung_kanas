@@ -73,10 +73,6 @@ PRODUCT_PROPERTY_OVERRIDES += \
 PRODUCT_PACKAGES += \
        Snap
 
-# Modem
-PRODUCT_PACKAGES += \
-	modemd
-
 # MDNIE - modified for this device
 PRODUCT_PACKAGES += \
 	AdvancedDisplay-mod
