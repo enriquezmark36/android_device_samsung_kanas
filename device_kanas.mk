@@ -77,6 +77,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	AdvancedDisplay-mod
 
+# Memtrack
+PRODUCT_PACKAGES += \
+	memtrack.sc8830
+
 # ART device props
 PRODUCT_PROPERTY_OVERRIDES += \
 	dalvik.vm.dex2oat-filter=interpret-only \
