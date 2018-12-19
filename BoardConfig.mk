@@ -77,7 +77,7 @@ USE_BLUETOOTH_BCM4343 :=
 # Kernel
 BOARD_KERNEL_CMDLINE := console=ttyS1,115200n8 androidboot.selinux=permissive androidboot.hardware=sc8830
 BOARD_KERNEL_PAGESIZE := 2048
-TARGET_KERNEL_CONFIG := impasta_kanas_cm14_1_defconfig
+TARGET_KERNEL_CONFIG := impasta_kanas_lineage_15_defconfig
 TARGET_KERNEL_SOURCE := kernel/samsung/kanas
 ## Common overrides
 BOARD_KERNEL_SEPARATED_DT :=
