@@ -25,6 +25,7 @@ TARGET_BOARD_PLATFORM_GPU := mali-400 MP
 
 # Some magic
 SOC_SCX35 := true
+NO_SAMDOZE := true
 
 # Enable privacy guard's su
 WITH_SU := true
