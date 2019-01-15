@@ -1,0 +1,40 @@
+From ffd0ad5773ac519446021e101ffe7646ebb99a4a Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Sun, 13 Jan 2019 20:12:24 +0800
+Subject: [PATCH 2/2] scx35-common: opt-in SamsungDoze package
+
+Some devices does not have a proximity sensor to use all the
+features in the package. Though, I cannot test reliably whether
+this allows Doze (the deep doze not the light one).
+
+So I thought it might be best to make this opt-in, could opt-out
+by defining NO_SAMDOZE to be true in BoardConfig.mk or simillar file.
+
+Change-Id: I265ca22faad80d5d7329e41ef097ed4b9839b856
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ common.mk | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/common.mk b/common.mk
+index c714fc5..dce0ffa 100644
+--- a/common.mk
++++ b/common.mk
+@@ -115,9 +115,13 @@ PRODUCT_PACKAGES += \
+ 
+ # Packages
+ PRODUCT_PACKAGES += \
+-	SamsungDoze \
+ 	Jelly
+ 
++# Allow opt-out from SamsungDoze, since not all devices have prox. sensor
++ifneq ($(strip $(NO_SAMDOZE)),true)
++PRODUCT_PACKAGES += SamsungDoze
++endif
++
+ # Lights
+ PRODUCT_PACKAGES += \
+ 	lights.sc8830
+-- 
+2.20.1
+
