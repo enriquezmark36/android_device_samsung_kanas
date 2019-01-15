@@ -1,0 +1,82 @@
+From 2b6ec3091b8f424b9e2512544f6757e0595cca81 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Sat, 15 Dec 2018 18:07:36 +0800
+Subject: [PATCH 10/11] libcamera: scx15: forward port old camerainfo
+
+Reappropiated for scx15 from commit 6f56e9da2e3c52889e8f1b0adb62664e61e0ce40
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+
+Change-Id: I81ba9c3686e24f215d2cd6e67cf7fcd83fcf9a13
+---
+ .../sc8830/inc/SprdCameraHardwareInterface.h  | 25 +++++++++++++++++--
+ .../src/SprdCameraHardwareInterface.cpp       |  4 +--
+ 2 files changed, 25 insertions(+), 4 deletions(-)
+
+diff --git a/libcamera/scx15/sc8830/inc/SprdCameraHardwareInterface.h b/libcamera/scx15/sc8830/inc/SprdCameraHardwareInterface.h
+index 2eea21e..b141d86 100644
+--- a/libcamera/scx15/sc8830/inc/SprdCameraHardwareInterface.h
++++ b/libcamera/scx15/sc8830/inc/SprdCameraHardwareInterface.h
+@@ -53,6 +53,27 @@ typedef struct sprd_camera_memory {
+ 	bool busy_flag;
+ }sprd_camera_memory_t;
+ 
++typedef struct mCameraInfo {
++	/**
++	 * The direction that the camera faces to. It should be CAMERA_FACING_BACK
++	 * or CAMERA_FACING_FRONT.
++	 */
++	int facing;
++
++	/**
++	 * The orientation of the camera image. The value is the angle that the
++	 * camera image needs to be rotated clockwise so it shows correctly on the
++	 * display in its natural orientation. It should be 0, 90, 180, or 270.
++	 *
++	 * For example, suppose a device has a naturally tall screen. The
++	 * back-facing camera sensor is mounted in landscape. You are looking at
++	 * the screen. If the top side of the camera sensor is aligned with the
++	 * right edge of the screen in natural orientation, the value should be
++	 * 90. If the top side of a front-facing camera sensor is aligned with the
++	 * right of the screen, the value should be 270.
++	 */
++	int orientation;
++}oldCameraInfo;
+ 
+ #define MAX_SUB_RAWHEAP_NUM 10
+ 
+@@ -108,8 +129,8 @@ public:
+ 	static int                   getPropertyAtv();
+ 	static int                   getNumberOfCameras();
+ 	static int                   getCameraInfo(int cameraId, struct camera_info *cameraInfo);
+-	static const CameraInfo      kCameraInfo[];
+-	static const CameraInfo      kCameraInfo3[];
++	static const mCameraInfo     kCameraInfo[];
++	static const mCameraInfo     kCameraInfo3[];
+ 	static int                   switch_monitor_thread_init(void *p_data);
+ 	static int                   switch_monitor_thread_deinit(void *p_data);
+ 	static void*                 switch_monitor_thread_proc(void *p_data);
+diff --git a/libcamera/scx15/sc8830/src/SprdCameraHardwareInterface.cpp b/libcamera/scx15/sc8830/src/SprdCameraHardwareInterface.cpp
+index b6eac0f..fc8badc 100644
+--- a/libcamera/scx15/sc8830/src/SprdCameraHardwareInterface.cpp
++++ b/libcamera/scx15/sc8830/src/SprdCameraHardwareInterface.cpp
+@@ -105,7 +105,7 @@ bool gIsApctRead = false;
+ 
+ gralloc_module_t const* SprdCameraHardware::mGrallocHal = NULL;
+ 
+-const CameraInfo SprdCameraHardware::kCameraInfo[] = {
++const oldCameraInfo SprdCameraHardware::kCameraInfo[] = {
+ 	{
+ 		CAMERA_FACING_BACK,
+ 		90,/*orientation*/
+@@ -118,7 +118,7 @@ const CameraInfo SprdCameraHardware::kCameraInfo[] = {
+ #endif
+ };
+ 
+-const CameraInfo SprdCameraHardware::kCameraInfo3[] = {
++const oldCameraInfo SprdCameraHardware::kCameraInfo3[] = {
+ 	{
+ 		CAMERA_FACING_BACK,
+ 		90,/*orientation*/
+-- 
+2.19.2
+
