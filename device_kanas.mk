@@ -93,7 +93,6 @@ MEDIA_CONFIGS := \
 	device/samsung/kanas/configs/media/media_profiles.xml
 
 AUDIO_CONFIGS := \
-	device/samsung/kanas/configs/audio/audio_effects_vendor.conf \
 	device/samsung/kanas/configs/audio/audio_hw.xml \
 	device/samsung/kanas/configs/audio/audio_para \
 	device/samsung/kanas/configs/audio/audio_policy.conf\
