@@ -75,6 +75,7 @@ BOARD_RIL_CLASS += ../../../device/samsung/kanas/ril
 
 # Bluetooth
 BOARD_CUSTOM_BT_CONFIG := device/samsung/kanas/bluetooth/libbt_vndcfg.txt
+BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR := device/samsung/kanas/bluetooth
 ## Common Overrides
 USE_BLUETOOTH_BCM4343 :=
 
