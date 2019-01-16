@@ -52,6 +52,31 @@ public class SandroidTeamRIL extends SamsungSPRDRIL implements CommandsInterface
     }
 
     @Override
+    public void setUiccSubscription(int appIndex, boolean activate, Message result) {
+        if (RILJ_LOGD) riljLog("setUiccSubscription" + " " + appIndex);
+
+        // Fake response (note: should be sent before mSubscriptionStatusRegistrants or
+        // SubscriptionManager might not set the readiness correctly)
+        AsyncResult.forMessage(result, 0, null);
+        result.sendToTarget();
+
+        // TODO: Actually turn off/on the radio (and don't fight with the ServiceStateTracker)
+        if (activate == true /* ACTIVATE */) {
+            // Subscription changed: enabled
+            if (mSubscriptionStatusRegistrants != null) {
+                mSubscriptionStatusRegistrants.notifyRegistrants(
+                        new AsyncResult (null, new int[] {1}, null));
+            }
+        } else if (activate == false /* DEACTIVATE */) {
+            // Subscription changed: disabled
+            if (mSubscriptionStatusRegistrants != null) {
+                mSubscriptionStatusRegistrants.notifyRegistrants(
+                        new AsyncResult (null, new int[] {0}, null));
+            }
+        }
+    }
+
+    @Override
     public void startLceService(int reportIntervalMs, boolean pullMode, Message response) {
         riljLog("Link Capacity Estimate (LCE) service is not supported!");
         if (response != null) {
@@ -68,6 +93,20 @@ public class SandroidTeamRIL extends SamsungSPRDRIL implements CommandsInterface
             AsyncResult.forMessage(result, null, new CommandException(
                     CommandException.Error.REQUEST_NOT_SUPPORTED));
             result.sendToTarget();
+        }
+    }
+
+    @Override
+    protected void notifyRegistrantsRilConnectionChanged(int rilVer) {
+        super.notifyRegistrantsRilConnectionChanged(rilVer);
+        if (rilVer != -1) {
+            if (mInstanceId != null) {
+                riljLog("Enable simultaneous data/voice on Multi-SIM");
+                invokeOemRilRequestSprd((byte) 3, (byte) 1, null);
+            } else {
+                riljLog("Set data subscription to allow data in either SIM slot when using single SIM mode");
+                setDataAllowed(true, null);
+            }
         }
     }
 
@@ -152,5 +191,10 @@ public class SandroidTeamRIL extends SamsungSPRDRIL implements CommandsInterface
         }
 
         return response;
+    }
+
+
+    private void invokeOemRilRequestSprd(byte key, byte value, Message response) {
+        invokeOemRilRequestRaw(new byte[] { 'S', 'P', 'R', 'D', key, value }, response);
     }
 }
