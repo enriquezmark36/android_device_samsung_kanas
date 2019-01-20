@@ -21,6 +21,10 @@ $(call inherit-product, vendor/samsung/kanas/kanas-vendor.mk)
 # Add our overlay first as a matter of precedence
 DEVICE_PACKAGE_OVERLAYS += device/samsung/kanas/overlay
 
+# ART prop overrides
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
+	dalvik.vm.usejit=false \
+
 # Inherit from scx35-common device configuration
 $(call inherit-product, device/samsung/scx35-common/common.mk)
 
@@ -83,8 +87,8 @@ PRODUCT_PACKAGES += \
 
 # ART device props
 PRODUCT_PROPERTY_OVERRIDES += \
-	dalvik.vm.dex2oat-filter=interpret-only \
-	dalvik.vm.image-dex2oat-filter=speed
+	dalvik.vm.dex2oat-filter=speed \
+	dalvik.vm.image-dex2oat-filter=speed \
 
 # Configuration overrides: these are not bundled with an Android.mk since they
 # need to supersede/override all instances.
