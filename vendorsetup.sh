@@ -18,6 +18,9 @@
 # In particular, you can add lunch options with the add_lunch_combo
 # function: add_lunch_combo generic-eng
 
+# Apply patches first
+sh device/samsung/kanas/patches/apply.sh;
+
 for targetBuildVariant in eng user userdebug
 do
   add_lunch_combo lineage_kanas-${targetBuildVariant}
