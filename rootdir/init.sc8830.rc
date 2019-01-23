@@ -148,6 +148,9 @@ on early-boot
     chown system root /proc/cpwcn/dsp
 
 on boot
+    # Swap one page at a time (default 3)
+    write /proc/sys/vm/page-cluster 0
+
     chown system system /sys/module/mali/parameters/gpu_cur_freq
     chown system system /sys/module/mali/parameters/gpufreq_max_limit
     chown system system /sys/module/mali/parameters/gpufreq_min_limit
