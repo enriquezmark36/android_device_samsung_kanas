@@ -19,4 +19,8 @@
 
 #define BTM_DEF_LOCAL_NAME   "Samsung Galaxy Core 2"
 
+/* Defined if the kernel does not have support for CLOCK_BOOTTIME_ALARM */
+#define KERNEL_MISSING_CLOCK_BOOTTIME_ALARM TRUE
+
+
 #endif
