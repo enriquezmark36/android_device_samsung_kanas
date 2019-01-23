@@ -72,6 +72,5 @@ fw.max_users=3
 config.disable_atlas=true
 
 # zRAM
-ro.config.swappiness=100
-ro.config.zram.compressor=lz4hc
-ro.config.zram.disksize=700M
+ro.config.zram.compressor=lz4
+ro.config.zram.disksize=350M
