@@ -1,0 +1,1205 @@
+From f3b66762e17433a5472c9fde7c9b535b1433d127 Mon Sep 17 00:00:00 2001
+From: ih24n69 <muhammadihsan69@gmail.com>
+Date: Thu, 30 Mar 2017 13:46:27 +0700
+Subject: Squashed commit: use scx15 source
+
+This is the entirety of patches that made it possible to run android marshmallow
+on SM-G355H (not sure on other SM-G355** devices though).
+
+Everything has been put as it is in the previous branch. Nothing lost or added.
+
+Since ih24n69 did most of the work, ih24n69 deserves to be the author of this commit.
+
+But seriously since Nougat, most of the initial patchset has been reduced to this.
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ audio/Android.mk                              |   4 +
+ gralloc/Android.mk                            |   4 +
+ gralloc/scx15/dump_bmp.cpp                    |   2 +
+ gralloc/scx15/gralloc_priv.h                  |  13 ++
+ hwcomposer/Android.mk                         |   4 +
+ hwcomposer/scx15/Android.mk                   |  19 +-
+ hwcomposer/scx15/sc8830/Android.mk            |  11 +-
+ libcamera/Android.mk                          |   2 +
+ libcamera/scx15/Camera.mk                     |  11 +-
+ libcamera/scx15/Camera2.mk                    |  11 +-
+ libcamera/scx15/Camera_Utest.mk               |  11 +-
+ libcamera/scx15/Camera_Utest2.mk              |  11 +-
+ libion_sprd/scx15/Android.mk                  |  34 ++-
+ .../scx15/kernel-headers/kanas/linux/ion.h    | 204 ++++++++++++++++++
+ libmemoryheapion/scx15/Android.mk             |  11 +-
+ .../scx15/kernel-headers/linux/ion.h          | 204 ++++++++++++++++++
+ .../scx15/kernel-headers/video/ion_sprd.h     |  99 +++++++++
+ libstagefrighthw/scx15/Android.mk             |  11 +-
+ omx_components/video/avc_sprd/Android.mk      |   8 +-
+ .../video/avc_sprd/scx15/dec/Android.mk       |  15 +-
+ .../avc_sprd/scx15/dec/SPRDAVCDecoder.cpp     |   7 +-
+ .../video/avc_sprd/scx15/dec/avc_dec_api.h    |   4 +
+ .../video/avc_sprd/scx15/enc/Android.mk       |  14 +-
+ omx_components/video/m4v_h263_sprd/Android.mk |   8 +-
+ .../video/m4v_h263_sprd/scx15/dec/Android.mk  |   9 +-
+ .../video/m4v_h263_sprd/scx15/enc/Android.mk  |   4 +
+ .../scx15/enc/SPRDMPEG4Encoder.cpp            |   4 +
+ .../scx15/enc/m4v_h263_enc_api.h              |   4 +
+ omx_components/video/vpx_sprd/Android.mk      |   6 +-
+ .../video/vpx_sprd/scx15/dec/Android.mk       |   9 +-
+ 30 files changed, 729 insertions(+), 29 deletions(-)
+ create mode 100644 libion_sprd/scx15/kernel-headers/kanas/linux/ion.h
+ create mode 100644 libmemoryheapion/scx15/kernel-headers/linux/ion.h
+ create mode 100644 libmemoryheapion/scx15/kernel-headers/video/ion_sprd.h
+
+diff --git a/audio/Android.mk b/audio/Android.mk
+index 2580224..3e59b4b 100644
+--- a/audio/Android.mk
++++ b/audio/Android.mk
+@@ -20,5 +20,9 @@ supported_boards := \
+ 	scx15 \
+ 
+ ifneq (,$(filter $(supported_boards),$(TARGET_BOARD_PLATFORM)))
++ifeq ($(SOC_SCX35),true)
++include $(call all-named-subdir-makefiles, scx15)
++else
+ include $(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM))
+ endif
++endif
+diff --git a/gralloc/Android.mk b/gralloc/Android.mk
+index 9037fa5..f5c852e 100644
+--- a/gralloc/Android.mk
++++ b/gralloc/Android.mk
+@@ -23,5 +23,9 @@ supported_boards := \
+ 	sc8810 \
+ 
+ ifneq (,$(filter $(supported_boards),$(TARGET_BOARD_PLATFORM)))
++ifeq ($(SOC_SCX35),true)
++include $(call all-named-subdir-makefiles,scx15)
++else
+ include $(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM))
+ endif
++endif
+diff --git a/gralloc/scx15/dump_bmp.cpp b/gralloc/scx15/dump_bmp.cpp
+index 7a2b40e..be3d982 100644
+--- a/gralloc/scx15/dump_bmp.cpp
++++ b/gralloc/scx15/dump_bmp.cpp
+@@ -8,6 +8,8 @@
+ #include <linux/fb.h>
+ #include <sys/stat.h>
+ 
++#include "gralloc_priv.h"
++
+ 
+ #define BI_RGB          0
+ #define BI_BITFIELDS    3
+diff --git a/gralloc/scx15/gralloc_priv.h b/gralloc/scx15/gralloc_priv.h
+index 531ff22..dbf2efb 100644
+--- a/gralloc/scx15/gralloc_priv.h
++++ b/gralloc/scx15/gralloc_priv.h
+@@ -42,6 +42,19 @@ enum {
+     GRALLOC_USAGE_CAMERA_BUFFER         = 0x04000000,
+ };
+ 
++enum {
++    HAL_PIXEL_FORMAT_YCbCr_422_P        = 0x12,
++    HAL_PIXEL_FORMAT_YCbCr_420_P        = 0x13,
++    HAL_PIXEL_FORMAT_YCbCr_420_I        = 0x15,
++    HAL_PIXEL_FORMAT_CbYCrY_422_I       = 0x16,
++    HAL_PIXEL_FORMAT_CbYCrY_420_I       = 0x17,
++    HAL_PIXEL_FORMAT_YCbCr_420_SP_TILED = 0x18,
++    HAL_PIXEL_FORMAT_YCbCr_420_SP       = 0x19,
++    HAL_PIXEL_FORMAT_YCrCb_420_SP_TILED = 0x1A,
++    HAL_PIXEL_FORMAT_YCrCb_422_SP       = 0x1B,
++    HAL_PIXEL_FORMAT_YCrCb_420_P        = 0x1C,
++};
++
+ /* NOTE:
+  * If your framebuffer device driver is integrated with UMP, you will have to
+  * change this IOCTL definition to reflect your integration with the framebuffer
+diff --git a/hwcomposer/Android.mk b/hwcomposer/Android.mk
+index 011054b..9aec7b7 100644
+--- a/hwcomposer/Android.mk
++++ b/hwcomposer/Android.mk
+@@ -22,5 +22,9 @@ supported_boards := \
+ 	scx15 \
+ 
+ ifneq (,$(filter $(supported_boards),$(TARGET_BOARD_PLATFORM)))
++ifeq ($(SOC_SCX35),true)
++include $(call all-named-subdir-makefiles,scx15 HWCUtils)
++else
+ include $(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM) HWCUtils)
+ endif
++endif
+diff --git a/hwcomposer/scx15/Android.mk b/hwcomposer/scx15/Android.mk
+index f9ce33b..cffd68b 100644
+--- a/hwcomposer/scx15/Android.mk
++++ b/hwcomposer/scx15/Android.mk
+@@ -61,7 +61,16 @@ LOCAL_SRC_FILES := \
+ 	SprdUtil.cpp \
+ 	dump.cpp \
+ 
++# Use scx15 for kanas/kanas3g
++ifeq ($(strip $(SOC_SCX35)),true)
+ LOCAL_C_INCLUDES := \
++	$(LOCAL_PATH)/../../gralloc/scx15
++else
++LOCAL_C_INCLUDES := \
++	$(LOCAL_PATH)/../../gralloc/$(TARGET_BOARD_PLATFORM)
++endif
++
++LOCAL_C_INCLUDES += \
+ 	$(LOCAL_PATH)/../../gralloc/$(TARGET_BOARD_PLATFORM) \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video/ \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/
+@@ -88,8 +97,12 @@ DEVICE_OVERLAYPLANE_BORROW_PRIMARYPLANE_BUFFER := true
+ endif
+ 
+ ifeq ($(TARGET_BOARD_PLATFORM),sc8830)
+-DEVICE_DIRECT_DISPLAY_SINGLE_OSD_LAYER := true
+ DEVICE_USE_FB_HW_VSYNC := true
++
++# Kanas/kanas3g doesn't have this flag
++ifneq ($(strip $(SOC_SCX35)),true)
++DEVICE_DIRECT_DISPLAY_SINGLE_OSD_LAYER := true
++endif
+ endif
+ 
+ ifeq ($(TARGET_BOARD_PLATFORM),scx15)
+@@ -127,6 +140,10 @@ ifeq ($(TARGET_BOARD_PLATFORM),scx15)
+ LOCAL_CFLAGS += -DGSP_ADDR_TYPE_PHY
+ endif
+ 
++ifeq ($(strip $(SOC_SCX35)),true)
++LOCAL_CFLAGS += -DGSP_ADDR_TYPE_PHY
++endif
++
+ endif # DEVICE_WITH_GSP
+ 
+ ifeq ($(DEVICE_PRIMARYPLANE_USE_RGB565),true)
+diff --git a/hwcomposer/scx15/sc8830/Android.mk b/hwcomposer/scx15/sc8830/Android.mk
+index ca84533..1a7ebfe 100755
+--- a/hwcomposer/scx15/sc8830/Android.mk
++++ b/hwcomposer/scx15/sc8830/Android.mk
+@@ -37,8 +37,17 @@ LOCAL_SHARED_LIBRARIES := liblog
+ LOCAL_SRC_FILES := \
+ 	gsp_hal.cpp \
+ 
++
++# Force scx15 on kanas/kanas3g
++ifeq ($(strip $(SOC_SCX35)),true)
++LOCAL_C_INCLUDES += \
++	$(LOCAL_PATH)/../../../gralloc/scx15
++else
++LOCAL_C_INCLUDES += \
++	$(LOCAL_PATH)/../../../gralloc/$(TARGET_BOARD_PLATFORM)
++endif
++
+ LOCAL_C_INCLUDES += \
+-	$(LOCAL_PATH)/../../../gralloc/$(TARGET_BOARD_PLATFORM) \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video/ \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/ \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/ \
+diff --git a/libcamera/Android.mk b/libcamera/Android.mk
+index a23f84e..c0b810b 100644
+--- a/libcamera/Android.mk
++++ b/libcamera/Android.mk
+@@ -26,6 +26,8 @@ supported_boards := \
+ ifneq (,$(filter $(supported_boards),$(TARGET_BOARD_PLATFORM)))
+ ifeq ($(SOC_SCX30G_V2),true)
+ include $(call all-named-subdir-makefiles,scx30g2)
++else ifeq ($(SOC_SCX35),true)
++include $(call all-named-subdir-makefiles,scx15)
+ else
+ include $(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM))
+ endif # SOC_SCX30G_V2
+diff --git a/libcamera/scx15/Camera.mk b/libcamera/scx15/Camera.mk
+index f345353..1bafee8 100644
+--- a/libcamera/scx15/Camera.mk
++++ b/libcamera/scx15/Camera.mk
+@@ -12,6 +12,7 @@ sc8830like=1
+ endif
+ 
+ ifeq ($(strip $(sc8830like)),1)
++
+ LOCAL_C_INCLUDES := \
+ 	$(LOCAL_PATH)/vsp/sc8830/inc	\
+ 	$(LOCAL_PATH)/vsp/sc8830/src \
+@@ -28,7 +29,15 @@ LOCAL_C_INCLUDES := \
+ 	system/media/camera/include \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/source/include \
+-	hardware/sprd/gralloc/$(TARGET_BOARD_PLATFORM) \
++
++# kanas/kanas3g uses the scx15 version
++ifeq ($(strip $(SOC_SCX35)),true)
++LOCAL_C_INCLUDES += \
++	hardware/sprd/gralloc/scx15
++else
++LOCAL_C_INCLUDES += \
++	hardware/sprd/gralloc/$(TARGET_BOARD_PLATFORM)
++endif
+ 
+ LOCAL_ADDITIONAL_DEPENDENCIES += \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr \
+diff --git a/libcamera/scx15/Camera2.mk b/libcamera/scx15/Camera2.mk
+index 536c4a3..88765ae 100644
+--- a/libcamera/scx15/Camera2.mk
++++ b/libcamera/scx15/Camera2.mk
+@@ -12,6 +12,7 @@ sc8830like=1
+ endif
+ 
+ ifeq ($(strip $(sc8830like)),1)
++
+ LOCAL_C_INCLUDES := \
+ 	$(LOCAL_PATH)/vsp/sc8830/inc	\
+ 	$(LOCAL_PATH)/vsp/sc8830/src \
+@@ -28,7 +29,15 @@ LOCAL_C_INCLUDES := \
+ 	system/media/camera/include \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/source/include \
+-	hardware/sprd/gralloc/$(TARGET_BOARD_PLATFORM) \
++
++# Again, kanas/kanas3g uses the scx15 despite being tagged as sc8830
++ifeq ($(strip $(SOC_SCX35)),true)
++LOCAL_C_INCLUDES += \
++	hardware/sprd/gralloc/scx15
++else
++LOCAL_C_INCLUDES += \
++	hardware/sprd/gralloc/$(TARGET_BOARD_PLATFORM)
++endif
+ 
+ LOCAL_ADDITIONAL_DEPENDENCIES += \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr \
+diff --git a/libcamera/scx15/Camera_Utest.mk b/libcamera/scx15/Camera_Utest.mk
+index ce29656..77e5b50 100644
+--- a/libcamera/scx15/Camera_Utest.mk
++++ b/libcamera/scx15/Camera_Utest.mk
+@@ -12,6 +12,7 @@ sc8830like=1
+ endif
+ 
+ ifeq ($(strip $(sc8830like)),1)
++
+ LOCAL_C_INCLUDES := \
+ 	$(LOCAL_PATH)/vsp/sc8830/inc	\
+ 	$(LOCAL_PATH)/vsp/sc8830/src \
+@@ -28,7 +29,15 @@ LOCAL_C_INCLUDES := \
+ 	system/media/camera/include \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/source/include \
+-	hardware/sprd/gralloc/$(TARGET_BOARD_PLATFORM) \
++
++# Force scx15 for kanas
++ifeq ($(strip $(SOC_SCX35)),true)
++LOCAL_C_INCLUDES += \
++	hardware/sprd/gralloc/scx15
++else
++LOCAL_C_INCLUDES += \
++	hardware/sprd/gralloc/$(TARGET_BOARD_PLATFORM)
++endif
+ 
+ LOCAL_ADDITIONAL_DEPENDENCIES += \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr \
+diff --git a/libcamera/scx15/Camera_Utest2.mk b/libcamera/scx15/Camera_Utest2.mk
+index a3ec2af..030992e 100644
+--- a/libcamera/scx15/Camera_Utest2.mk
++++ b/libcamera/scx15/Camera_Utest2.mk
+@@ -12,6 +12,7 @@ sc8830like=1
+ endif
+ 
+ ifeq ($(strip $(sc8830like)),1)
++
+ LOCAL_C_INCLUDES := \
+ 	$(LOCAL_PATH)/vsp/sc8830/inc	\
+ 	$(LOCAL_PATH)/vsp/sc8830/src \
+@@ -28,7 +29,15 @@ LOCAL_C_INCLUDES := \
+ 	system/media/camera/include \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/source/include \
+-	hardware/sprd/gralloc/$(TARGET_BOARD_PLATFORM) \
++
++# Force scx15 version for kanas/kanas3g
++ifeq ($(strip $(SOC_SCX35)),true)
++LOCAL_C_INCLUDES += \
++	hardware/sprd/gralloc/scx15
++else
++LOCAL_C_INCLUDES += \
++	hardware/sprd/gralloc/$(TARGET_BOARD_PLATFORM)
++endif
+ 
+ LOCAL_ADDITIONAL_DEPENDENCIES += \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr \
+diff --git a/libion_sprd/scx15/Android.mk b/libion_sprd/scx15/Android.mk
+index 11c786e..48bd12f 100644
+--- a/libion_sprd/scx15/Android.mk
++++ b/libion_sprd/scx15/Android.mk
+@@ -23,16 +23,25 @@ LOCAL_MODULE := libion_sprd
+ 
+ LOCAL_PROPRIETARY_MODULE := true
+ 
+-LOCAL_ADDITIONAL_DEPENDENCIES += \
+-	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+-
+ LOCAL_C_INCLUDES += \
+ 	$(LOCAL_PATH)/include \
+ 	$(LOCAL_PATH)/kernel-headers \
+-	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include \
+ 
+ LOCAL_EXPORT_C_INCLUDE_DIRS := \
+-	$(LOCAL_C_INCLUDES) \
++	$(LOCAL_C_INCLUDES)
++
++# Force this specific version of ion.h for compilation
++ifeq ($(strip $(SOC_SCX35)),true)
++LOCAL_C_INCLUDES += \
++	$(LOCAL_PATH)/kernel-headers/kanas
++else
++LOCAL_C_INCLUDES += \
++	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_EXPORT_C_INCLUDE_DIRS += \
++	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_ADDITIONAL_DEPENDENCIES += \
++	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
++endif
+ 
+ LOCAL_SRC_FILES := \
+ 	ion.c
+@@ -53,13 +62,20 @@ include $(CLEAR_VARS)
+ 
+ LOCAL_MODULE := iontest_sprd
+ 
+-LOCAL_ADDITIONAL_DEPENDENCIES += \
+-	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+-
+ LOCAL_C_INCLUDES += \
+ 	$(LOCAL_PATH)/include \
+ 	$(LOCAL_PATH)/kernel-headers \
+-	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++
++# Force this specific version of ion.h
++# There are some different versions of ion.h, e.g Google's common kernel source
++# For now, this only has been tested on kanas.
++ifeq ($(strip $(SOC_SCX35)),true)
++LOCAL_C_INCLUDES += $(LOCAL_PATH)/kernel-headers/kanas
++else
++LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_ADDITIONAL_DEPENDENCIES += \
++	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
++endif
+ 
+ LOCAL_SRC_FILES := \
+ 	ion.c \
+diff --git a/libion_sprd/scx15/kernel-headers/kanas/linux/ion.h b/libion_sprd/scx15/kernel-headers/kanas/linux/ion.h
+new file mode 100644
+index 0000000..bc04d1d
+--- /dev/null
++++ b/libion_sprd/scx15/kernel-headers/kanas/linux/ion.h
+@@ -0,0 +1,204 @@
++/*
++ * include/linux/ion.h
++ *
++ * Copyright (C) 2011 Google, Inc.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef _LINUX_ION_H
++#define _LINUX_ION_H
++
++#include <linux/types.h>
++
++/**
++ * enum ion_heap_types - list of all possible types of heaps
++ * @ION_HEAP_TYPE_SYSTEM:	 memory allocated via vmalloc
++ * @ION_HEAP_TYPE_SYSTEM_CONTIG: memory allocated via kmalloc
++ * @ION_HEAP_TYPE_CARVEOUT:	 memory allocated from a prereserved
++ * 				 carveout heap, allocations are physically
++ * 				 contiguous
++ * @ION_HEAP_TYPE_DMA:		 memory allocated via DMA API
++ * @ION_NUM_HEAPS:		 helper for iterating over heaps, a bit mask
++ * 				 is used to identify the heaps, so only 32
++ * 				 total heap types are supported
++ */
++enum ion_heap_type {
++	ION_HEAP_TYPE_SYSTEM,
++	ION_HEAP_TYPE_SYSTEM_CONTIG,
++	ION_HEAP_TYPE_CARVEOUT,
++	ION_HEAP_TYPE_CHUNK,
++	ION_HEAP_TYPE_DMA,
++	ION_HEAP_TYPE_CUSTOM, /* must be last so device specific heaps always
++				 are at the end of this enum */
++	ION_NUM_HEAPS = 16,
++};
++
++#define ION_HEAP_SYSTEM_MASK		(1 << ION_HEAP_TYPE_SYSTEM)
++#define ION_HEAP_SYSTEM_CONTIG_MASK	(1 << ION_HEAP_TYPE_SYSTEM_CONTIG)
++#define ION_HEAP_CARVEOUT_MASK		(1 << ION_HEAP_TYPE_CARVEOUT)
++#define ION_HEAP_TYPE_DMA_MASK		(1 << ION_HEAP_TYPE_DMA)
++
++#define ION_NUM_HEAP_IDS		sizeof(unsigned int) * 8
++
++/**
++ * allocation flags - the lower 16 bits are used by core ion, the upper 16
++ * bits are reserved for use by the heaps themselves.
++ */
++#define ION_FLAG_CACHED 1		/* mappings of this buffer should be
++					   cached, ion will do cache
++					   maintenance when the buffer is
++					   mapped for dma */
++#define ION_FLAG_CACHED_NEEDS_SYNC 2	/* mappings of this buffer will created
++					   at mmap time, if this is set
++					   caches must be managed manually */
++
++
++/**
++ * DOC: Ion Userspace API
++ *
++ * create a client by opening /dev/ion
++ * most operations handled via following ioctls
++ *
++ */
++
++/**
++ * struct ion_allocation_data - metadata passed from userspace for allocations
++ * @len:		size of the allocation
++ * @align:		required alignment of the allocation
++ * @heap_id_mask:	mask of heap ids to allocate from
++ * @flags:		flags passed to heap
++ * @handle:		pointer that will be populated with a cookie to use to 
++ *			refer to this allocation
++ *
++ * Provided by userspace as an argument to the ioctl
++ */
++struct ion_allocation_data {
++	size_t len;
++	size_t align;
++	unsigned int heap_mask;
++	unsigned int flags;
++	struct ion_handle *handle;
++};
++
++/**
++ * struct ion_fd_data - metadata passed to/from userspace for a handle/fd pair
++ * @handle:	a handle
++ * @fd:		a file descriptor representing that handle
++ *
++ * For ION_IOC_SHARE or ION_IOC_MAP userspace populates the handle field with
++ * the handle returned from ion alloc, and the kernel returns the file
++ * descriptor to share or map in the fd field.  For ION_IOC_IMPORT, userspace
++ * provides the file descriptor and the kernel returns the handle.
++ */
++struct ion_fd_data {
++	struct ion_handle *handle;
++	int fd;
++};
++
++/**
++ * struct ion_handle_data - a handle passed to/from the kernel
++ * @handle:	a handle
++ */
++struct ion_handle_data {
++	struct ion_handle *handle;
++};
++
++/**
++ * struct ion_custom_data - metadata passed to/from userspace for a custom ioctl
++ * @cmd:	the custom ioctl function to call
++ * @arg:	additional data to pass to the custom ioctl, typically a user
++ *		pointer to a predefined structure
++ *
++ * This works just like the regular cmd and arg fields of an ioctl.
++ */
++struct ion_custom_data {
++	unsigned int cmd;
++	unsigned long arg;
++};
++
++#define ION_IOC_MAGIC		'I'
++
++/**
++ * DOC: ION_IOC_ALLOC - allocate memory
++ *
++ * Takes an ion_allocation_data struct and returns it with the handle field
++ * populated with the opaque handle for the allocation.
++ */
++#define ION_IOC_ALLOC		_IOWR(ION_IOC_MAGIC, 0, \
++				      struct ion_allocation_data)
++
++/**
++ * DOC: ION_IOC_FREE - free memory
++ *
++ * Takes an ion_handle_data struct and frees the handle.
++ */
++#define ION_IOC_FREE		_IOWR(ION_IOC_MAGIC, 1, struct ion_handle_data)
++
++/**
++ * DOC: ION_IOC_MAP - get a file descriptor to mmap
++ *
++ * Takes an ion_fd_data struct with the handle field populated with a valid
++ * opaque handle.  Returns the struct with the fd field set to a file
++ * descriptor open in the current address space.  This file descriptor
++ * can then be used as an argument to mmap.
++ */
++#define ION_IOC_MAP		_IOWR(ION_IOC_MAGIC, 2, struct ion_fd_data)
++
++/**
++ * DOC: ION_IOC_SHARE - creates a file descriptor to use to share an allocation
++ *
++ * Takes an ion_fd_data struct with the handle field populated with a valid
++ * opaque handle.  Returns the struct with the fd field set to a file
++ * descriptor open in the current address space.  This file descriptor
++ * can then be passed to another process.  The corresponding opaque handle can
++ * be retrieved via ION_IOC_IMPORT.
++ */
++#define ION_IOC_SHARE		_IOWR(ION_IOC_MAGIC, 4, struct ion_fd_data)
++
++/**
++ * DOC: ION_IOC_IMPORT - imports a shared file descriptor
++ *
++ * Takes an ion_fd_data struct with the fd field populated with a valid file
++ * descriptor obtained from ION_IOC_SHARE and returns the struct with the handle
++ * filed set to the corresponding opaque handle.
++ */
++#define ION_IOC_IMPORT		_IOWR(ION_IOC_MAGIC, 5, struct ion_fd_data)
++
++/**
++ * DOC: ION_IOC_INVALIDATE - invalidate a shared file descriptors
++ *
++ * Deprecated in favor of using the dma_buf api's correctly (syncing
++ * will happend automatically when the buffer is mapped to a device).
++ * If necessary should be used after touching a cached buffer from the cpu,
++ * this will make the buffer in memory coherent.
++ */
++#define ION_IOC_INVALIDATE		_IOWR(ION_IOC_MAGIC, 8, struct ion_fd_data)
++
++/**
++ * DOC: ION_IOC_SYNC - syncs a shared file descriptors to memory
++ *
++ * Deprecated in favor of using the dma_buf api's correctly (syncing
++ * will happend automatically when the buffer is mapped to a device).
++ * If necessary should be used after touching a cached buffer from the cpu,
++ * this will make the buffer in memory coherent.
++ */
++#define ION_IOC_SYNC		_IOWR(ION_IOC_MAGIC, 7, struct ion_fd_data)
++
++/**
++ * DOC: ION_IOC_CUSTOM - call architecture specific ion ioctl
++ *
++ * Takes the argument of the architecture specific ioctl to call and
++ * passes appropriate userdata for that ioctl
++ */
++#define ION_IOC_CUSTOM		_IOWR(ION_IOC_MAGIC, 6, struct ion_custom_data)
++
++#endif /* _LINUX_ION_H */
+diff --git a/libmemoryheapion/scx15/Android.mk b/libmemoryheapion/scx15/Android.mk
+index f30d943..f3ef87b 100644
+--- a/libmemoryheapion/scx15/Android.mk
++++ b/libmemoryheapion/scx15/Android.mk
+@@ -26,12 +26,17 @@ LOCAL_PROPRIETARY_MODULE := true
+ LOCAL_SRC_FILES := \
+ 	MemoryHeapIon.cpp
+ 
+-LOCAL_ADDITIONAL_DEPENDENCIES += \
+-	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+-
++# Force this specific version of ion.h for compilation
++ifeq ($(strip $(SOC_SCX35)),true)
++LOCAL_C_INCLUDES += \
++	$(LOCAL_PATH)/kernel-headers/
++else
+ LOCAL_C_INCLUDES += \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include \
+ 	$(TOP)/hardware/sprd/kernel_headers/$(TARGET_BOARD_PLATFORM)
++LOCAL_ADDITIONAL_DEPENDENCIES += \
++	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
++endif
+ 
+ ifdef ($(TARGET_BOARD_PLATFORM),sc8810)
+ LOCAL_CFLAGS += -DSC8810_BOARD
+diff --git a/libmemoryheapion/scx15/kernel-headers/linux/ion.h b/libmemoryheapion/scx15/kernel-headers/linux/ion.h
+new file mode 100644
+index 0000000..bc04d1d
+--- /dev/null
++++ b/libmemoryheapion/scx15/kernel-headers/linux/ion.h
+@@ -0,0 +1,204 @@
++/*
++ * include/linux/ion.h
++ *
++ * Copyright (C) 2011 Google, Inc.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef _LINUX_ION_H
++#define _LINUX_ION_H
++
++#include <linux/types.h>
++
++/**
++ * enum ion_heap_types - list of all possible types of heaps
++ * @ION_HEAP_TYPE_SYSTEM:	 memory allocated via vmalloc
++ * @ION_HEAP_TYPE_SYSTEM_CONTIG: memory allocated via kmalloc
++ * @ION_HEAP_TYPE_CARVEOUT:	 memory allocated from a prereserved
++ * 				 carveout heap, allocations are physically
++ * 				 contiguous
++ * @ION_HEAP_TYPE_DMA:		 memory allocated via DMA API
++ * @ION_NUM_HEAPS:		 helper for iterating over heaps, a bit mask
++ * 				 is used to identify the heaps, so only 32
++ * 				 total heap types are supported
++ */
++enum ion_heap_type {
++	ION_HEAP_TYPE_SYSTEM,
++	ION_HEAP_TYPE_SYSTEM_CONTIG,
++	ION_HEAP_TYPE_CARVEOUT,
++	ION_HEAP_TYPE_CHUNK,
++	ION_HEAP_TYPE_DMA,
++	ION_HEAP_TYPE_CUSTOM, /* must be last so device specific heaps always
++				 are at the end of this enum */
++	ION_NUM_HEAPS = 16,
++};
++
++#define ION_HEAP_SYSTEM_MASK		(1 << ION_HEAP_TYPE_SYSTEM)
++#define ION_HEAP_SYSTEM_CONTIG_MASK	(1 << ION_HEAP_TYPE_SYSTEM_CONTIG)
++#define ION_HEAP_CARVEOUT_MASK		(1 << ION_HEAP_TYPE_CARVEOUT)
++#define ION_HEAP_TYPE_DMA_MASK		(1 << ION_HEAP_TYPE_DMA)
++
++#define ION_NUM_HEAP_IDS		sizeof(unsigned int) * 8
++
++/**
++ * allocation flags - the lower 16 bits are used by core ion, the upper 16
++ * bits are reserved for use by the heaps themselves.
++ */
++#define ION_FLAG_CACHED 1		/* mappings of this buffer should be
++					   cached, ion will do cache
++					   maintenance when the buffer is
++					   mapped for dma */
++#define ION_FLAG_CACHED_NEEDS_SYNC 2	/* mappings of this buffer will created
++					   at mmap time, if this is set
++					   caches must be managed manually */
++
++
++/**
++ * DOC: Ion Userspace API
++ *
++ * create a client by opening /dev/ion
++ * most operations handled via following ioctls
++ *
++ */
++
++/**
++ * struct ion_allocation_data - metadata passed from userspace for allocations
++ * @len:		size of the allocation
++ * @align:		required alignment of the allocation
++ * @heap_id_mask:	mask of heap ids to allocate from
++ * @flags:		flags passed to heap
++ * @handle:		pointer that will be populated with a cookie to use to 
++ *			refer to this allocation
++ *
++ * Provided by userspace as an argument to the ioctl
++ */
++struct ion_allocation_data {
++	size_t len;
++	size_t align;
++	unsigned int heap_mask;
++	unsigned int flags;
++	struct ion_handle *handle;
++};
++
++/**
++ * struct ion_fd_data - metadata passed to/from userspace for a handle/fd pair
++ * @handle:	a handle
++ * @fd:		a file descriptor representing that handle
++ *
++ * For ION_IOC_SHARE or ION_IOC_MAP userspace populates the handle field with
++ * the handle returned from ion alloc, and the kernel returns the file
++ * descriptor to share or map in the fd field.  For ION_IOC_IMPORT, userspace
++ * provides the file descriptor and the kernel returns the handle.
++ */
++struct ion_fd_data {
++	struct ion_handle *handle;
++	int fd;
++};
++
++/**
++ * struct ion_handle_data - a handle passed to/from the kernel
++ * @handle:	a handle
++ */
++struct ion_handle_data {
++	struct ion_handle *handle;
++};
++
++/**
++ * struct ion_custom_data - metadata passed to/from userspace for a custom ioctl
++ * @cmd:	the custom ioctl function to call
++ * @arg:	additional data to pass to the custom ioctl, typically a user
++ *		pointer to a predefined structure
++ *
++ * This works just like the regular cmd and arg fields of an ioctl.
++ */
++struct ion_custom_data {
++	unsigned int cmd;
++	unsigned long arg;
++};
++
++#define ION_IOC_MAGIC		'I'
++
++/**
++ * DOC: ION_IOC_ALLOC - allocate memory
++ *
++ * Takes an ion_allocation_data struct and returns it with the handle field
++ * populated with the opaque handle for the allocation.
++ */
++#define ION_IOC_ALLOC		_IOWR(ION_IOC_MAGIC, 0, \
++				      struct ion_allocation_data)
++
++/**
++ * DOC: ION_IOC_FREE - free memory
++ *
++ * Takes an ion_handle_data struct and frees the handle.
++ */
++#define ION_IOC_FREE		_IOWR(ION_IOC_MAGIC, 1, struct ion_handle_data)
++
++/**
++ * DOC: ION_IOC_MAP - get a file descriptor to mmap
++ *
++ * Takes an ion_fd_data struct with the handle field populated with a valid
++ * opaque handle.  Returns the struct with the fd field set to a file
++ * descriptor open in the current address space.  This file descriptor
++ * can then be used as an argument to mmap.
++ */
++#define ION_IOC_MAP		_IOWR(ION_IOC_MAGIC, 2, struct ion_fd_data)
++
++/**
++ * DOC: ION_IOC_SHARE - creates a file descriptor to use to share an allocation
++ *
++ * Takes an ion_fd_data struct with the handle field populated with a valid
++ * opaque handle.  Returns the struct with the fd field set to a file
++ * descriptor open in the current address space.  This file descriptor
++ * can then be passed to another process.  The corresponding opaque handle can
++ * be retrieved via ION_IOC_IMPORT.
++ */
++#define ION_IOC_SHARE		_IOWR(ION_IOC_MAGIC, 4, struct ion_fd_data)
++
++/**
++ * DOC: ION_IOC_IMPORT - imports a shared file descriptor
++ *
++ * Takes an ion_fd_data struct with the fd field populated with a valid file
++ * descriptor obtained from ION_IOC_SHARE and returns the struct with the handle
++ * filed set to the corresponding opaque handle.
++ */
++#define ION_IOC_IMPORT		_IOWR(ION_IOC_MAGIC, 5, struct ion_fd_data)
++
++/**
++ * DOC: ION_IOC_INVALIDATE - invalidate a shared file descriptors
++ *
++ * Deprecated in favor of using the dma_buf api's correctly (syncing
++ * will happend automatically when the buffer is mapped to a device).
++ * If necessary should be used after touching a cached buffer from the cpu,
++ * this will make the buffer in memory coherent.
++ */
++#define ION_IOC_INVALIDATE		_IOWR(ION_IOC_MAGIC, 8, struct ion_fd_data)
++
++/**
++ * DOC: ION_IOC_SYNC - syncs a shared file descriptors to memory
++ *
++ * Deprecated in favor of using the dma_buf api's correctly (syncing
++ * will happend automatically when the buffer is mapped to a device).
++ * If necessary should be used after touching a cached buffer from the cpu,
++ * this will make the buffer in memory coherent.
++ */
++#define ION_IOC_SYNC		_IOWR(ION_IOC_MAGIC, 7, struct ion_fd_data)
++
++/**
++ * DOC: ION_IOC_CUSTOM - call architecture specific ion ioctl
++ *
++ * Takes the argument of the architecture specific ioctl to call and
++ * passes appropriate userdata for that ioctl
++ */
++#define ION_IOC_CUSTOM		_IOWR(ION_IOC_MAGIC, 6, struct ion_custom_data)
++
++#endif /* _LINUX_ION_H */
+diff --git a/libmemoryheapion/scx15/kernel-headers/video/ion_sprd.h b/libmemoryheapion/scx15/kernel-headers/video/ion_sprd.h
+new file mode 100644
+index 0000000..82dfdcc
+--- /dev/null
++++ b/libmemoryheapion/scx15/kernel-headers/video/ion_sprd.h
+@@ -0,0 +1,99 @@
++/*
++ * Copyright (C) 2012 Spreadtrum Communications Inc.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef	_ION_SPRD_H
++#define _ION_SPRD_H
++
++#define ION_HEAP_CMA_ID0        6
++#define ION_HEAP_CMA_ID1   	7
++#define ION_HEAP_CMA_ID2   	8
++#define ION_HEAP_CMA_ID3   	9
++
++#define ION_HEAP_IOMMU_ID0      10
++#define ION_HEAP_IOMMU_ID1   	11
++#define ION_HEAP_IOMMU_ID2   	12
++#define ION_HEAP_IOMMU_ID3   	13
++
++#ifdef ION_HEAP_CARVEOUT_MASK
++#undef ION_HEAP_CARVEOUT_MASK
++#endif
++#define ION_HEAP_CARVEOUT_MASK		(1 << ION_HEAP_CARVEOUT_TYPE)
++
++#define ION_HEAP_CARVEOUT_OVERLAY_MASK		(1 << ION_HEAP_CARVEOUT_OVERLAY_TYPE)
++
++
++#ifdef ION_HEAP_SYSTEM_MASK
++#undef ION_HEAP_SYSTEM_MASK
++#endif
++#define ION_HEAP_SYSTEM_MASK       (1 << 0)
++
++#define ION_HEAP_ID_SYSTEM	1
++#define ION_HEAP_ID_MM		2
++#define ION_HEAP_ID_OVERLAY	3
++#define ION_HEAP_CARVEOUT_TYPE   2
++#define ION_HEAP_CARVEOUT_OVERLAY_TYPE   3
++#define ION_HEAP_ID_MASK_SYSTEM 	(1<<ION_HEAP_ID_SYSTEM)
++#define ION_HEAP_ID_MASK_MM		(1<<ION_HEAP_ID_MM)
++#define ION_HEAP_ID_MASK_OVERLAY	(1<<ION_HEAP_ID_OVERLAY)
++
++#define ION_DRIVER_VERSION	1
++
++struct ion_phys_data {
++	int fd_buffer;
++	unsigned long phys;
++	size_t size;
++};
++
++struct ion_mmu_data {
++	int fd_buffer;
++	unsigned long iova_addr;
++	size_t iova_size;
++};
++
++struct ion_msync_data {
++	int fd_buffer;
++	void *vaddr;
++	void *paddr;
++	size_t size;
++};
++
++struct ion_map_data {
++	int fd_buffer;
++	unsigned long dev_addr;
++};
++
++struct ion_unmap_data {
++	int fd_buffer;
++};
++
++struct ion_fence_data {
++    int fence_fd;
++    char name[32];
++    unsigned long value;
++};
++
++enum ION_SPRD_CUSTOM_CMD {
++	ION_SPRD_CUSTOM_PHYS,
++	ION_SPRD_CUSTOM_MSYNC,
++
++	/* to get/free mmu iova */ //added by yfs
++	ION_SPRD_CUSTOM_GSP_MAP,
++	ION_SPRD_CUSTOM_GSP_UNMAP,
++	ION_SPRD_CUSTOM_MM_MAP,
++	ION_SPRD_CUSTOM_MM_UNMAP,
++        ION_SPRD_CUSTOM_FENCE_CREATE,
++        ION_SPRD_CUSTOM_FENCE_SIGNAL,
++        ION_SPRD_CUSTOM_FENCE_DUP,
++};
++
++#endif /* _ION_SPRD_H */
+diff --git a/libstagefrighthw/scx15/Android.mk b/libstagefrighthw/scx15/Android.mk
+index ead73af..879e569 100644
+--- a/libstagefrighthw/scx15/Android.mk
++++ b/libstagefrighthw/scx15/Android.mk
+@@ -31,7 +31,16 @@ LOCAL_C_INCLUDES := \
+ 	frameworks/native/include/media/openmax \
+ 	frameworks/native/include/media/hardware \
+ 	$(LOCAL_PATH)/include \
+-	$(LOCAL_PATH)/../../gralloc/$(TARGET_BOARD_PLATFORM) \
++
++ifeq ($(strip $(SOC_SCX35)),true)
++LOCAL_C_INCLUDES += \
++	$(LOCAL_PATH)/../../gralloc/scx15
++else
++LOCAL_C_INCLUDES += \
++	$(LOCAL_PATH)/../../gralloc/$(TARGET_BOARD_PLATFORM)
++endif
++
++LOCAL_C_INCLUDES += \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video/ \
+ 
+ LOCAL_EXPORT_C_INCLUDE_DIRS := \
+diff --git a/omx_components/video/avc_sprd/Android.mk b/omx_components/video/avc_sprd/Android.mk
+index 2ae9514..5bc69b1 100644
+--- a/omx_components/video/avc_sprd/Android.mk
++++ b/omx_components/video/avc_sprd/Android.mk
+@@ -21,7 +21,13 @@ ifneq (,$(filter scx15 sc8830,$(TARGET_BOARD_PLATFORM)))
+ 
+ include_list := \
+ 	$(LOCAL_PATH)/thumbnail/Android.mk \
+-	$(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM))
++
++ifeq ($(SOC_SCX35),true)
++include_makefiles += $(call all-named-subdir-makefiles, scx15)
++else
++include_makefiles += $(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM))
++endif
++
+ include $(include_list)
+ 
+ endif
+diff --git a/omx_components/video/avc_sprd/scx15/dec/Android.mk b/omx_components/video/avc_sprd/scx15/dec/Android.mk
+index ffd6b5f..7022721 100644
+--- a/omx_components/video/avc_sprd/scx15/dec/Android.mk
++++ b/omx_components/video/avc_sprd/scx15/dec/Android.mk
+@@ -12,8 +12,15 @@ LOCAL_C_INCLUDES := \
+ 	frameworks/native/include/ui \
+ 	frameworks/native/include/utils \
+ 	frameworks/native/include/media/hardware \
+-	$(LOCAL_PATH)/../../../../../gralloc/$(TARGET_BOARD_PLATFORM) \
+-	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video 
++	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video
++
++ifeq ($(strip $(SOC_SCX35)),true)
++LOCAL_C_INCLUDES += \
++	$(LOCAL_PATH)/../../../../../gralloc/scx15
++else
++LOCAL_C_INCLUDES += \
++	$(LOCAL_PATH)/../../../../../gralloc/$(TARGET_BOARD_PLATFORM)
++endif
+ 
+ LOCAL_ADDITIONAL_DEPENDENCIES += \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+@@ -22,6 +29,10 @@ LOCAL_CFLAGS := \
+ 	-DOSCL_EXPORT_REF= \
+ 	-DOSCL_IMPORT_REF=
+ 
++ifeq ($(strip $(SOC_SCX35)),true)
++LOCAL_CFLAGS += -DSOC_SCX35
++endif
++
+ LOCAL_ARM_MODE := arm
+ 
+ LOCAL_SHARED_LIBRARIES := \
+diff --git a/omx_components/video/avc_sprd/scx15/dec/SPRDAVCDecoder.cpp b/omx_components/video/avc_sprd/scx15/dec/SPRDAVCDecoder.cpp
+index 90b758c..95086cb 100644
+--- a/omx_components/video/avc_sprd/scx15/dec/SPRDAVCDecoder.cpp
++++ b/omx_components/video/avc_sprd/scx15/dec/SPRDAVCDecoder.cpp
+@@ -389,7 +389,12 @@ status_t SPRDAVCDecoder::initDecoder() {
+     video_format.p_extra = NULL;
+     video_format.p_extra_phy = 0;
+     video_format.i_extra = 0;
++#ifdef SOC_SCX35
++    video_format.uv_interleaved = 1;
++#else
+     video_format.yuv_format = YUV420SP_NV12;
++#endif
++
+ 
+     if ((*mH264DecInit)(mHandle, &codec_buf,&video_format) != MMDEC_OK) {
+         ALOGE("Failed to init AVCDEC");
+@@ -1063,7 +1068,7 @@ void SPRDAVCDecoder::onQueueFilled(OMX_U32 portIndex) {
+         MMDecRet ret;
+         ret = (*mH264DecGetInfo)(mHandle, &decoderInfo);
+         if(ret == MMDEC_OK) {
+-#if 0
++#if SOC_SCX35
+             if (!((decoderInfo.picWidth<= mMaxWidth&& decoderInfo.picHeight<= mMaxHeight)
+                     || (decoderInfo.picWidth <= mMaxHeight && decoderInfo.picHeight <= mMaxWidth))) {
+                 ALOGE("[%d,%d] is out of range [%d, %d], failed to support this format.",
+diff --git a/omx_components/video/avc_sprd/scx15/dec/avc_dec_api.h b/omx_components/video/avc_sprd/scx15/dec/avc_dec_api.h
+index 5c7992e..0745341 100644
+--- a/omx_components/video/avc_sprd/scx15/dec/avc_dec_api.h
++++ b/omx_components/video/avc_sprd/scx15/dec/avc_dec_api.h
+@@ -81,7 +81,11 @@ typedef struct
+     int32	i_extra;
+     void 	*p_extra;
+     uint32	p_extra_phy;
++#ifdef SOC_SCX35
++    int32	uv_interleaved;
++#else
+     int32	yuv_format;
++#endif
+ } MMDecVideoFormat;
+ 
+ // Decoder buffer for decoding structure
+diff --git a/omx_components/video/avc_sprd/scx15/enc/Android.mk b/omx_components/video/avc_sprd/scx15/enc/Android.mk
+index 135adec..79438ff 100644
+--- a/omx_components/video/avc_sprd/scx15/enc/Android.mk
++++ b/omx_components/video/avc_sprd/scx15/enc/Android.mk
+@@ -9,8 +9,18 @@ LOCAL_C_INCLUDES := \
+ 	frameworks/av/media/libstagefright/include \
+ 	frameworks/native/include/media/openmax \
+ 	frameworks/native/include/media/hardware \
+-	frameworks/native/include \
+-	$(LOCAL_PATH)/../../../../../gralloc/$(TARGET_BOARD_PLATFORM) \
++	frameworks/native/include
++
++ifeq ($(strip $(SOC_SCX35)),true)
++LOCAL_C_INCLUDES += \
++	$(LOCAL_PATH)/../../../../../gralloc/scx15
++
++else
++LOCAL_C_INCLUDES += \
++	$(LOCAL_PATH)/../../../../../gralloc/$(TARGET_BOARD_PLATFORM)
++endif
++
++LOCAL_C_INCLUDES += \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video
+ 
+ LOCAL_ADDITIONAL_DEPENDENCIES += \
+diff --git a/omx_components/video/m4v_h263_sprd/Android.mk b/omx_components/video/m4v_h263_sprd/Android.mk
+index 2ae9514..5bc69b1 100644
+--- a/omx_components/video/m4v_h263_sprd/Android.mk
++++ b/omx_components/video/m4v_h263_sprd/Android.mk
+@@ -21,7 +21,13 @@ ifneq (,$(filter scx15 sc8830,$(TARGET_BOARD_PLATFORM)))
+ 
+ include_list := \
+ 	$(LOCAL_PATH)/thumbnail/Android.mk \
+-	$(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM))
++
++ifeq ($(SOC_SCX35),true)
++include_makefiles += $(call all-named-subdir-makefiles, scx15)
++else
++include_makefiles += $(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM))
++endif
++
+ include $(include_list)
+ 
+ endif
+diff --git a/omx_components/video/m4v_h263_sprd/scx15/dec/Android.mk b/omx_components/video/m4v_h263_sprd/scx15/dec/Android.mk
+index d6b3a12..b61afe5 100644
+--- a/omx_components/video/m4v_h263_sprd/scx15/dec/Android.mk
++++ b/omx_components/video/m4v_h263_sprd/scx15/dec/Android.mk
+@@ -12,9 +12,16 @@ LOCAL_C_INCLUDES := \
+ 	frameworks/native/include/ui \
+ 	frameworks/native/include/utils \
+ 	frameworks/native/include/media/hardware \
+-	$(LOCAL_PATH)/../../../../../gralloc/$(TARGET_BOARD_PLATFORM) \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video
+ 
++ifeq ($(strip $(SOC_SCX35)),true)
++LOCAL_C_INCLUDES += \
++	$(LOCAL_PATH)/../../../../../gralloc/scx15
++else
++LOCAL_C_INCLUDES += \
++	$(LOCAL_PATH)/../../../../../gralloc/$(TARGET_BOARD_PLATFORM)
++endif
++
+ LOCAL_ADDITIONAL_DEPENDENCIES += \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+ 
+diff --git a/omx_components/video/m4v_h263_sprd/scx15/enc/Android.mk b/omx_components/video/m4v_h263_sprd/scx15/enc/Android.mk
+index a0d223d..c0cc4f9 100644
+--- a/omx_components/video/m4v_h263_sprd/scx15/enc/Android.mk
++++ b/omx_components/video/m4v_h263_sprd/scx15/enc/Android.mk
+@@ -42,4 +42,8 @@ ifeq ($(strip $(TARGET_BOARD_CAMERA_ANTI_SHAKE)),true)
+ LOCAL_CFLAGS += -DANTI_SHAKE
+ endif
+ 
++ifeq ($(strip $(SOC_SCX35)),true)
++LOCAL_CFLAGS += -DSOC_SCX35
++endif
++
+ include $(BUILD_SHARED_LIBRARY)
+diff --git a/omx_components/video/m4v_h263_sprd/scx15/enc/SPRDMPEG4Encoder.cpp b/omx_components/video/m4v_h263_sprd/scx15/enc/SPRDMPEG4Encoder.cpp
+index 28c1d7b..9b1bc32 100644
+--- a/omx_components/video/m4v_h263_sprd/scx15/enc/SPRDMPEG4Encoder.cpp
++++ b/omx_components/video/m4v_h263_sprd/scx15/enc/SPRDMPEG4Encoder.cpp
+@@ -322,7 +322,11 @@ OMX_ERRORTYPE SPRDMPEG4Encoder::initEncParams() {
+     mEncInfo.is_h263 = mIsH263;
+     mEncInfo.frame_width = mVideoWidth;
+     mEncInfo.frame_height = mVideoHeight;
++#ifdef SOC_SCX35
++    mEncInfo.uv_interleaved = 1;
++#else
+     mEncInfo.yuv_format = MMENC_YUV420SP_NV21;
++#endif
+     mEncInfo.time_scale = 1000;
+ #ifdef ANTI_SHAKE
+     mEncInfo.b_anti_shake = 1;
+diff --git a/omx_components/video/m4v_h263_sprd/scx15/enc/m4v_h263_enc_api.h b/omx_components/video/m4v_h263_sprd/scx15/enc/m4v_h263_enc_api.h
+index f375faa..60580e8 100644
+--- a/omx_components/video/m4v_h263_sprd/scx15/enc/m4v_h263_enc_api.h
++++ b/omx_components/video/m4v_h263_sprd/scx15/enc/m4v_h263_enc_api.h
+@@ -98,7 +98,11 @@ typedef struct
+     int32	frame_width;				//frame width
+     int32	frame_height;				//frame Height
+     int32	time_scale;
++#ifdef SOC_SCX35
++    int32	uv_interleaved;				//tmp add
++#else
+     int32	yuv_format;
++#endif
+     int32	b_anti_shake;
+ } MMEncVideoInfo;
+ 
+diff --git a/omx_components/video/vpx_sprd/Android.mk b/omx_components/video/vpx_sprd/Android.mk
+index b04ef7d..d8ce13a 100644
+--- a/omx_components/video/vpx_sprd/Android.mk
++++ b/omx_components/video/vpx_sprd/Android.mk
+@@ -18,5 +18,9 @@
+ LOCAL_PATH := $(call my-dir)
+ 
+ ifneq (,$(filter scx15 sc8830,$(TARGET_BOARD_PLATFORM)))
++ifeq ($(SOC_SCX35),true)
++include $(call all-named-subdir-makefiles, scx15)
++else
+ include $(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM))
+-endif
+\ No newline at end of file
++endif
++endif
+diff --git a/omx_components/video/vpx_sprd/scx15/dec/Android.mk b/omx_components/video/vpx_sprd/scx15/dec/Android.mk
+index a5b3901..baba5b9 100644
+--- a/omx_components/video/vpx_sprd/scx15/dec/Android.mk
++++ b/omx_components/video/vpx_sprd/scx15/dec/Android.mk
+@@ -12,9 +12,16 @@ LOCAL_C_INCLUDES := \
+ 	frameworks/native/include/ui \
+ 	frameworks/native/include/utils \
+ 	frameworks/native/include/media/hardware \
+-	$(LOCAL_PATH)/../../../../../gralloc/$(TARGET_BOARD_PLATFORM) \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video
+ 
++ifeq ($(strip $(SOC_SCX35)),true)
++LOCAL_C_INCLUDES += \
++	$(LOCAL_PATH)/../../../../../gralloc/scx15
++else
++LOCAL_C_INCLUDES += \
++	$(LOCAL_PATH)/../../../../../gralloc/$(TARGET_BOARD_PLATFORM)
++endif
++
+ LOCAL_ADDITIONAL_DEPENDENCIES += \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+ 
+-- 
+2.20.1
+
