@@ -1,0 +1,42 @@
+From dbdf6ca22b30c8fdc1f620c6afec32e7cd7d6362 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Mon, 11 Feb 2019 18:53:26 +0800
+Subject: [PATCH 4/5] hwcomposer: scx15: Fix compilation for those using
+ GSP_ADDR_TYPE_PHY
+
+Change-Id: Ia8d3bf33cd47d37783c31eedd218882f211eb6fe
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ hwcomposer/scx15/SprdDisplayPlane.cpp | 2 +-
+ hwcomposer/scx15/SprdUtil.cpp         | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/hwcomposer/scx15/SprdDisplayPlane.cpp b/hwcomposer/scx15/SprdDisplayPlane.cpp
+index e9d39f3..e982386 100644
+--- a/hwcomposer/scx15/SprdDisplayPlane.cpp
++++ b/hwcomposer/scx15/SprdDisplayPlane.cpp
+@@ -104,7 +104,7 @@ private_handle_t* SprdDisplayPlane:: createPlaneBuffer(int index)
+         return NULL;
+     }
+ 
+-    GraphicBufferAllocator::get().allocate(mWidth, mHeight, mFormat, mPlaneUsage, (buffer_handle_t*)&BufHandle, &stride, getUniqueId(), std::move("HWC"));
++    GraphicBufferAllocator::get().allocate(mWidth, mHeight, mFormat, 1, mPlaneUsage, (buffer_handle_t*)&BufHandle, &stride, getUniqueId(), std::move("HWC"));
+     if (BufHandle == NULL)
+     {
+         ALOGE("SprdDisplayPlane cannot alloc buffer");
+diff --git a/hwcomposer/scx15/SprdUtil.cpp b/hwcomposer/scx15/SprdUtil.cpp
+index 8116193..675a94d 100644
+--- a/hwcomposer/scx15/SprdUtil.cpp
++++ b/hwcomposer/scx15/SprdUtil.cpp
+@@ -405,7 +405,7 @@ int SprdUtil:: acquireTmpBuffer(int width, int height, int format, private_handl
+ 
+ AllocGFXBuffer:
+ #ifdef GSP_ADDR_TYPE_PHY
+-    GraphicBufferAllocator::get().allocate(width, height, format, GRALLOC_USAGE_OVERLAY_BUFFER, (buffer_handle_t*)&tmpBuffer, &stride, getUniqueId(), std::move("HWC"));
++    GraphicBufferAllocator::get().allocate(width, height, format, 1, GRALLOC_USAGE_OVERLAY_BUFFER, (buffer_handle_t*)&tmpBuffer, &stride, getUniqueId(), std::move("HWC"));
+ #elif defined (GSP_ADDR_TYPE_IOVA)
+     GraphicBufferAllocator::get().alloc(width, height, format, 0, (buffer_handle_t*)&tmpBuffer, &stride);
+ #endif
+-- 
+2.19.2
+
