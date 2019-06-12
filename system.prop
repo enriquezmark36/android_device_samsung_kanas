@@ -74,3 +74,6 @@ config.disable_atlas=true
 # zRAM
 ro.config.zram.compressor=lz4
 ro.config.zram.disksize=350M
+
+# EGL blobs crash on screen off
+ro.egl.destroy_after_detach=true
