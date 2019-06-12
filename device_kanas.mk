@@ -73,6 +73,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	memtrack.sc8830
 
+# GPS wrapper, wraps the GPS HAL
+PRODUCT_PACKAGES += \
+	gps.default
+
 # Prebuilt targets overrides:
 # These files are declared as prebuilt targets in some Android.mk files
 # but need some device specific modifications.
