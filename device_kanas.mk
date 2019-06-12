@@ -95,7 +95,12 @@ AUDIO_CONFIGS := \
 INIT_FILES := \
 	device/samsung/kanas/rootdir/init.sc8830.rc
 
+RAMDISK_FILES := \
+	device/samsung/kanas/rootdir/init.board.rc \
+
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(MEDIA_CONFIGS),$(f):system/vendor/etc/$(notdir $(f))) \
 	$(foreach f,$(AUDIO_CONFIGS),$(f):system/vendor/etc/$(notdir $(f))) \
 	$(foreach f,$(INIT_FILES),$(f):root/$(notdir $(f))) \
+	$(foreach f,$(RAMDISK_FILES),$(f):root/$(notdir $(f))) \
+
