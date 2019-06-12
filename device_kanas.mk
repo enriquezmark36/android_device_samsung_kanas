@@ -85,6 +85,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	memtrack.sc8830
 
+# GPS wrapper, wraps the GPS HAL
+PRODUCT_PACKAGES += \
+	gps.sc8830
+
 # ART device props
 PRODUCT_PROPERTY_OVERRIDES += \
 	dalvik.vm.dex2oat-filter=speed \
