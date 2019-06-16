@@ -108,6 +108,7 @@ AUDIO_CONFIGS := \
 INIT_FILES := \
 	device/samsung/kanas/configs/media/mediaserver.rc \
 	device/samsung/kanas/system/etc/init/refnotify.rc \
+	device/samsung/kanas/system/etc/init/at_distributor.rc \
 
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(MEDIA_CONFIGS),$(f):system/etc/$(notdir $(f))) \

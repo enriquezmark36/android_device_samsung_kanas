@@ -1,0 +1,4 @@
+service at_distributor /system/bin/at_distributor
+    class main
+    user root
+    group radio misc log
