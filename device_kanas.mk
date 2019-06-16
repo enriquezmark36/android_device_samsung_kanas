@@ -39,7 +39,6 @@ TARGET_SCREEN_WIDTH := 480
 
 # Rootdir files
 PRODUCT_PACKAGES += \
-	init.board.rc \
 	init.sc8830.rc \
 	init.sc8830.usb.rc \
 	init.kanas3g_base.rc \
@@ -113,7 +112,12 @@ INIT_FILES := \
 	device/samsung/kanas/system/etc/init/refnotify.rc \
 	device/samsung/kanas/system/etc/init/at_distributor.rc \
 
+RAMDISK_FILES := \
+	device/samsung/kanas/rootdir/init.board.rc \
+
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(MEDIA_CONFIGS),$(f):system/etc/$(notdir $(f))) \
 	$(foreach f,$(AUDIO_CONFIGS),$(f):system/etc/$(notdir $(f))) \
-	$(foreach f,$(INIT_FILES),$(f):system/etc/init/$(notdir $(f)))
+	$(foreach f,$(INIT_FILES),$(f):system/etc/init/$(notdir $(f))) \
+	$(foreach f,$(RAMDISK_FILES),$(f):root/$(notdir $(f))) \
+
