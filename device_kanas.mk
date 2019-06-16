@@ -22,8 +22,10 @@ $(call inherit-product, vendor/samsung/kanas/kanas-vendor.mk)
 DEVICE_PACKAGE_OVERLAYS += device/samsung/kanas/overlay
 
 # ART prop overrides
-PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
+PRODUCT_PROPERTY_OVERRIDES += \
 	dalvik.vm.usejit=false \
+	dalvik.vm.dex2oat-filter=speed \
+	dalvik.vm.image-dex2oat-filter=speed \
 
 # Inherit from scx35-common device configuration
 $(call inherit-product, device/samsung/scx35-common/common.mk)
@@ -89,11 +91,6 @@ PRODUCT_PACKAGES += \
 # GPS wrapper, wraps the GPS HAL
 PRODUCT_PACKAGES += \
 	gps.default
-
-# ART device props
-PRODUCT_PROPERTY_OVERRIDES += \
-	dalvik.vm.dex2oat-filter=speed \
-	dalvik.vm.image-dex2oat-filter=speed \
 
 # Configuration overrides: these are not bundled with an Android.mk since they
 # need to supersede/override all instances.
