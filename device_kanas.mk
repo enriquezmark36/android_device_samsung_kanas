@@ -109,7 +109,8 @@ AUDIO_CONFIGS := \
 	device/samsung/kanas/configs/audio/tiny_hw.xml
 
 INIT_FILES := \
-	device/samsung/kanas/configs/media/mediaserver.rc
+	device/samsung/kanas/configs/media/mediaserver.rc \
+	device/samsung/kanas/system/etc/init/refnotify.rc \
 
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(MEDIA_CONFIGS),$(f):system/etc/$(notdir $(f))) \
