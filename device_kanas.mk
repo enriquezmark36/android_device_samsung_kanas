@@ -27,6 +27,9 @@ PRODUCT_PROPERTY_OVERRIDES += \
 	dalvik.vm.dex2oat-filter=speed \
 	dalvik.vm.image-dex2oat-filter=speed \
 
+# Opt-out of SamsungDoze
+NO_SAMDOZE := true
+
 # Inherit from scx35-common device configuration
 $(call inherit-product, device/samsung/scx35-common/common.mk)
 
