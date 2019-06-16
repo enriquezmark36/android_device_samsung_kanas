@@ -88,7 +88,7 @@ PRODUCT_PACKAGES += \
 
 # GPS wrapper, wraps the GPS HAL
 PRODUCT_PACKAGES += \
-	gps.sc8830
+	gps.default
 
 # ART device props
 PRODUCT_PROPERTY_OVERRIDES += \

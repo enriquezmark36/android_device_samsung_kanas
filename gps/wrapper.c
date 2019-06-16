@@ -58,7 +58,7 @@ static const void* wrapper_get_extension(const char* name) {
 		       sizeof(AGpsInterface_v1));
 		my_agps_interface.size = sizeof(AGpsInterface_v1);
 
-		ALOGI_IF((loglevel <= 1),"[%s] %s: Using AGpsInterface_v1 struct,"
+		ALOGI("[%s] %s: Using AGpsInterface_v1 struct,"
 		" size changes from %d B => %d B",
 		__func__, name, sizeof(AGpsInterface), my_agps_interface.size);
 
@@ -104,7 +104,7 @@ static int wrapper_open(__attribute__((unused)) const hw_module_t* module,
 
 	my_gps_device = calloc(1, sizeof(struct gps_device_t));
 	if (!my_gps_device) {
-		ALOGE_IF((loglevel <= 4),"couldn't malloc");
+		ALOGE("couldn't malloc");
 		return -EINVAL;
 	}
 
@@ -112,7 +112,7 @@ static int wrapper_open(__attribute__((unused)) const hw_module_t* module,
 	dso_handle = dlopen(ORIGINAL_HAL_PATH, RTLD_NOW);
 	if (dso_handle == NULL) {
 		char const *err_str = dlerror();
-		ALOGE(,"%s", err_str ? err_str : "unknown");
+		ALOGE("%s", err_str ? err_str : "unknown");
 		goto dso_fail;
 	}
 
