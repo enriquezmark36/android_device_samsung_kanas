@@ -64,6 +64,26 @@ public class KanasRIL extends SamsungSPRDRIL implements CommandsInterface {
     }
 
     @Override
+    public void getModemActivityInfo(Message result) {
+        if (RILJ_LOGD) riljLog("early blocking getModemActivityInfo()");
+        if (result != null) {
+            AsyncResult.forMessage(result, null, new CommandException(
+                    CommandException.Error.REQUEST_NOT_SUPPORTED));
+            result.sendToTarget();
+        }
+    }
+
+    @Override
+    public void getCellInfoList(Message result) {
+        if (RILJ_LOGD) riljLog("early blocking getCellInfoList()");
+        if (result != null) {
+            AsyncResult.forMessage(result, null, new CommandException(
+                    CommandException.Error.REQUEST_NOT_SUPPORTED));
+            result.sendToTarget();
+        }
+    }
+
+    @Override
     protected Object
     responseCallList(Parcel p) {
         int num;
