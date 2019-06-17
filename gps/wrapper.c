@@ -74,7 +74,7 @@ static int wrapper_init(GpsCallbacks* callbacks) {
 	my_gps_callbacks.size = sizeof(GpsCallbacks_v1);
 	ALOGI("[%s] Using GpsCallbacks_v1 struct,"
 		" size changes from %d B => %d B",
-		__func__, sizeof(GpsCallbacks_v1), my_gps_callbacks.size);
+		__func__, sizeof(GpsCallbacks), my_gps_callbacks.size);
 
 	return real_gps_interface->init((GpsCallbacks* )(&my_gps_callbacks));
 }
