@@ -40,6 +40,8 @@ on boot
 	chmod 0664 /sys/class/mdnie/mdnie/scenario
 	chown system system /sys/class/mdnie/mdnie/negative
 	chmod 0664 /sys/class/mdnie/mdnie/negative
+    chmod 0660 /sys/class/phy/phy_dev/phy_feq
+    chown system system /sys/class/phy/phy_dev/phy_feq
 
 # <Sensors>
 # Accelerometer_sensor
