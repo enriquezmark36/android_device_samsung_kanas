@@ -64,8 +64,18 @@ public class KanasRIL extends SamsungSPRDRIL implements CommandsInterface {
     }
 
     @Override
+    public void getHardwareConfig (Message result) {
+        riljLog("Ignoring call to 'getHardwareConfig'");
+        if (result != null) {
+            AsyncResult.forMessage(result, null, new CommandException(
+                    CommandException.Error.REQUEST_NOT_SUPPORTED));
+            result.sendToTarget();
+        }
+    }
+
+    @Override
     public void getModemActivityInfo(Message result) {
-        if (RILJ_LOGD) riljLog("early blocking getModemActivityInfo()");
+        if (RILJ_LOGD) riljLog("Ignoring call to getModemActivityInfo()");
         if (result != null) {
             AsyncResult.forMessage(result, null, new CommandException(
                     CommandException.Error.REQUEST_NOT_SUPPORTED));
@@ -75,12 +85,77 @@ public class KanasRIL extends SamsungSPRDRIL implements CommandsInterface {
 
     @Override
     public void getCellInfoList(Message result) {
-        if (RILJ_LOGD) riljLog("early blocking getCellInfoList()");
+        if (RILJ_LOGD) riljLog("Ignoring call to getCellInfoList()");
         if (result != null) {
             AsyncResult.forMessage(result, null, new CommandException(
                     CommandException.Error.REQUEST_NOT_SUPPORTED));
             result.sendToTarget();
         }
+    }
+
+    @Override
+    public void setUiccSubscription(int appIndex, boolean activate, Message result) {
+        if (RILJ_LOGD) riljLog("setUiccSubscription: appIndex: " + appIndex + " activate: " + activate);
+
+        // Fake response (note: should be sent before mSubscriptionStatusRegistrants or
+        // SubscriptionManager might not set the readiness correctly)
+        AsyncResult.forMessage(result, 0, null);
+        result.sendToTarget();
+
+        // TODO: Actually turn off/on the radio (and don't fight with the ServiceStateTracker)
+        if (activate == true /* ACTIVATE */) {
+            // Subscription changed: enabled
+            if (mSubscriptionStatusRegistrants != null) {
+                mSubscriptionStatusRegistrants.notifyRegistrants(
+                        new AsyncResult (null, new int[] {1}, null));
+            }
+        } else if (activate == false /* DEACTIVATE */) {
+            // Subscription changed: disabled
+            if (mSubscriptionStatusRegistrants != null) {
+                mSubscriptionStatusRegistrants.notifyRegistrants(
+                        new AsyncResult (null, new int[] {0}, null));
+            }
+        }
+    }
+
+    @Override
+    protected void notifyRegistrantsRilConnectionChanged(int rilVer) {
+        super.notifyRegistrantsRilConnectionChanged(rilVer);
+        if (rilVer != -1) {
+            if (mInstanceId != null) {
+                riljLog("Enable simultaneous data/voice on Multi-SIM");
+                invokeOemRilRequestSprd((byte) 3, (byte) 1, null);
+            } else {
+                riljLog("Set data subscription to allow data in either SIM slot when using single SIM mode");
+                setDataAllowed(true, null);
+            }
+        }
+    }
+
+    @Override
+    protected RadioState getRadioStateFromInt(int stateInt) {
+        RadioState state;
+
+        /* RIL_RadioState ril.h */
+        switch(stateInt) {
+            case 0: state = RadioState.RADIO_OFF; break;
+            case 1: state = RadioState.RADIO_UNAVAILABLE; break;
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+            case 6:
+            case 7:
+            case 8:
+            case 9:
+            case 10:
+            case 13: state = RadioState.RADIO_ON; break;
+
+            default:
+                throw new RuntimeException(
+                            "Unrecognized RIL_RadioState: " + stateInt);
+        }
+        return state;
     }
 
     @Override
@@ -165,5 +240,10 @@ public class KanasRIL extends SamsungSPRDRIL implements CommandsInterface {
 
         return response;
     }
+
+    private void invokeOemRilRequestSprd(byte key, byte value, Message response) {
+        invokeOemRilRequestRaw(new byte[] { 'S', 'P', 'R', 'D', key, value }, response);
+    }
+
 }
 
