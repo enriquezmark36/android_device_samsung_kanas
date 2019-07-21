@@ -1,0 +1,2 @@
+# For some special Camera HAL that writes to "Cam_antibanding" file
+allow mediaserver sysfs_cam_antibanding:file { write open read };

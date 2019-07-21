@@ -63,6 +63,9 @@ NUM_FRAMEBUFFER_SURFACE_BUFFERS := 2
 BOARD_GLOBAL_CFLAGS += -DUSE_3_FRAMEBUFFER
 USE_SPRD_DITHER := false
 
+# Additional SELinux policies
+BOARD_SEPOLICY_DIRS += device/samsung/kanas/sepolicy
+
 # Audio
 # BOARD_USE_LIBATCHANNEL_WRAPPER := true
 # BOARD_USES_SS_VOIP := true

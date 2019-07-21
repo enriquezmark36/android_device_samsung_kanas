@@ -1,0 +1,14 @@
+# System files
+/system/lib/hw/gps\.vendor\.sc8830\.so      --  u:object_r:gps_vendor_hal:s0
+
+# Block labeling
+/dev/block/mmcblk0p11                           u:object_r:radio_block_device:s0
+/dev/block/mmcblk0p12                           u:object_r:radio_block_device:s0
+
+# Sysfs files
+/sys/devices/virtual/camera/rear/Cam_antibanding  u:object_r:sysfs_cam_antibanding:s0
+
+# MDNIE sysfs files
+/sys/devices/virtual/mdnie/mdnie/scenario       u:object_r:sysfs_mdnie:s0
+/sys/devices/virtual/mdnie/mdnie/negative       u:object_r:sysfs_mdnie:s0
+/sys/devices/virtual/mdnie/mdnie/outdoor        u:object_r:sysfs_mdnie:s0

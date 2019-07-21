@@ -1,0 +1,12 @@
+# For the gpio interface in /proc/driver/sirf
+allow system_server gps_sirf:file { open write };
+
+# GPS HAL accesses
+allow system_server radio_device:chr_file write;
+allow system_server shell_exec:file { execute execute_no_trans open read };
+
+# GPS HAL wrapper, loading the stock unmodified GPS HAL driver
+allow system_server gps_vendor_hal:file execmod;
+
+# Access to /productinfo
+allow system_server prod_file:dir getattr;

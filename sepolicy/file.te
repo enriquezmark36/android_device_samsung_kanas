@@ -1,0 +1,5 @@
+type sysfs_cam_antibanding, fs_type, sysfs_type;
+type sysfs_mdnie, fs_type, sysfs_type;
+type gps_vendor_hal, fs_type;
+type gps_sirf, fs_type;
+
