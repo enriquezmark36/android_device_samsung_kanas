@@ -1,0 +1,236 @@
+From c28ace05a297890b8ed7db20e327773161919b6b Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Sun, 30 Jun 2019 18:47:23 +0800
+Subject: [PATCH 3/3] scx35-common: extra SELinux policies; add domain and
+ rules for refnotify
+
+'Till then, refnotify will not run due to having no SELinux context and would
+eventually cause the coProcessor to have a buffer filled(?) assert since refnotify
+is responsible of clearing it up.
+
+This also contains a 'filtered' results from audit2allow which should allow more
+nitty-gritty parts of the vendor blobs to work properly and also to some GPS devices
+that have cause so much denials.
+
+Change-Id: I49f2b4c07d04c25da18912f0241a660db43ac0f1
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ sepolicy/audioserver.te   | 16 ++++++++++------
+ sepolicy/engpc.te         | 11 ++++++++++-
+ sepolicy/file.te          |  4 +++-
+ sepolicy/file_contexts    |  3 +++
+ sepolicy/mediacodec.te    |  9 ++++++---
+ sepolicy/modemd.te        | 10 +++++-----
+ sepolicy/netd.te          |  1 +
+ sepolicy/nvitemd.te       |  3 +++
+ sepolicy/renotify.te      |  7 +++++++
+ sepolicy/rild.te          |  4 +++-
+ sepolicy/system_server.te | 10 +++++++---
+ sepolicy/toolbox.te       | 10 +++++++---
+ sepolicy/zygote.te        |  4 ++--
+ 13 files changed, 67 insertions(+), 25 deletions(-)
+ create mode 100644 sepolicy/renotify.te
+
+diff --git a/sepolicy/audioserver.te b/sepolicy/audioserver.te
+index 16fa371..c403567 100644
+--- a/sepolicy/audioserver.te
++++ b/sepolicy/audioserver.te
+@@ -1,6 +1,10 @@
+-set_prop(audioserver, media_prop)
+-allow audioserver proc_pin_switch:file { read write open };
+-allow audioserver proc_pin_switch:dir search;
+-allow audioserver radio_device:chr_file { read write open };
+-allow audioserver rild:unix_stream_socket connectto;
+-allow audioserver system_file:file execmod;
+\ No newline at end of file
++set_prop(audioserver, media_prop)
++allow audioserver proc_pin_switch:file { read write open };
++allow audioserver proc_pin_switch:dir search;
++allow audioserver radio_device:chr_file { read write open };
++allow audioserver rild:unix_stream_socket connectto;
++allow audioserver system_file:file execmod;
++
++# Access to /dev/pipe/mmi.audio.ctrl
++allow audioserver media_device:fifo_file { open read write };
++allow audioserver media_device:dir search;
+diff --git a/sepolicy/engpc.te b/sepolicy/engpc.te
+index 67cd645..716bcd6 100644
+--- a/sepolicy/engpc.te
++++ b/sepolicy/engpc.te
+@@ -15,5 +15,14 @@ allow engpc media_data_file:file { create open read write getattr setattr };
+ allow engpc media_data_file:dir { search open read write add_name };
+ allow engpc init:unix_stream_socket connectto;
+ allow engpc property_socket:sock_file write;
+-allow engpc shell_exec:file { open read execute execute_no_trans };
++allow engpc shell_exec:file { open read execute execute_no_trans getattr };
+ allow engpc self:netlink_kobject_uevent_socket { create setopt bind read write };
++
++# /proc/cmdline
++allow engpc proc:file { open read };
++
++# /dev/slog_w
++allow engpc slog_device:chr_file { open read write };
++
++# Allow usage of toybox's utilities
++allow engpc toolbox_exec:file { execute execute_no_trans getattr open read };
+diff --git a/sepolicy/file.te b/sepolicy/file.te
+index 805894f..0a58573 100644
+--- a/sepolicy/file.te
++++ b/sepolicy/file.te
+@@ -5,7 +5,9 @@ type proc_cpw, fs_type;
+ type proc_cpt, fs_type;
+ type sysfs_restart_cpc, fs_type, sysfs_type;
+ type sysfs_dynamic_pclk, fs_type, sysfs_type;
++type sysfs_dmcfreq_set_freq, fs_type, sysfs_type;
++type sysfs_wait_for_fb, fs_type, sysfs_type;
+ type at_distributor, exec_type;
+ type modemd, exec_type;
+ type nvitemd_exec, exec_type, file_type;
+-type refnotify_exec, exec_type, file_type;
+\ No newline at end of file
++type refnotify_exec, exec_type, file_type;
+diff --git a/sepolicy/file_contexts b/sepolicy/file_contexts
+index 671da21..a96cb11 100644
+--- a/sepolicy/file_contexts
++++ b/sepolicy/file_contexts
+@@ -101,3 +101,6 @@
+ 
+ # Sysfs
+ /sys/devices/platform/sprd_fb.0/graphics/fb0/dynamic_pclk    u:object_r:sysfs_dynamic_pclk:s0
++/sys/devices/platform/scxx30-dmcfreq.0/devfreq/scxx30-dmcfreq.0/ondemand/set_freq  u:object_r:sysfs_dmcfreq_set_freq:s0
++/sys/power/wait_for_fb_sleep                                 u:object_r:sysfs_wait_for_fb:s0
++/sys/power/wait_for_fb_wake                                  u:object_r:sysfs_wait_for_fb:s0
+diff --git a/sepolicy/mediacodec.te b/sepolicy/mediacodec.te
+index a9edb7d..42bb13b 100644
+--- a/sepolicy/mediacodec.te
++++ b/sepolicy/mediacodec.te
+@@ -1,3 +1,6 @@
+-set_prop(mediacodec, media_prop)
+-allow mediacodec audio_device:chr_file { read write open ioctl };
+-allow mediacodec system_file:file execmod;
+\ No newline at end of file
++set_prop(mediacodec, media_prop)
++allow mediacodec audio_device:chr_file { read write open ioctl };
++allow mediacodec system_file:file execmod;
++
++# Allow changing memory frequency, regarding the devfreq dirver.
++allow mediacodec sysfs_dmcfreq_set_freq:file { open write };
+diff --git a/sepolicy/modemd.te b/sepolicy/modemd.te
+index fccc71d..d74cefa 100644
+--- a/sepolicy/modemd.te
++++ b/sepolicy/modemd.te
+@@ -1,5 +1,5 @@
+-allow rild servicemanager:dir search;
+-allow rild servicemanager:file { read open };
+-allow rild system_app:dir search;
+-allow rild system_app:file { read open };
+-allow rild prod_file:dir search;
++allow rild servicemanager:dir search;
++allow rild servicemanager:file { read open };
++allow rild system_app:dir search;
++allow rild system_app:file { read open };
++allow rild prod_file:dir search;
+diff --git a/sepolicy/netd.te b/sepolicy/netd.te
+index af9fbc1..2f498be 100644
+--- a/sepolicy/netd.te
++++ b/sepolicy/netd.te
+@@ -1 +1,2 @@
+ allow netd kernel:system module_request;
++allow netd self:capability sys_nice;
+diff --git a/sepolicy/nvitemd.te b/sepolicy/nvitemd.te
+index 34f676a..d572854 100644
+--- a/sepolicy/nvitemd.te
++++ b/sepolicy/nvitemd.te
+@@ -1,3 +1,6 @@
+ type nvitemd, domain;
+ 
+ init_daemon_domain(nvitemd)
++
++allow nvitemd radio_block_device:blk_file { open read write };
++allow nvitemd spipe_device:chr_file { open read write };
+diff --git a/sepolicy/renotify.te b/sepolicy/renotify.te
+new file mode 100644
+index 0000000..c98fd10
+--- /dev/null
++++ b/sepolicy/renotify.te
+@@ -0,0 +1,7 @@
++type refnotify, domain;
++
++init_daemon_domain(refnotify)
++
++allow refnotify refnotify_device:chr_file { open read write };
++allow refnotify rtc_device:chr_file { ioctl open read write };
++allow refnotify sysfs_wait_for_fb:file { open read };
+diff --git a/sepolicy/rild.te b/sepolicy/rild.te
+index 739f67e..7ff62bb 100644
+--- a/sepolicy/rild.te
++++ b/sepolicy/rild.te
+@@ -29,4 +29,6 @@ allow rild rild_exec:file entrypoint;
+ allow rild self:capability { fsetid fowner chown };
+ 
+ allow rild unlabeled:file { read write open getattr setattr };
+-allow rild unlabeled:dir search;
+\ No newline at end of file
++allow rild unlabeled:dir search;
++
++allow rild spipe_device:chr_file { open read write };
+diff --git a/sepolicy/system_server.te b/sepolicy/system_server.te
+index f7fc41c..62a6640 100644
+--- a/sepolicy/system_server.te
++++ b/sepolicy/system_server.te
+@@ -1,9 +1,13 @@
+ allow system_server gpu_device:chr_file { read write getattr open ioctl };
+-allow system_server efs_file:dir search;
++allow system_server efs_file:dir { search getattr };
+ allow system_server efs_file:file { read open };
+-allow system_server gps_data_file:dir { search open read write add_name };
++allow system_server gps_data_file:dir { search open read write add_name getattr remove_name setattr };
++allow system_server gps_data_file:file { append getattr open read write };
+ allow system_server gps_data_file:fifo_file { write read open setattr };
++allow system_server gps_data_file:sock_file { create setattr unlink write };
++allow system_server gps_serial_device:chr_file { ioctl open read write };
+ allow system_server radio_prop:property_service set;
+ allow system_server shell_prop:property_service set;
+ allow system_server wpa_socket:unix_dgram_socket sendto;
+-allow system_server unlabeled:file unlink;
+\ No newline at end of file
++allow system_server unlabeled:file unlink;
++allow system_server sysfs_wait_for_fb:file { open read };
+diff --git a/sepolicy/toolbox.te b/sepolicy/toolbox.te
+index cdacf87..efdba6a 100644
+--- a/sepolicy/toolbox.te
++++ b/sepolicy/toolbox.te
+@@ -1,3 +1,7 @@
+-allow toolbox media_device:dir { write add_name };
+-allow toolbox media_device:fifo_file create;
+-allow toolbox toolbox:capability dac_override;
++allow toolbox media_device:dir { write add_name };
++allow toolbox media_device:fifo_file create;
++allow toolbox toolbox:capability dac_override;
++
++# Allow creation of fifo files for IPC of vendor supplied software
++allow toolbox radio_device:dir { add_name write };
++allow toolbox radio_device:fifo_file create;
+diff --git a/sepolicy/zygote.te b/sepolicy/zygote.te
+index 42385ac..8cb989c 100644
+--- a/sepolicy/zygote.te
++++ b/sepolicy/zygote.te
+@@ -9,7 +9,7 @@ allow zygote platform_app_data_file:dir search;
+ allow zygote platform_app_data_file:file { open read getattr append };
+ allow zygote proc:file { write append };
+ allow zygote property_socket:sock_file write;
+-allow zygote self:capability sys_boot;
++allow zygote self:capability { sys_boot sys_nice };
+ allow zygote servicemanager:binder transfer;
+ allow zygote surfaceflinger:binder { call transfer };
+ allow zygote surfaceflinger:fd use;
+@@ -18,4 +18,4 @@ allow zygote system_data_file:dir { create setattr };
+ allow zygote system_prop:property_service set;
+ #allow zygote system:unix_stream_socket { read write };
+ allow zygote kernel:system module_request;
+-allow zygote device:file { open read write getattr };
+\ No newline at end of file
++allow zygote device:file { open read write getattr };
+-- 
+2.21.0
+

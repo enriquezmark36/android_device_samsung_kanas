@@ -1,0 +1,34 @@
+From 80bb60f52a0ec0152fbc608125e12c0adc557fc4 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Fri, 19 Jul 2019 12:48:12 +0800
+Subject: [PATCH 2/2] donotmerge , Do not poll SIGNAL_STRENGTH at all.
+
+This is a quick and dirty workaround to having the phone in dsds mode report
+no signal just because the second sim is absent. This works on the assumption
+that the modem ALWAYS sends the signal strength if it's connected.
+
+From a quick testing, this seems to be caused by the commit:
+b39822359961b15d8f9190bba6fcd53ecc3e7c38 Fixed the incorrect signal strength info displayed after call end.
+
+Change-Id: I1b023f65e5943a1bf8e21f4631951e1f8bf23c48
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ .../com/android/internal/telephony/ServiceStateTracker.java     | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/java/com/android/internal/telephony/ServiceStateTracker.java b/src/java/com/android/internal/telephony/ServiceStateTracker.java
+index abbc1f74c..e449d0c7d 100644
+--- a/src/java/com/android/internal/telephony/ServiceStateTracker.java
++++ b/src/java/com/android/internal/telephony/ServiceStateTracker.java
+@@ -145,7 +145,7 @@ public class ServiceStateTracker extends Handler {
+      * getting unsolicited signal strength updates from the radio, set
+      * value to true and don't bother polling any more.
+      */
+-    private boolean mDontPollSignalStrength = false;
++    private boolean mDontPollSignalStrength = true;
+ 
+     private RegistrantList mVoiceRoamingOnRegistrants = new RegistrantList();
+     private RegistrantList mVoiceRoamingOffRegistrants = new RegistrantList();
+-- 
+2.21.0
+
