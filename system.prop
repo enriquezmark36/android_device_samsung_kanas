@@ -68,9 +68,6 @@ ro.telephony.ril.socket_name=rild,rild1,rild2
 fw.show_multiuserui=1
 fw.max_users=3
 
-# System prop for Atlas service
-config.disable_atlas=true
-
 # zRAM
 ro.config.zram.compressor=lz4
 ro.config.zram.disksize=350M
