@@ -9,6 +9,9 @@
          Below will adjust 6 minfree buckets (in MB) to: 19, 24, 28, 33, 38, 48 -->
     <integer name="config_lowMemoryKillerMinFreeKbytesAbsolute">49152</integer>
 
+    <bool name="config_networkSamplingWakesDevice">false</bool>
+
     <!-- Default bounds [left top right bottom] on screen for picture-in-picture windows. -->
     <string translatable="false" name="config_defaultPictureInPictureBounds">"0 0 333 200"</string>
+
 </resources>
