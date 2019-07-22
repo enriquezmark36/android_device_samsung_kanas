@@ -116,9 +116,14 @@ INIT_FILES := \
 RAMDISK_FILES := \
 	device/samsung/kanas/rootdir/init.board.rc \
 
+# Permissions
+PERMISSIONS_XML_FILES := \
+	frameworks/native/data/etc/android.software.picture_in_picture.xml
+
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(MEDIA_CONFIGS),$(f):system/etc/$(notdir $(f))) \
 	$(foreach f,$(AUDIO_CONFIGS),$(f):system/etc/$(notdir $(f))) \
+	$(foreach f,$(PERMISSIONS_XML_FILES),$(f):system/etc/permissions/$(notdir $(f))) \
 	$(foreach f,$(INIT_FILES),$(f):system/etc/init/$(notdir $(f))) \
 	$(foreach f,$(RAMDISK_FILES),$(f):root/$(notdir $(f))) \
 

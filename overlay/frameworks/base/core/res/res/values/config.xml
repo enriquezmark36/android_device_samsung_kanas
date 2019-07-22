@@ -8,4 +8,7 @@
          bucket, and scaled proportionally to the smaller buckets. 0 keeps the default.
          Below will adjust 6 minfree buckets (in MB) to: 19, 24, 28, 33, 38, 48 -->
     <integer name="config_lowMemoryKillerMinFreeKbytesAbsolute">49152</integer>
+
+    <!-- Default bounds [left top right bottom] on screen for picture-in-picture windows. -->
+    <string translatable="false" name="config_defaultPictureInPictureBounds">"0 0 333 200"</string>
 </resources>
