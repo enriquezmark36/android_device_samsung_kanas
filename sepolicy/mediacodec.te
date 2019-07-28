@@ -1,0 +1,2 @@
+# Allow setting its own priority
+allow mediacodec self:capability sys_nice;

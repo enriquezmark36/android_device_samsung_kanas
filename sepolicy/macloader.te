@@ -1,0 +1,2 @@
+# For executing [shell] commands
+allow macloader shell_exec:file getattr;

@@ -1,0 +1,5 @@
+# For the camera hal blob
+allow cameraserver system_file:file { execmod };
+
+# For some reason, /dev/sprd_sensor is labeled as audio_device?
+allow cameraserver audio_device:chr_file { ioctl open read write };

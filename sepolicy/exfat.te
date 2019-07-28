@@ -1,0 +1,12 @@
+# Capabilities and policies allowing access to exfat fs sdcards
+
+# platform app are usually the native apps that run like adb, logcat
+allow platform_app exfat:dir create_dir_perms;
+allow platform_app exfat:file create_file_perms;
+
+# priv_app are usually the android apps from /system/priv_app/
+allow priv_app exfat:dir { open read search add_name write };
+allow priv_app exfat:file { getattr write read open create };
+
+# Allow common apps to access to exfat fs through binder
+allow untrusted_app exfat:file { read write getattr };
