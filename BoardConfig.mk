@@ -69,6 +69,7 @@ BOARD_SEPOLICY_DIRS += device/samsung/kanas/sepolicy
 # Audio
 # BOARD_USE_LIBATCHANNEL_WRAPPER := true
 # BOARD_USES_SS_VOIP := true
+BOARD_VOICECALL_VOLUME_MAX := 9
 
 # Bootanimation
 TARGET_BOOTANIMATION_HALF_RES := true
