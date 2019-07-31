@@ -18,7 +18,7 @@
 #define LOG_TAG "libgpswrapper"
 // #define LOG_NDEBUG 0
 
-#define ORIGINAL_HAL_PATH "/system/lib/hw/gps.vendor.sc8830.so"
+#define ORIGINAL_HAL_PATH "/vendor/lib/hw/gps.vendor.sc8830.so"
 
 #include <errno.h>
 #include <stdlib.h>
