@@ -121,7 +121,7 @@ BOARD_GLOBAL_CFLAGS += -DCONFIG_CAMERA_ISP
 TARGET_LD_SHIM_LIBS += /system/vendor/lib/hw/camera.sc8830.so|libmemoryheapion.so
 
 # Sensors
-TARGET_USES_SENSORS_WRAPPER := true
+TARGET_USES_SENSORS_WRAPPER := false
 
 # Recovery
 BOARD_HAS_DOWNLOAD_MODE := true
