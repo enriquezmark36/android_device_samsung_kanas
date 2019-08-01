@@ -6,22 +6,24 @@ on early-init
     mount debugfs debugfs /sys/kernel/debug
 
     # set core dump resource limit
-    setrlimit 4 2147483647 2147483647
+    setrlimit 4 -1 -1
 
     # coredump file will not be generated in release version
     write /proc/sys/kernel/core_pattern /dev/null
 
-	chown system system /sys/devices/platform/panel/backlight/panel/brightness
+    chown system system /sys/devices/platform/panel/backlight/panel/brightness
     chown system system /sys/class/input/event0/device/device/enable
     chmod 777 /sys/class/input/event0/device/device/enable
     mount debugfs /sys/kernel/debug /sys/kernel/debug
 
+
 on init
     mkdir /productinfo 0771 system system
-    symlink /dev/block/platform/sdio_emmc/by-name/PERSISTENT /dev/block/persistent
 
     # Support Preload install apks
     mkdir /preload 0771 system system
+
+    mkdir /efs 0774 radio system
 
     # See storage config details at https://source.android.com/devices/storage/
 
@@ -32,8 +34,6 @@ on init
     #thermistor
     chown radio system /sys/class/sec/sec-thermistor/temp_adc
     chown radio system /sys/class/sec/sec-thermistor/temperature
-    chown radio system /sys/class/sec/sec-thermistor/dcxo_temp_adc
-    chown radio system /sys/class/sec/sec-thermistor/dcxo_temperature
 
     chown radio system /sys/class/thermal/thermal_zone1/temp
 
@@ -55,7 +55,7 @@ on fs
     chmod 660 /dev/fb0
 
 on charger
-	write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor "powersave"
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor "powersave"
     mount ext4 /dev/block/platform/sprd-sdhci.3/by-name/system /system ro,barrier=1 wait
 
 service charger /charger
@@ -82,10 +82,15 @@ on post-fs-data
     mkdir /data/anr 0771 system system
     mkdir /data/tombstones 0771 system system
 
+    # Make param block device link
+    chown system system /dev/block/platform/sprd-sdhci.3/by-name/PARAM
+    chmod 0660 /dev/block/platform/sprd-sdhci.3/by-name/PARAM
+    symlink /dev/block/platform/sprd-sdhci.3/by-name/PARAM /dev/block/param
+
     # Set indication (checked by vold) that we have finished this action
     setprop vold.post_fs_data_done 1
 
-	on property:ro.debug_level=0x494d
+on property:ro.debug_level=0x494d
     # Debug Level MID, turn tracing on
     # set ring buf size to 4KB * 4 = 16KB
     write /sys/kernel/debug/tracing/buffer_size_kb 512
@@ -99,6 +104,7 @@ on post-fs-data
     write /sys/kernel/debug/tracing/events/timer/enable 1
     write /sys/kernel/debug/tracing/events/cpufreq_interactive/cpufreq_interactive_setspeed/enable 1
 
+
 on early-boot
     # set RLIMIT_MEMLOCK to 64MB
     setrlimit 8 67108864 67108864
@@ -107,6 +113,7 @@ on early-boot
     mkdir /dev/pipe 0755 system system
     exec -- /system/bin/mknod -m 666 /dev/pipe/mmi.audio.ctrl p
     # Support audio parameter stored
+    mkdir /data/local/media 0775 media system
 
     chmod 660 /proc/cpt/wdtirq
     chmod 660 /proc/cpt/stop
@@ -146,33 +153,38 @@ on early-boot
     chown system root /proc/cpwcn/modem
     chown system root /proc/cpwcn/dsp
 
-    chown system root /sys/class/rtcc/rtcc_trigger
 on boot
+    # Swap one page at a time (default 3)
+    write /proc/sys/vm/page-cluster 0
+
     chmod 0644 /proc/cmdline
     chown system system /sys/module/mali/parameters/gpu_freq_cur
     chown system system /sys/module/mali/parameters/gpu_cur_freq
     chown system system /sys/module/mali/parameters/gpu_freq_max_limit
-    chown system system /sys/module/mali/parameters/gpufreq_max_limit
     chown system system /sys/module/mali/parameters/gpu_freq_min_limit
     chown system system /sys/module/mali/parameters/gpufreq_min_limit
+    chown system system /sys/module/mali/parameters/gpufreq_max_limit
     chown system system /sys/module/mali/parameters/gpufreq_table
     chown system system /sys/kernel/debug/mali0/memory_usage
 
+    chmod 0660 /sys/devices/virtual/camera/rear/Cam_antibanding
+    chown media system /sys/devices/virtual/camera/rear/Cam_antibanding
+
     chown system system /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
     chown system system /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed
-    chown system system /sys/devices/platform/scxx30-dmcfreq.0/devfreq/scxx30-dmcfreq.0/ondemand/set_freq
+    write /sys/devices/platform/scxx30-dmcfreq.0/devfreq/scxx30-dmcfreq.0/governor "ondemand"
+    wait /sys/devices/platform/scxx30-dmcfreq.0/devfreq/scxx30-dmcfreq.0/ondemand
     chown system system /sys/devices/platform/scxx30-dmcfreq.0/devfreq/scxx30-dmcfreq.0/ondemand/set_enable
     chown system system /sys/devices/platform/scxx30-dmcfreq.0/devfreq/scxx30-dmcfreq.0/ondemand/set_upthreshold
     chown system system /sys/devices/platform/scxx30-dmcfreq.0/devfreq/scxx30-dmcfreq.0/ondemand/set_downdifferential
-    chown media system /sys/devices/platform/scxx30-dmcfreq.0/devfreq/scxx30-dmcfreq.0/ondemand/set_request
-    chown system system /dev/iq_mem
+    chown mediacodec system /sys/devices/platform/scxx30-dmcfreq.0/devfreq/scxx30-dmcfreq.0/ondemand/set_freq
+    chown mediacodec system /sys/devices/platform/scxx30-dmcfreq.0/devfreq/scxx30-dmcfreq.0/ondemand/set_request
     chown media system /sys/devices/system/cpu/cpuhotplug/cpu_hotplug_disable
     chown system system /sys/class/graphics/fb0/blank
 
     chmod 0660 /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
     chmod 0660 /sys/devices/platform/scxx30-dmcfreq.0/devfreq/scxx30-dmcfreq.0/ondemand/set_freq
     chmod 0660 /sys/devices/platform/scxx30-dmcfreq.0/devfreq/scxx30-dmcfreq.0/ondemand/set_enable
-    chmod 0440 /dev/iq_mem
     chmod 0660 /sys/class/graphics/fb0/blank
 
 # mdnie
@@ -180,6 +192,8 @@ on boot
     chmod 0664 /sys/class/mdnie/mdnie/scenario
     chown system system /sys/class/mdnie/mdnie/negative
     chmod 0664 /sys/class/mdnie/mdnie/negative
+    chmod 0660 /sys/class/phy/phy_dev/phy_feq
+    chown system system /sys/class/phy/phy_dev/phy_feq
 
 # SENSORS
 # Accelerometer_sensor
@@ -188,30 +202,10 @@ on boot
     chown system radio /sys/class/sensors/accelerometer_sensor/reactive_alert
     chown system radio /sys/class/sensors/accelerometer_sensor/vendor
     chown system radio /sys/class/sensors/accelerometer_sensor/name
-    chown system radio /sys/class/sensors/accelerometer_sensor/selftest
-    chown system radio /sys/class/sensors/accelerometer_sensor/lowpassfilter
     chown system radio /efs/FactoryApp/accel_calibration_data
     chmod 0666 /efs/FactoryApp/accel_calibration_data
-
-# Proximity_sensor
-    chown system radio /sys/class/sensors/proximity_sensor/state
-    chown system radio /sys/class/sensors/proximity_sensor/raw_data
-    chown system radio /sys/class/sensors/proximity_sensor/prox_avg
-    chown system radio /sys/class/sensors/proximity_sensor/prox_cal
-    chown system radio /sys/class/sensors/proximity_sensor/vendor
-    chown system radio /sys/class/sensors/proximity_sensor/name
-    chown system radio /sys/class/sensors/proximity_sensor/thresh_high
-    chown system radio /sys/class/sensors/proximity_sensor/thresh_low
-    chown system radio /sys/class/sensors/proximity_sensor/barcode_emul_en
-
-# Magnetic_sensor
-    chown system radio /sys/class/sensors/magnetic_sensor/name
-    chown system radio /sys/class/sensors/magnetic_sensor/vendor
-    chown system radio /sys/class/sensors/magnetic_sensor/selftest
-
-# MetaEvent
-    chown system radio /sys/class/sensors/sensor_dev/flush
-
+    chown system radio /sys/class/input/input2/en_sig_motion
+    chmod 0664 /sys/class/input/input2/en_sig_motion
 #audio pin mux
     chown system system /proc/pin_switch/bt_iis_sys_sel/cp0_iis2
     chown system system /proc/pin_switch/bt_iis_sys_sel/cp0_iis3
@@ -243,16 +237,17 @@ on boot
 
     chmod 0664 /proc/pin_switch/bt_iis_sys_sel/cp0_iis2
     chmod 0664 /proc/pin_switch/bt_iis_sys_sel/cp0_iis3
-    chmod 0664 /proc/pin_switch/bt_iis_sys_sel/cp0_iis0
+    chmod 0666 /proc/pin_switch/bt_iis_sys_sel/cp0_iis0
     chmod 0664 /proc/pin_switch/bt_iis_sys_sel/cp0_iis1
     chmod 0664 /proc/pin_switch/bt_iis_sys_sel/cp1_iis1
     chmod 0664 /proc/pin_switch/bt_iis_sys_sel/cp1_iis2
-    chmod 0664 /proc/pin_switch/bt_iis_sys_sel/cp1_iis0
+    chmod 0666 /proc/pin_switch/bt_iis_sys_sel/cp1_iis0
     chmod 0664 /proc/pin_switch/bt_iis_sys_sel/cp1_iis3
+    chmod 0666 /proc/pin_switch/bt_iis_sys_sel/cp2_iis0
     chmod 0664 /proc/pin_switch/bt_iis_sys_sel/ap_iis3
     chmod 0664 /proc/pin_switch/bt_iis_sys_sel/ap_iis2
     chmod 0664 /proc/pin_switch/bt_iis_sys_sel/ap_iis1
-    chmod 0664 /proc/pin_switch/bt_iis_sys_sel/ap_iis0
+    chmod 0666 /proc/pin_switch/bt_iis_sys_sel/ap_iis0
     chmod 0664 /proc/pin_switch/bt_iis_sys_sel/vbc_iis
     chmod 0664 /proc/pin_switch/iis01_loop_sel
     chmod 0664 /proc/pin_switch/iis23_loop_sel
@@ -261,13 +256,14 @@ on boot
     chmod 0664 /proc/pin_switch/iis03_loop_sel
     chmod 0664 /proc/pin_switch/iis13_loop_sel
     chmod 0664 /proc/pin_switch/iis1_sys_sel/ap_iis1
-    chmod 0664 /proc/pin_switch/iis0_sys_sel/ap_iis0
-    chmod 0664 /proc/pin_switch/iis0_sys_sel/cp0_iis0
-    chmod 0664 /proc/pin_switch/iis0_sys_sel/cp1_iis0
-    chmod 0664 /proc/pin_switch/iis0_sys_sel/cp2_iis0
+    chmod 0666 /proc/pin_switch/iis0_sys_sel/ap_iis0
+    chmod 0666 /proc/pin_switch/iis0_sys_sel/cp0_iis0
+    chmod 0666 /proc/pin_switch/iis0_sys_sel/cp1_iis0
+    chmod 0666 /proc/pin_switch/iis0_sys_sel/cp2_iis0
     chmod 0664 /proc/pin_switch/iis1_sys_sel/cp2_iis1
     chmod 0664 /proc/pin_switch/iis1_sys_sel/cp0_iis1
     chmod 0664 /proc/pin_switch/iis1_sys_sel/cp1_iis1
+
 
     chown system system /dev/ttyGS0
     chmod 0770 /dev/snd/controlC0
@@ -308,6 +304,7 @@ on boot
 
 # for tsp command
     chown system system /sys/class/sec/tsp/cmd
+    chmod 0664 /sys/class/sec/tsp/cmd
 
 # phone
     setprop ro.telephony.call_ring.multiple 0
@@ -360,38 +357,14 @@ on boot
 # SEC_PRODUCT_FEATURE_COMMON_USE_MULTISIM
     setprop ro.multisim.simslotcount 2
 
-# OTG Test
-    chown system radio /sys/class/host_notify/usb_otg/booster
-    chmod 0664 /sys/class/host_notify/usb_otg/booster
-
 #for efs
     chown radio system /efs
     chmod 0771 /efs
 
-#For Absolute Persistence Partition 
-
-    mkdir /persdata 0755 system system
-    mkdir /persdata/absolute 0750 system system
-
-    wait /dev/block/platform/sdio_emmc/by-name/persdata
-    check_fs /dev/block/platform/sdio_emmc/by-name/persdata ext4
-    mount ext4 /dev/block/platform/sdio_emmc/by-name/persdata /persdata/absolute nosuid nodev barrier=1
-
-    chown system system /persdata
-    chmod 0755 /persdata 
-    chown system system /persdata/absolute
-    chmod 0750 /persdata/absolute
-
-# Broadcom GPS
-    mkdir /data/system 0771 system system
-    chown system system /data/system
-    mkdir /data/system/gps 0771 system system
-    chown system system /data/system/gps
-    rm /data/gps_started
-    rm /data/glonass_started
-    rm /data/beidou_started
-    rm /data/smd_started
-    rm /data/sv_cno.info
+# CSR GPS
+    chown system system /proc/driver/sirf
+    chown system system /dev/ttyS2
+    chmod 0660 /dev/ttyS2
 
 # permissions for bluetooth.
    setprop ro.bt.bdaddr_path "/efs/bluetooth/bt_addr"
@@ -405,10 +378,9 @@ on boot
    chmod 0770 /dev/ttyS0
    chmod 0770 /dev/ttyS1
    chmod 0660 /sys/class/rfkill/rfkill0/state
+   chmod 660 /sys/class/rfkill/rfkill0/type
    chown bluetooth bluetooth /sys/class/rfkill/rfkill0/state
    chown bluetooth bluetooth /sys/class/rfkill/rfkill0/type
-   chmod 0660 /proc/bluetooth/sleep/btwrite
-   chown bluetooth system /proc/bluetooth/sleep/btwrite
 
 #LCD
     chown system system /sys/class/backlight/panel/brightness
@@ -422,7 +394,6 @@ on boot
 
 # Permissions for System Server and daemons.
     chown system system /sys/devices/platform/panel/backlight/panel/brightness
-    write /proc/sys/vm/dirty_writeback_centisecs 1000
 
 on charger
     start console
@@ -438,18 +409,25 @@ on property:ro.config.ksm.support=true
     write /sys/kernel/mm/ksm/sleep_millisecs 500
     write /sys/kernel/mm/ksm/run   1
 
+on property:persist.modem.w.enable=1
     symlink /dev/spipe_w1 /dev/vbpipe1
     symlink /dev/spipe_w2 /dev/vbpipe2
     symlink /dev/spipe_w3 /dev/vbpipe3
     symlink /dev/spipe_w6 /dev/vbpipe6
-    start refnotify_w
+    symlink /dev/block/platform/sprd-sdhci.3/by-name/FIXNV1 /dev/block/platform/sprd-sdhci.3/by-name/fixnv2
+    symlink /dev/block/platform/sprd-sdhci.3/by-name/FIXNV2 /dev/block/platform/sprd-sdhci.3/by-name/fixnv1
+    symlink /dev/block/platform/sprd-sdhci.3/by-name/RUNTIMENV1 /dev/block/platform/sprd-sdhci.3/by-name/runtimenv1
+    symlink /dev/block/platform/sprd-sdhci.3/by-name/RUNTIMENV2 /dev/block/platform/sprd-sdhci.3/by-name/runtimenv2
+    symlink /dev/block/platform/sprd-sdhci.3/by-name/MODEM /dev/block/platform/sprd-sdhci.3/by-name/wmodem
+    symlink /dev/block/platform/sprd-sdhci.3/by-name/WDSP /dev/block/platform/sprd-sdhci.3/by-name/wdsp
     start nvitemd_w
+    start refnotify_w
 
-    chmod 0666 /proc/pin_switch/iis0_sys_sel/cp0_iis0
-    chmod 0666 /proc/pin_switch/iis0_sys_sel/cp1_iis0
-    chmod 0666 /proc/pin_switch/iis0_sys_sel/cp2_iis0
-    chmod 0666 /proc/pin_switch/iis0_sys_sel/ap_iis0
-    chmod 0666 /proc/pin_switch/bt_iis_sys_sel/cp0_iis0
-    chmod 0666 /proc/pin_switch/bt_iis_sys_sel/cp1_iis0
-    chmod 0666 /proc/pin_switch/bt_iis_sys_sel/cp2_iis0
-    chmod 0666 /proc/pin_switch/bt_iis_sys_sel/ap_iis0
+on late-fs
+    write /sys/block/mmcblk0/queue/iostats 0
+    write /sys/block/mmcblk0/queue/nr_requests 256
+    # Should be 128 but there's no guarantee
+    # that the spatial locality would also apply here.
+    # Also suppose that 128 is NOT the default value for read_ahead_kb...
+    write /sys/block/mmcblk0/queue/read_ahead_kb 128
+    write /sys/block/dm-0/queue/read_ahead_kb 128
