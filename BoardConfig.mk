@@ -29,6 +29,11 @@ SOC_SCX35 := true
 # Enable privacy guard's su
 WITH_SU := true
 
+# Work arounds a zygote complaining about keeping open a possibly
+# deleted/closed fd.
+# TODO: Not a proper solution, I think.
+TARGET_SPECIFIC_HEADER_PATH := device/samsung/kanas/include
+
 # Img configuration
 BOARD_BOOTIMAGE_PARTITION_SIZE := 15728640
 BOARD_RECOVERYIMAGE_PARTITION_SIZE := 15728640
