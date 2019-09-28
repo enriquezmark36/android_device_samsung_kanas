@@ -1,0 +1,122 @@
+From 88c61b612f65c582849d1ab9ecaead8cd4cd27fc Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Sat, 10 Aug 2019 22:01:28 +0800
+Subject: [PATCH 06/15] gralloc: scx15: Prepare simple mitigations to get HIDL
+ working
+
+This patch contains two workarounds.
+
+The first workaround creates a dummy but otherwise working fd as a
+replacement to the invalid fd. The dummy fd should allow both cloning
+and transport (via hwbinder) to work properly.
+
+The second workaround prevents the free() callback upon framebuffer
+memory. This is to avoid the new way of allocating a buffer where
+the free() callback is called inside allocate(). I don't know why it is
+done but the framebuffer memory is never allocated in the first place
+only mmap'd once then it's the same forever.
+
+Change-Id: Ide79bbb09c666e096cd07bcc5c4ecd1d0d389614
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ gralloc/scx15/Android.mk         |  9 +++++++++
+ gralloc/scx15/alloc_device.cpp   |  9 +++++++++
+ gralloc/scx15/gralloc_module.cpp | 22 ++++++++++++++++++++++
+ 3 files changed, 40 insertions(+)
+
+diff --git a/gralloc/scx15/Android.mk b/gralloc/scx15/Android.mk
+index b4b89c8..718fa89 100644
+--- a/gralloc/scx15/Android.mk
++++ b/gralloc/scx15/Android.mk
+@@ -72,6 +72,15 @@ LOCAL_CFLAGS += -DSPRD_DITHER_ENABLE
+ LOCAL_SHARED_LIBRARIES += libdither
+ endif
+ 
++ifeq ($(TARGET_USES_HIDL_WORKAROUNDS), true)
++# Creates a dummy fd when travelling via hwbinder
++LOCAL_CFLAGS += -DHIDL_INVALID_FD
++
++# Prevent HIDL from "freeing" FB memory at all.
++# Pun intended.
++LOCAL_CFLAGS += -DHIDL_NO_FREE_FB
++endif
++
+ LOCAL_SRC_FILES := \
+ 	gralloc_module.cpp \
+ 	alloc_device.cpp \
+diff --git a/gralloc/scx15/alloc_device.cpp b/gralloc/scx15/alloc_device.cpp
+index e20f659..1916986 100644
+--- a/gralloc/scx15/alloc_device.cpp
++++ b/gralloc/scx15/alloc_device.cpp
+@@ -472,6 +472,9 @@ static int gralloc_alloc_framebuffer_locked(alloc_device_t* dev, size_t size, in
+ 			AINF("framebuffer accessed with dma buf (fd 0x%x)\n", (int)fb_dma_buf.fd);
+ 			hnd->share_fd = fb_dma_buf.fd;
+ 		}
++	#elif HIDL_INVALID_FD
++		hnd->share_fd = dup(m->framebuffer->fd);
++		AINF("Working around the FD issue. Using %d instead, caveat emptor.\n", hnd->share_fd);
+ 	#endif
+ 	}
+ #endif
+@@ -706,12 +709,18 @@ static int alloc_device_free(alloc_device_t* dev, buffer_handle_t handle)
+ #endif
+ 	if (hnd->flags & private_handle_t::PRIV_FLAGS_FRAMEBUFFER)
+ 	{
++	// We won't actually free the FB when in when the
++	// workaround HIDL_NO_FREE_FB is active since the HIDL implementation
++	// will call free() the moment the allocation had succeeded then has been
++	// registered twice, one in this module, second in the HIDL implementation.
++#ifndef HIDL_NO_FREE_FB
+ 		// free this buffer
+ 		private_module_t* m = reinterpret_cast<private_module_t*>(dev->common.module);
+ 		const size_t bufferSize = m->finfo.line_length * m->info.yres;
+ 		int index = (hnd->base - m->framebuffer->base) / bufferSize;
+ 		m->bufferMask &= ~(1<<index);
+ 		close(hnd->fd);
++#endif
+ 
+ #if GRALLOC_ARM_UMP_MODULE
+ 		if ( (int)UMP_INVALID_MEMORY_HANDLE != hnd->ump_mem_handle )
+diff --git a/gralloc/scx15/gralloc_module.cpp b/gralloc/scx15/gralloc_module.cpp
+index 39ed216..a858562 100644
+--- a/gralloc/scx15/gralloc_module.cpp
++++ b/gralloc/scx15/gralloc_module.cpp
+@@ -78,6 +78,18 @@ static int gralloc_register_buffer(gralloc_module_t const *module, buffer_handle
+ 
+ 	int retval = -EINVAL;
+ 
++#if HIDL_INVALID_FD
++	if (hnd->flags & private_handle_t::PRIV_FLAGS_FRAMEBUFFER)
++	{
++#if HIDL_INVALID_FD
++		AINF("Working around the FD issue Prt2. Closing %d; setting to -1.\n", hnd->share_fd);
++		close(hnd->share_fd);
++		hnd->share_fd = -1;
++#endif
++		return 0;
++	}
++#endif
++
+ 	pthread_mutex_lock(&s_map_lock);
+ 
+ #if GRALLOC_ARM_UMP_MODULE
+@@ -231,6 +243,16 @@ static int gralloc_unregister_buffer(gralloc_module_t const *module, buffer_hand
+ 
+ 	private_handle_t *hnd = (private_handle_t *)handle;
+ 
++#if HIDL_INVALID_FD
++	if (hnd->flags & private_handle_t::PRIV_FLAGS_FRAMEBUFFER)
++	{
++#if HIDL_INVALID_FD
++		AINF("Working around the FD issue Prt3. Silently ignore calls to unregister the FB: %p\n", handle);
++#endif
++		return 0;
++	}
++#endif
++
+ 	AERR_IF(hnd->lockState & private_handle_t::LOCK_STATE_READ_MASK, "[unregister] handle %p still locked (state=%08x)", hnd, hnd->lockState);
+ 
+ 	if (hnd->flags & private_handle_t::PRIV_FLAGS_FRAMEBUFFER)
+-- 
+2.23.0
+

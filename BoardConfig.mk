@@ -62,6 +62,10 @@ NUM_FRAMEBUFFER_SURFACE_BUFFERS := 3
 BOARD_GLOBAL_CFLAGS += -DUSE_3_FRAMEBUFFER
 USE_SPRD_DITHER := false
 
+# Use mitigations to inherent compatibility issues
+# when gralloc is used as a HIDL pass-through module
+TARGET_USES_HIDL_WORKAROUNDS := true
+
 # Audio
 BOARD_USE_LIBATCHANNEL_WRAPPER := true
 BOARD_USES_SS_VOIP := true
