@@ -1,0 +1,88 @@
+From 2d1d5db0fabe26659261652af09c9cb09ea8e4ec Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Thu, 26 Sep 2019 21:07:53 +0800
+Subject: [PATCH 14/15] hwcomposer: scx15: Fix Compilation of OverlayComposer
+
+This patch imposes 2 fixes:
+1. Require libnativewindow when building with OverlayComposer as
+its requirement ANativeWindow can be found in libnativewindow
+rather than the libui library.
+
+2. Use one layer when creating a new GraphicBuffer. Since the concept
+of multple layers does not exists then and this old module doesn't
+use them.
+
+It should be now possible to compile with USE_OVERLAY_COMPOSER_GPU set to true.
+
+Change-Id: I869dd194acee245b21923140f1f377b7bbfad7bb
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ hwcomposer/scx15/Android.mk                            | 3 +++
+ hwcomposer/scx15/OverlayComposer/Layer.cpp             | 2 +-
+ hwcomposer/scx15/OverlayComposer/OverlayComposer.h     | 2 +-
+ hwcomposer/scx15/OverlayComposer/OverlayNativeWindow.h | 2 ++
+ 4 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/hwcomposer/scx15/Android.mk b/hwcomposer/scx15/Android.mk
+index 1721f74..3b0cc96 100644
+--- a/hwcomposer/scx15/Android.mk
++++ b/hwcomposer/scx15/Android.mk
+@@ -186,6 +186,9 @@ LOCAL_SRC_FILES += \
+ 	OverlayComposer/Utility.cpp \
+ 	OverlayComposer/SyncThread.cpp \
+ 
++LOCAL_SHARED_LIBRARIES += \
++	libnativewindow \
++
+ endif
+ 
+ ifeq ($(TARGET_BOARD_PLATFORM),sc8825)
+diff --git a/hwcomposer/scx15/OverlayComposer/Layer.cpp b/hwcomposer/scx15/OverlayComposer/Layer.cpp
+index 1ca4149..7fbf60a 100644
+--- a/hwcomposer/scx15/OverlayComposer/Layer.cpp
++++ b/hwcomposer/scx15/OverlayComposer/Layer.cpp
+@@ -173,7 +173,7 @@ bool Layer::wrapGraphicBuffer()
+     getSizeStride(mPrivH->width, mPrivH->height, mPrivH->format, size, stride);
+ 
+     mGFXBuffer = new GraphicBuffer(mPrivH->width, mPrivH->height,
+-                                   mPrivH->format, GraphicBuffer::USAGE_HW_TEXTURE,
++                                   mPrivH->format, 1, GraphicBuffer::USAGE_HW_TEXTURE,
+                                    stride,
+                                    (native_handle_t*)mPrivH, false);
+     if (mGFXBuffer->initCheck() != NO_ERROR)
+diff --git a/hwcomposer/scx15/OverlayComposer/OverlayComposer.h b/hwcomposer/scx15/OverlayComposer/OverlayComposer.h
+index 39538df..f2bd648 100644
+--- a/hwcomposer/scx15/OverlayComposer/OverlayComposer.h
++++ b/hwcomposer/scx15/OverlayComposer/OverlayComposer.h
+@@ -68,6 +68,7 @@
+ #include <errno.h>
+ #include <fcntl.h>
+ 
++#include <ui/ANativeObjectBase.h>
+ #include <GLES/gl.h>
+ #include <EGL/egl.h>
+ #include <EGL/eglext.h>
+@@ -81,7 +82,6 @@
+ #include <utils/RefBase.h>
+ #include <utils/List.h>
+ 
+-#include <ui/ANativeObjectBase.h>
+ 
+ #include "gralloc_priv.h"
+ 
+diff --git a/hwcomposer/scx15/OverlayComposer/OverlayNativeWindow.h b/hwcomposer/scx15/OverlayComposer/OverlayNativeWindow.h
+index 1f8727d..f7cfc34 100644
+--- a/hwcomposer/scx15/OverlayComposer/OverlayNativeWindow.h
++++ b/hwcomposer/scx15/OverlayComposer/OverlayNativeWindow.h
+@@ -35,6 +35,8 @@
+ 
+ #include <ui/ANativeObjectBase.h>
+ #include <ui/Fence.h>
++#include <system/window.h>
++
+ #include "gralloc_priv.h"
+ #include "Utility.h"
+ 
+-- 
+2.23.0
+
