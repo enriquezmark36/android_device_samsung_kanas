@@ -1,0 +1,50 @@
+From 7c50b354c78c2c3c46970b0dee39f975663d381d Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Sun, 11 Aug 2019 16:07:52 +0800
+Subject: [PATCH 07/15] omx_components: fix SOC_SCX35 patchset merge fail
+
+Rename "include_makefiles" to "include_list", the source has changed since Android N.
+This should fix the libstragefright_* files not being built.
+
+Change-Id: Id4b8484275b07b3e2b61c9a0b18697f2d4f429d1
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ omx_components/video/avc_sprd/Android.mk      | 4 ++--
+ omx_components/video/m4v_h263_sprd/Android.mk | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/omx_components/video/avc_sprd/Android.mk b/omx_components/video/avc_sprd/Android.mk
+index 5bc69b1..c5591d8 100644
+--- a/omx_components/video/avc_sprd/Android.mk
++++ b/omx_components/video/avc_sprd/Android.mk
+@@ -23,9 +23,9 @@ include_list := \
+ 	$(LOCAL_PATH)/thumbnail/Android.mk \
+ 
+ ifeq ($(SOC_SCX35),true)
+-include_makefiles += $(call all-named-subdir-makefiles, scx15)
++include_list += $(call all-named-subdir-makefiles, scx15)
+ else
+-include_makefiles += $(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM))
++include_list += $(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM))
+ endif
+ 
+ include $(include_list)
+diff --git a/omx_components/video/m4v_h263_sprd/Android.mk b/omx_components/video/m4v_h263_sprd/Android.mk
+index 5bc69b1..c5591d8 100644
+--- a/omx_components/video/m4v_h263_sprd/Android.mk
++++ b/omx_components/video/m4v_h263_sprd/Android.mk
+@@ -23,9 +23,9 @@ include_list := \
+ 	$(LOCAL_PATH)/thumbnail/Android.mk \
+ 
+ ifeq ($(SOC_SCX35),true)
+-include_makefiles += $(call all-named-subdir-makefiles, scx15)
++include_list += $(call all-named-subdir-makefiles, scx15)
+ else
+-include_makefiles += $(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM))
++include_list += $(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM))
+ endif
+ 
+ include $(include_list)
+-- 
+2.23.0
+
