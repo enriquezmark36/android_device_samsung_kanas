@@ -1,0 +1,49 @@
+From 7cd5510a1889e151d5e03fd021efb0ed5f74c3b9 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Fri, 27 Sep 2019 22:04:29 +0800
+Subject: [PATCH] soong_config: Add BOARD_CANT_REALLOCATE_OMX_BUFFERS
+
+Change-Id: Iee0798705901534c8b8a15d883b2e1eac29c4dd4
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ build/soong/android/variable.go | 4 ++++
+ build/soong/soong_config.mk     | 1 +
+ 2 files changed, 5 insertions(+)
+
+diff --git a/build/soong/android/variable.go b/build/soong/android/variable.go
+index d92ae929..2765a75a 100644
+--- a/build/soong/android/variable.go
++++ b/build/soong/android/variable.go
+@@ -6,6 +6,9 @@ type Product_variables struct {
+ 	Needs_legacy_camera_hal1_dyn_native_handle struct {
+ 		Cppflags []string
+ 	}
++	Board_cant_reallocate_omx_buffers struct {
++		Cppflags []string
++	}
+ 	Needs_text_relocations struct {
+ 		Cppflags []string
+ 	}
+@@ -30,6 +33,7 @@ type Product_variables struct {
+ type ProductVariables struct {
+ 	Has_legacy_camera_hal1  *bool `json:",omitempty"`
+ 	Needs_legacy_camera_hal1_dyn_native_handle  *bool `json:",omitempty"`
++	Board_cant_reallocate_omx_buffers  *bool `json:",omitempty"`
+ 	Needs_text_relocations  *bool `json:",omitempty"`
+ 	Specific_camera_parameter_library  *string `json:",omitempty"`
+ 	Target_shim_libs  *string `json:",omitempty"`
+diff --git a/build/soong/soong_config.mk b/build/soong/soong_config.mk
+index 0c98c89c..65906d6d 100644
+--- a/build/soong/soong_config.mk
++++ b/build/soong/soong_config.mk
+@@ -6,6 +6,7 @@ lineage_soong:
+ 	echo '"Lineage": {'; \
+ 	echo '    "Has_legacy_camera_hal1": $(if $(filter true,$(TARGET_HAS_LEGACY_CAMERA_HAL1)),true,false),'; \
+ 	echo '    "Needs_legacy_camera_hal1_dyn_native_handle": $(if $(filter true,$(TARGET_NEEDS_LEGACY_CAMERA_HAL1_DYN_NATIVE_HANDLE)),true,false),'; \
++	echo '    "Board_cant_reallocate_omx_buffers": $(if $(filter true,$(BOARD_CANT_REALLOCATE_OMX_BUFFERS)),true,false),'; \
+ 	echo '    "Needs_text_relocations": $(if $(filter true,$(TARGET_NEEDS_PLATFORM_TEXT_RELOCATIONS)),true,false),'; \
+ 	echo '    "Specific_camera_parameter_library": "$(TARGET_SPECIFIC_CAMERA_PARAMETER_LIBRARY)",'; \
+ 	echo '    "Target_shim_libs": "$(subst $(space),:,$(TARGET_LD_SHIM_LIBS))",'; \
+-- 
+2.23.0
+
