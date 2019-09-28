@@ -102,7 +102,7 @@ TARGET_OTA_ASSERT_DEVICE := kanas,kanas3g,kanas3gxx,kanas3gub,kanas3gnfcxx,kanas
 MALLOC_SVELTE := true
 
 # Tell vold that we have a kernel based impl of exfat
-TARGET_KERNEL_HAVE_EXFAT := true
+TARGET_EXFAT_DRIVER := exfat
 
 # Enable dex-preoptimization to speed up the first boot sequence
 # WITH_DEXPREOPT := true
