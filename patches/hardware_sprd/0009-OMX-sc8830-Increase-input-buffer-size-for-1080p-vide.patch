@@ -1,0 +1,49 @@
+From ef51bbd42bb253a3de67e80b790afd6d40d5b27f Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Sun, 29 Jul 2018 15:06:16 +0800
+Subject: [PATCH 09/15] OMX: sc8830: Increase input buffer size for 1080p
+ videos
+
+This allows playback of some 1080p videos whose frame is just large in file size.
+But, you may still get ion alloc error if it gets too large. (can be fixed in the kernel)
+
+Change-Id: Ifd6587267cc2c3c584e95066591b763f0b4ce450
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ .../video/avc_sprd/scx15/dec/SPRDAVCDecoder.cpp        | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/omx_components/video/avc_sprd/scx15/dec/SPRDAVCDecoder.cpp b/omx_components/video/avc_sprd/scx15/dec/SPRDAVCDecoder.cpp
+index 95086cb..60b86be 100644
+--- a/omx_components/video/avc_sprd/scx15/dec/SPRDAVCDecoder.cpp
++++ b/omx_components/video/avc_sprd/scx15/dec/SPRDAVCDecoder.cpp
+@@ -626,11 +626,16 @@ OMX_ERRORTYPE SPRDAVCDecoder::internalSetParameter(
+             change_ddr_freq();
+         }
+ 
+-        if (!((mWidth < 1280 && mHeight < 720) || (mWidth < 720 && mHeight < 1280))) {
++        long area = mHeight * mWidth;
++        if (area >= 2073600 /*1920 * 1080*/) {
++            PortInfo *port = editPortInfo(kInputPortIndex);
++            if(port->mDef.nBufferSize < 1566720)
++                port->mDef.nBufferSize = 1566720 /* 1920*1088*3/4 */;
++        } else if (area >= 921600 /* 1280*720 */) {
+             PortInfo *port = editPortInfo(kInputPortIndex);
+             if(port->mDef.nBufferSize < 384*1024)
+                 port->mDef.nBufferSize = 384*1024;
+-        } else if (!((mWidth < 720 && mHeight < 480) || (mWidth < 480 && mHeight < 720))) {
++        } else if (area >= 345600 /* 720*480 */) {
+             PortInfo *port = editPortInfo(kInputPortIndex);
+             if(port->mDef.nBufferSize < 256*1024)
+                 port->mDef.nBufferSize = 256*1024;
+@@ -1154,6 +1159,7 @@ bool SPRDAVCDecoder::handlePortSettingChangeEvent(const H264SwDecInfo *info) {
+         if (info->numRefFrames > def->nBufferCountActual-(2+1+info->has_b_frames)) {
+             ALOGI("%s, %d, info->numRefFrames: %d, info->has_b_frames: %d, def->nBufferCountActual: %d", __FUNCTION__, __LINE__, info->numRefFrames, info->has_b_frames, def->nBufferCountActual);
+             def->nBufferCountActual = info->numRefFrames + (2+1+info->has_b_frames);
++	    ALOGI("%s, %d, we expect def->nBufferCountActual=%d", __FUNCTION__, __LINE__, def->nBufferCountActual);
+         }
+ 
+         updatePortDefinitions();
+-- 
+2.23.0
+

@@ -1,0 +1,44 @@
+From 2d91e1742c2274cdb15b42d23be00bee058c449a Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Sat, 15 Dec 2018 14:32:28 +0800
+Subject: [PATCH 11/15] libcamera: scx15: Strip the _sprd suffix from
+ libmemoryheapion_sprd
+
+The library has already been renamed preventing this from building properly
+
+Change-Id: Icfc33f2a566fee393735e381c289c5d3c72c0578
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ libcamera/scx15/Camera.mk  | 2 +-
+ libcamera/scx15/Camera2.mk | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libcamera/scx15/Camera.mk b/libcamera/scx15/Camera.mk
+index 1bafee8..77dcc83 100644
+--- a/libcamera/scx15/Camera.mk
++++ b/libcamera/scx15/Camera.mk
+@@ -240,7 +240,7 @@ endif
+ LOCAL_MODULE_TAGS := optional
+ 
+ ifeq ($(strip $(sc8830like)),1)
+-LOCAL_SHARED_LIBRARIES := libexif libutils libbinder libcamera_client libskia libcutils libsqlite libhardware libmorpho_easy_hdr libcamera_metadata libmemoryheapion_sprd
++LOCAL_SHARED_LIBRARIES := libexif libutils libbinder libcamera_client libskia libcutils libsqlite libhardware libmorpho_easy_hdr libcamera_metadata libmemoryheapion
+ endif
+ 
+ ifdef CONFIG_CAMERA_ISP
+diff --git a/libcamera/scx15/Camera2.mk b/libcamera/scx15/Camera2.mk
+index 88765ae..f71ed8d 100644
+--- a/libcamera/scx15/Camera2.mk
++++ b/libcamera/scx15/Camera2.mk
+@@ -237,7 +237,7 @@ endif
+ LOCAL_MODULE_TAGS := optional
+ 
+ ifeq ($(strip $(sc8830like)),1)
+-LOCAL_SHARED_LIBRARIES := libexif libutils libbinder libcamera_client libskia libcutils libsqlite libhardware libmorpho_easy_hdr libcamera_metadata libmemoryheapion_sprd
++LOCAL_SHARED_LIBRARIES := libexif libutils libbinder libcamera_client libskia libcutils libsqlite libhardware libmorpho_easy_hdr libcamera_metadata libmemoryheapion
+ endif
+ 
+ ifdef CONFIG_CAMERA_ISP
+-- 
+2.23.0
+
