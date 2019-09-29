@@ -1,4 +1,4 @@
-From e073bd4dee1f78e4b3730f7cb546cda199add376 Mon Sep 17 00:00:00 2001
+From 965f15e36845d72b30681a35b6ef7f45ead61c26 Mon Sep 17 00:00:00 2001
 From: Mark Enriquez <enriquezmark36@gmail.com>
 Date: Fri, 27 Sep 2019 21:36:26 +0800
 Subject: [PATCH] libstagefright: Make it possible to skip OMX buffer
@@ -20,10 +20,11 @@ on the vendor/lineage directory.
 Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
 
 Change-Id: I87a9ac8cfce491307402b0efb545ee152c14eb7c
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
 ---
- media/libstagefright/ACodec.cpp     | 9 +++++++++
- media/libstagefright/omx/Android.bp | 3 +++
- 2 files changed, 12 insertions(+)
+ media/libstagefright/ACodec.cpp | 9 +++++++++
+ media/libstagefright/Android.bp | 5 +++++
+ 2 files changed, 14 insertions(+)
 
 diff --git a/media/libstagefright/ACodec.cpp b/media/libstagefright/ACodec.cpp
 index def8ada3c..52d69429e 100644
@@ -52,20 +53,22 @@ index def8ada3c..52d69429e 100644
  
      err = native_window_set_buffer_count(
              mNativeWindow.get(), def.nBufferCountActual);
-diff --git a/media/libstagefright/omx/Android.bp b/media/libstagefright/omx/Android.bp
-index 1a00fb950..a2b6589a9 100644
---- a/media/libstagefright/omx/Android.bp
-+++ b/media/libstagefright/omx/Android.bp
-@@ -84,6 +84,9 @@ cc_library_shared {
-             needs_legacy_camera_hal1_dyn_native_handle: {
-                 cppflags: ["-DNEEDS_LEGACY_CAMERA_HAL1_DYN_NATIVE_HANDLE"],
-             },
-+            Board_cant_reallocate_omx_buffers: {
+diff --git a/media/libstagefright/Android.bp b/media/libstagefright/Android.bp
+index c8d4e4aaa..6ed11bf0a 100644
+--- a/media/libstagefright/Android.bp
++++ b/media/libstagefright/Android.bp
+@@ -146,6 +146,11 @@ cc_library_shared {
+             // enable experiments only in userdebug and eng builds
+             cflags: ["-DENABLE_STAGEFRIGHT_EXPERIMENTS"],
+         },
++        lineage: {
++            board_cant_reallocate_omx_buffers: {
 +                cppflags: ["-DBOARD_CANT_REALLOCATE_OMX_BUFFERS"],
 +            },
-             uses_qcom_bsp_legacy: {
-                 cppflags: ["-DQCOM_BSP_LEGACY"],
-             },
++        },
+     },
+ 
+     sanitize: {
 -- 
 2.23.0
 
