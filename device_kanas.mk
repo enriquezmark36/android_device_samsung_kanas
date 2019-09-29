@@ -77,6 +77,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	gps.default
 
+# Explicitly include mkf2fsuserimg.sh
+PRODUCT_PACKAGES += \
+	mkf2fsuserimg.sh
+
 # Prebuilt targets overrides:
 # These files are declared as prebuilt targets in some Android.mk files
 # but need some device specific modifications.
