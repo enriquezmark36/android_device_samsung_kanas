@@ -1,0 +1,50 @@
+From 347f1cdf84ae15b33d41b56656f1c0517b087021 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Sat, 27 Jul 2019 16:41:37 +0800
+Subject: [PATCH 13/13] audio: scx15: Add the ability to specify the maximum
+ AT+VGR value
+
+On some devices, the maximum value can vary.
+For example, on SM-G355H the max is 9.
+
+This value, from what I could research, controls the receive gain.
+Should help amplify voice calls in case when the default value is less than the maximum.
+
+Change-Id: Ie5a3345a8e13fffb3a85445f2d70f3ad2d3b9e1b
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ audio/scx15/Android.mk            | 6 ++++++
+ audio/scx15/at_commands_generic.c | 2 ++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/audio/scx15/Android.mk b/audio/scx15/Android.mk
+index 0d1ebfb..b7c4afa 100644
+--- a/audio/scx15/Android.mk
++++ b/audio/scx15/Android.mk
+@@ -44,6 +44,12 @@ else
+ LOCAL_CFLAGS += -DVOIP_DSP_PROCESS
+ endif
+ 
++# Some modems did support a max volume more or less than the default
++# value. Nevertheless if this is not set, the default will be used.
++ifneq ($(BOARD_VOICECALL_VOLUME_MAX), )
++LOCAL_CFLAGS += -DVOICECALL_VOLUME_MAX_UI=$(BOARD_VOICECALL_VOLUME_MAX)
++endif
++
+ LOCAL_C_INCLUDES += \
+ 	external/tinyalsa/include \
+ 	external/expat/lib \
+diff --git a/audio/scx15/at_commands_generic.c b/audio/scx15/at_commands_generic.c
+index abd2fce..dd4af77 100644
+--- a/audio/scx15/at_commands_generic.c
++++ b/audio/scx15/at_commands_generic.c
+@@ -1,4 +1,6 @@
++#ifndef VOICECALL_VOLUME_MAX_UI
+ #define VOICECALL_VOLUME_MAX_UI	6
++#endif
+ #define AT_RESPONSE_LEN 1024
+ 
+ enum {
+-- 
+2.21.0
+

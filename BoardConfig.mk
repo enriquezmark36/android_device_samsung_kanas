@@ -29,6 +29,11 @@ SOC_SCX35 := true
 # Enable privacy guard's su
 WITH_SU := true
 
+# Work arounds a zygote complaining about keeping open a possibly
+# deleted/closed fd.
+# TODO: Not a proper solution, I think.
+TARGET_SPECIFIC_HEADER_PATH := device/samsung/kanas/include
+
 # Img configuration
 BOARD_BOOTIMAGE_PARTITION_SIZE := 15728640
 BOARD_RECOVERYIMAGE_PARTITION_SIZE := 15728640
@@ -69,6 +74,7 @@ BOARD_SEPOLICY_DIRS += device/samsung/kanas/sepolicy
 # Audio
 # BOARD_USE_LIBATCHANNEL_WRAPPER := true
 # BOARD_USES_SS_VOIP := true
+BOARD_VOICECALL_VOLUME_MAX := 9
 
 # Bootanimation
 TARGET_BOOTANIMATION_HALF_RES := true
@@ -117,6 +123,7 @@ TARGET_KERNEL_HAVE_EXFAT := true
 WITH_DEXPREOPT := true
 
 # Camera
+TARGET_HAS_LEGACY_CAMERA_HAL1 := true
 TARGET_BOARD_CAMERA_HAL_VERSION := HAL1.0
 TARGET_BOARD_CAMERA_ANDROID_ZSL_MODE := false
 TARGET_BOARD_BACK_CAMERA_ROTATION := false

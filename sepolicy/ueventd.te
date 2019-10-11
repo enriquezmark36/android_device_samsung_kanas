@@ -1,0 +1,2 @@
+# Allows audio character file to be opened by TinyALSA
+allow ueventd audio_device:chr_file { relabelfrom relabelto };

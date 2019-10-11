@@ -1,0 +1,3 @@
+allow sudaemon activity_service:service_manager find;
+allow sudaemon package_service:service_manager find;
+allow sudaemon usagestats_service:service_manager find;

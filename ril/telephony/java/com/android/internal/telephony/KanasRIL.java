@@ -32,6 +32,7 @@ import android.telephony.TelephonyManager;
 import com.android.internal.telephony.uicc.SpnOverride;
 import com.android.internal.telephony.uicc.IccUtils;
 import com.android.internal.telephony.RILConstants;
+import com.android.internal.telephony.gsm.SmsBroadcastConfigInfo;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -133,29 +134,113 @@ public class KanasRIL extends SamsungSPRDRIL implements CommandsInterface {
     }
 
     @Override
-    protected RadioState getRadioStateFromInt(int stateInt) {
-        RadioState state;
+    public void setGsmBroadcastConfig(SmsBroadcastConfigInfo[] config, Message response) {
+        /* TODO: Anyway to remove the predefined list?
+         * It looks like that the modem can only support 20 different message identifier at a time.
+         * The observed problem here is that on Android 7 and above the ids
+         * set easily exceed 20 and the modem seem to have problems dealing with
+         * the extra like being unable to show the extra IDs when queried.
+         *
+         * Based on the first few tests, a small contribution on the elevated
+         * power consumption is observed specially on 3G, 2G seems to be unaffected.
+	 *
+         * The RIL also does not seem to unset the IDs when disabled from
+         * Android which means once an ID is enabled, it can't be disabled
+         * from the RIL (or through Android).
+         * One way to unset is by issuing an AT command from elsewhere.
+         *
+         * This approach limits the IDs to set by matching the range to a predefined list of IDs.
+         *
+	 * 4352,4353,4354,4356,4370,4371,4372,4373,4374,4375,4376,4377,4378,4379,4383
+         */
 
-        /* RIL_RadioState ril.h */
-        switch(stateInt) {
-            case 0: state = RadioState.RADIO_OFF; break;
-            case 1: state = RadioState.RADIO_UNAVAILABLE; break;
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            case 7:
-            case 8:
-            case 9:
-            case 10:
-            case 13: state = RadioState.RADIO_ON; break;
+        ArrayList<Integer> parcel = new ArrayList<Integer>();
+        int numOfConfig = config.length;
+        int[] id = new int[]{4352,4353,4354,4356,4370,4371,4372,4373,4374,4375,4376,4377,4378,4379,4383};
 
-            default:
-                throw new RuntimeException(
-                            "Unrecognized RIL_RadioState: " + stateInt);
+        if (RILJ_LOGD) {
+            riljLog("setGsmBroadcastConfig: called with " + numOfConfig + " configs:");
+
+            for (int i = 0; i < numOfConfig; i++)
+                riljLog(config[i].toString());
+
+            riljLog("setGsmBroadcastConfig: filtering ranges: ");
         }
-        return state;
+
+        for(int i = 0; i < numOfConfig; i++) {
+            int toId = config[i].getToServiceId();
+            int lastGoodFrom = config[i].getFromServiceId();
+            int lastGoodTo = -1;
+            int fromCodeScheme = config[i].getFromCodeScheme();
+            int toCodeScheme = config[i].getToCodeScheme();
+            boolean isSelected = config[i].isSelected();
+
+            if ((lastGoodFrom > id[id.length - 1]) || (toId < id[0])) {
+                if (RILJ_LOGD)
+                    riljLog("Config skipped, not supported: "+ config[i].toString());
+                continue;
+            }
+
+            if (toId > id[id.length - 1])
+                toId = id[id.length - 1];
+
+            for( int j = lastGoodFrom; j <= toId ; j++) {
+                int indx = Arrays.binarySearch(id, j);
+                if (((indx < id.length) && (indx >= 0)) && id[indx] == j) {
+                    if (lastGoodTo == -1)
+                        lastGoodFrom = j;
+                    lastGoodTo = j;
+
+                    if (j < toId)
+                        continue;
+                }
+
+                if (lastGoodTo == -1)
+                    continue;
+
+                if (RILJ_LOGD) {
+                    riljLog(
+                        "SmsBroadcastConfigInfo: Id [" +
+                        lastGoodFrom + ',' + lastGoodTo + "] Code [" +
+                        fromCodeScheme + ',' + toCodeScheme + "] " +
+                        (isSelected ? "ENABLED" : "DISABLED")
+                    );
+
+                }
+
+                parcel.add(lastGoodFrom);
+                parcel.add(lastGoodTo);
+                parcel.add(fromCodeScheme);
+                parcel.add(toCodeScheme);
+                parcel.add(isSelected ? 1 : 0);
+
+                lastGoodTo = -1;
+            }
+        }
+
+
+        if (parcel.size() == 0) {
+            if (RILJ_LOGD)
+                riljLog("setGsmBroadcastConfig: but no configs seem to be valid.");
+
+            AsyncResult.forMessage(response, null, new CommandException(
+                    CommandException.Error.GENERIC_FAILURE));
+            response.sendToTarget();
+        } else {
+            int totalNumOfConfig = parcel.size();
+            RILRequest rr = RILRequest.obtain(RIL_REQUEST_GSM_SET_BROADCAST_CONFIG, response);
+
+            if (RILJ_LOGD)
+                riljLog(rr.serialString() + "> " + requestToString(rr.mRequest)
+                        + " with " + (totalNumOfConfig / 5) + " configs.");
+
+            rr.mParcel.writeInt(totalNumOfConfig / 5);
+
+            for(int i=0; i < totalNumOfConfig ; i++)
+                rr.mParcel.writeInt(parcel.get(i));
+
+            send(rr);
+        }
     }
 
     @Override

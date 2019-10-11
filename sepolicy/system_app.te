@@ -1,2 +1,2 @@
 # For AdvancedDisplay and MDNIE scenarios
-allow system_app sysfs_mdnie:file { open read write };
+allow system_app sysfs_mdnie:file { open read write getattr };
