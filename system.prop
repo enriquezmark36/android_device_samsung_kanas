@@ -59,7 +59,10 @@ sys.usb.gser.count=2
 ro.ril.hsxpa=1
 ro.ril.gprsclass=10
 persist.radio.multisim.config=dsds
+
+# Try seting this to "SandroidTeamRIL" when RIL related problems occur
 ro.telephony.ril_class=KanasRIL
+
 ro.telephony.ril.config=setPrefNwTypeOnUnsolConnected
 ro.ril.telephony.mqanelements=6
 ro.telephony.ril.socket_name=rild,rild1,rild2
