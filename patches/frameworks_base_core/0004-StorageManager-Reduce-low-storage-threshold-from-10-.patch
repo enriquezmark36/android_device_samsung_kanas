@@ -1,0 +1,30 @@
+From 853b3dcdcae3e804c8ec09ef7df0a25e16f29e09 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Sun, 10 Feb 2019 14:23:05 +0800
+Subject: [PATCH 4/4] StorageManager: Reduce low storage threshold from 10% to
+ 3%, 500MB to 100MB
+
+Change-Id: I8e6b05844819055aadf504724b2fe961d4c8025b
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ core/java/android/os/storage/StorageManager.java | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/core/java/android/os/storage/StorageManager.java b/core/java/android/os/storage/StorageManager.java
+index 12f703d7574..76fdb815763 100644
+--- a/core/java/android/os/storage/StorageManager.java
++++ b/core/java/android/os/storage/StorageManager.java
+@@ -1023,8 +1023,8 @@ public class StorageManager {
+     }
+ 
+     /** {@hide} */
+-    private static final int DEFAULT_THRESHOLD_PERCENTAGE = 10;
+-    private static final long DEFAULT_THRESHOLD_MAX_BYTES = 500 * MB_IN_BYTES;
++    private static final int DEFAULT_THRESHOLD_PERCENTAGE = 3;
++    private static final long DEFAULT_THRESHOLD_MAX_BYTES = 100 * MB_IN_BYTES;
+     private static final long DEFAULT_FULL_THRESHOLD_BYTES = MB_IN_BYTES;
+ 
+     /**
+-- 
+2.20.1
+
