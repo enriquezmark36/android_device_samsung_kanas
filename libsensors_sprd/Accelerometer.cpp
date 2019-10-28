@@ -175,7 +175,7 @@ int Accelerometer::setDelay(int32_t handle, int64_t delay_ns)
 		err = write_sys_attribute(input_sysfs_path, buffer, bytes);
 		if (err == 0) {
 			mDelay = delay_ns;
-			ALOGD("Accelerometer: Control set delay %f ms requetsed, ",
+			ALOGD("Accelerometer: Control set delay %f ms requested, ",
 			      delay_ns/1000000.0f);
 		}
 	}
@@ -294,9 +294,8 @@ int Accelerometer::readEvents(sensors_event_t * data, int count)
 int Accelerometer::batch(int handle, int flags, int64_t period_ns, int64_t timeout) {
 	(void)flags;
 	(void)timeout;
-	if (mEnabled) {
-		setDelay(handle, period_ns);
-	}
+    (void)period_ns;
+    (void)handle;
 	return 0;
 }
 
