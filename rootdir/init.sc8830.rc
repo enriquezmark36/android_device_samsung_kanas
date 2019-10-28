@@ -88,9 +88,10 @@ on post-fs
     chmod 0771 /productinfo
     insmod /system/lib/modules/mali.ko
 
-    # Slave bind mount /data/media/legacy for some applications
-    mkdir /data/media/legacy 0771 media_rw media_rw
-    mount none /data/media/0 /data/media/legacy slave bind rec
+    # Create a symbolic link on /data/media/legacy for some applications
+    symlink /data/media/legacy /data/media/0
+    chmod 0771 /data/media/legacy
+    chown media_rw media_rw /data/media/legacy
 
 on post-fs-data
     # Set indication (checked by vold) that we have finished this action
