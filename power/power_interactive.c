@@ -37,7 +37,6 @@
 #include <hardware/power.h>
 
 #define CPU_SYSFS_PATH "/sys/devices/system/cpu/cpu0"
-#define CPU_INTERACTIVE_PATH "/sys/devices/system/cpu/cpufreq/interactive"
 
 #define BOOST_PATH        "/boost"
 #define BOOSTPULSE_PATH   "/boostpulse"
@@ -47,11 +46,23 @@
 
 #define MAX_FREQ_PATH     "/cpufreq/scaling_max_freq"
 #define MIN_FREQ_PATH     "/cpufreq/scaling_min_freq"
+#define CPU_MAX_FREQ_PATH "/cpufreq/cpuinfo_max_freq"
+#define CPU_MIN_FREQ_PATH "/cpufreq/cpuinfo_min_freq"
 
-#define LCD_FPS_PATH     "/sys/devices/virtual/dispc/dispc/fps"
-#define GPU_MAX_FREQ_PATH "/sys/power/gpufreq_max_limit"
-#define GPU_MIN_FREQ_PATH "/sys/power/gpufreq_min_limit"
-#define GPU_FREQ_CHECK    "/sys/module/mali/parameters/mali_max_pp_cores_group_1"
+#define GOVNOR_NAME_PATH  "/cpufreq/scaling_governor"
+
+#define LCD_FPS_PATH      "/sys/devices/virtual/dispc/dispc/fps"
+
+#define GPU_CORE_SCALER   "/sys/module/mali/parameters/mali_core_scaling"
+#define GPU_CORE_NUM      "/sys/module/mali/parameters/mali_max_pp_cores_group_1"
+#define GPU_CORE_TARUTIL  "/sys/module/mali/parameters/mali_core_tarutil"
+#define GPU_CORE_MINLOAD  "/sys/module/mali/parameters/mali_core_minload"
+
+// Sustainable frequency
+#define CPU_SUST_FREQ     "1000000"
+
+#define CPU_LIMIT_MAX     "/sys/power/cpufreq_max_limit"
+#define CPU_LIMIT_MIN     "/sys/power/cpufreq_min_limit"
 
 #define PARAM_MAXLEN      10
 
@@ -62,7 +73,8 @@ struct samsung_power_module {
     pthread_mutex_t lock;
     int boost_fd;
     int boostpulse_fd;
-    int limit_gpu_freq;
+    int cpufreq_limit;
+    int gpu_core_scale;
     char hispeed_freq[PARAM_MAXLEN];
     char max_freq[PARAM_MAXLEN];
     char min_freq[PARAM_MAXLEN];
@@ -77,7 +89,14 @@ enum power_profile_e {
     PROFILE_MAX
 };
 
+enum cpufreq_limit_e {
+    CPUFREQ_MIN_LIMIT = 0,
+    CPUFREQ_MAX_LIMIT,
+    CPUFREQ_MIN_RESTORE,
+    CPUFREQ_MAX_RESTORE,
+};
 static enum power_profile_e current_power_profile = PROFILE_BALANCED;
+static char cpu_governor_path[255] = "/sys/devices/system/cpu/cpufreq/";
 
 /**********************************************************
  *** HELPER FUNCTIONS
@@ -156,19 +175,19 @@ static void cpu_sysfs_write(const char *param, char s[PARAM_MAXLEN])
     sysfs_write(path, s);
 }
 
-static void cpu_interactive_read(const char *param, char s[PARAM_MAXLEN])
+static void cpu_governor_read(const char *param, char s[PARAM_MAXLEN])
 {
     char path[PATH_MAX];
 
-    sprintf(path, "%s%s", CPU_INTERACTIVE_PATH, param);
+    sprintf(path, "%s%s", cpu_governor_path, param);
     sysfs_read(path, s, PARAM_MAXLEN);
 }
 
-static void cpu_interactive_write(const char *param, char s[PARAM_MAXLEN])
+static void cpu_governor_write(const char *param, char s[PARAM_MAXLEN])
 {
     char path[PATH_MAX];
 
-    sprintf(path, "%s%s", CPU_INTERACTIVE_PATH, param);
+    sprintf(path, "%s%s", cpu_governor_path, param);
     sysfs_write(path, s);
 }
 
@@ -176,13 +195,12 @@ static void send_boost(int boost_fd, int32_t duration_us)
 {
     int len;
 
-    if (boost_fd < 0) {
+    if (boost_fd < 0)
         return;
-    }
 
     len = write(boost_fd, "1", 1);
     if (len < 0) {
-        ALOGE("Error writing to %s%s: %s", CPU_INTERACTIVE_PATH, BOOST_PATH, strerror(errno));
+        ALOGE("Error writing to %s%s: %s", cpu_governor_path, BOOST_PATH, strerror(errno));
         return;
     }
 
@@ -200,7 +218,7 @@ static void send_boostpulse(int boostpulse_fd)
 
     len = write(boostpulse_fd, "1", 1);
     if (len < 0) {
-        ALOGE("Error writing to %s%s: %s", CPU_INTERACTIVE_PATH, BOOSTPULSE_PATH,
+        ALOGE("Error writing to %s%s: %s", cpu_governor_path, BOOSTPULSE_PATH,
                 strerror(errno));
     }
 }
@@ -208,6 +226,58 @@ static void send_boostpulse(int boostpulse_fd)
 /**********************************************************
  *** POWER FUNCTIONS
  **********************************************************/
+
+static void set_cpufreq_limit(struct samsung_power_module *samsung_pwr,
+                              enum cpufreq_limit_e type,
+                              char *freq)
+{
+    (void) samsung_pwr;
+
+    switch (type) {
+        case CPUFREQ_MIN_RESTORE:
+            sysfs_write(CPU_LIMIT_MIN, "-1");
+            cpu_sysfs_write(MIN_FREQ_PATH, samsung_pwr->min_freq);
+            break;
+        case CPUFREQ_MIN_LIMIT:
+            sysfs_write(CPU_LIMIT_MIN, freq);
+            break;
+
+        case CPUFREQ_MAX_RESTORE:
+            sysfs_write(CPU_LIMIT_MAX, "-1");
+            cpu_sysfs_write(MAX_FREQ_PATH, samsung_pwr->max_freq);
+            break;
+        case CPUFREQ_MAX_LIMIT:
+            sysfs_write(CPU_LIMIT_MAX, freq);
+        default:
+            break;
+    }
+}
+
+static void set_cpufreq_scaling_limit(struct samsung_power_module *samsung_pwr,
+                                      enum cpufreq_limit_e type,
+                                      char *freq)
+{
+    switch (type) {
+        case CPUFREQ_MIN_LIMIT:
+            cpu_sysfs_write(MAX_FREQ_PATH, freq);
+            break;
+        case CPUFREQ_MAX_LIMIT:
+            cpu_sysfs_write(MAX_FREQ_PATH, freq);
+            break;
+        case CPUFREQ_MIN_RESTORE:
+            cpu_sysfs_write(MIN_FREQ_PATH, samsung_pwr->min_freq);
+            break;
+        case CPUFREQ_MAX_RESTORE:
+            cpu_sysfs_write(MAX_FREQ_PATH, samsung_pwr->max_freq);
+            break;
+        default:
+            break;
+    }
+}
+
+void (*limit_cpufreq)(struct samsung_power_module *,
+                      enum cpufreq_limit_e,
+                      char *) = set_cpufreq_scaling_limit;
 
 static void set_lcd_fps(int profile)
 {
@@ -229,40 +299,50 @@ static void set_lcd_fps(int profile)
         return;
 }
 
-static void limit_gpu_frequency(struct samsung_power_module *samsung_pwr,
+static void set_gpu_core_scaler(struct samsung_power_module *samsung_pwr,
                                 int profile)
 {
-    if (!samsung_pwr->limit_gpu_freq)
+    char *target_util, *reserved_idle_power, *scaling_enabled;
+    if (!samsung_pwr->gpu_core_scale)
         return;
 
     switch (profile) {
         case PROFILE_POWER_SAVE:
-                ALOGV("%s: Set GPU freq range [0Hz, 64MHz]", __func__);
-                sysfs_write(GPU_MAX_FREQ_PATH, "64000");
-                sysfs_write(GPU_MIN_FREQ_PATH, "-1");
+                target_util = "256";
+                reserved_idle_power = "230";
+                scaling_enabled = "1";
             break;
         case PROFILE_BIAS_POWER_SAVE:
-                ALOGV("%s: Set GPU freq range [0Hz, 128MHz]", __func__);
-                sysfs_write(GPU_MAX_FREQ_PATH, "128000");
-                sysfs_write(GPU_MIN_FREQ_PATH, "-1");
+                target_util = "230";
+                reserved_idle_power = "160";
+                scaling_enabled = "1";
             break;
         case PROFILE_BALANCED:
-                ALOGV("%s: Set GPU freq range [0Hz, 256MHz]", __func__);
-                sysfs_write(GPU_MAX_FREQ_PATH, "256000");
-                sysfs_write(GPU_MIN_FREQ_PATH, "-1");
+                target_util = "200";
+                reserved_idle_power = "190";
+                scaling_enabled = "1";
             break;
         case PROFILE_BIAS_PERFORMANCE:
-                ALOGV("%s: Set GPU freq range [128MHz, 312MHz]", __func__);
-                sysfs_write(GPU_MAX_FREQ_PATH, "312000");
-                sysfs_write(GPU_MIN_FREQ_PATH, "128000");
+                target_util = "154";
+                reserved_idle_power = "157";
+                scaling_enabled = "0";
             break;
         case PROFILE_HIGH_PERFORMANCE:
-                ALOGV("%s: Set GPU freq range [312MHz, 312MHz]", __func__);
-                sysfs_write(GPU_MAX_FREQ_PATH, "312000");
-                sysfs_write(GPU_MIN_FREQ_PATH, "312000");
+                target_util = "1";
+                reserved_idle_power = "512";
+                scaling_enabled = "1";
             break;
     }
-        return;
+
+    sysfs_write(GPU_CORE_TARUTIL, target_util);
+    sysfs_write(GPU_CORE_MINLOAD, reserved_idle_power);
+    sysfs_write(GPU_CORE_SCALER, scaling_enabled);
+    ALOGV("%s: Configuring GPU core scaling with these parameters:\n"
+          "GPU core scaling enabled: %s\n"
+          "Target GPU utilization: %s\n"
+          "Reserved GPU capacity: %s\n",
+        __func__, scaling_enabled[0] == '1' ? "Yes" : "No", target_util, reserved_idle_power);
+    return;
 }
 
 static void set_power_profile(struct samsung_power_module *samsung_pwr,
@@ -270,39 +350,37 @@ static void set_power_profile(struct samsung_power_module *samsung_pwr,
 {
     int rc;
 
-    if (profile < 0 || profile >= PROFILE_MAX) {
+    if (profile < 0 || profile >= PROFILE_MAX)
         return;
-    }
 
-    if (current_power_profile == (enum power_profile_e) profile) {
+    if (current_power_profile == (enum power_profile_e) profile)
         return;
-    }
 
     ALOGV("%s: profile=%d", __func__, profile);
 
     switch (profile) {
         case PROFILE_POWER_SAVE:
-            // Limit to min freq
-            cpu_sysfs_write(MAX_FREQ_PATH, samsung_pwr->min_freq);
+            limit_cpufreq(samsung_pwr, CPUFREQ_MIN_RESTORE, 0);
+            limit_cpufreq(samsung_pwr, CPUFREQ_MAX_LIMIT, samsung_pwr->min_freq);
             ALOGV("%s: set powersave mode", __func__);
             break;
         case PROFILE_BIAS_POWER_SAVE:
-            // Grab value set by init.*.rc
-            cpu_interactive_read(HISPEED_FREQ_PATH, samsung_pwr->hispeed_freq);
-            // Limit to hispeed freq
-            cpu_sysfs_write(MAX_FREQ_PATH, samsung_pwr->hispeed_freq);
+            limit_cpufreq(samsung_pwr, CPUFREQ_MIN_RESTORE, 0);
+            limit_cpufreq(samsung_pwr, CPUFREQ_MAX_LIMIT, CPU_SUST_FREQ);
             ALOGV("%s: set efficiency mode", __func__);
             break;
         case PROFILE_BALANCED:
             // Restore normal max freq
-            cpu_sysfs_write(MAX_FREQ_PATH, samsung_pwr->max_freq);
+            limit_cpufreq(samsung_pwr, CPUFREQ_MIN_RESTORE, 0);
+            limit_cpufreq(samsung_pwr, CPUFREQ_MAX_RESTORE, 0);
             ALOGV("%s: set balanced mode", __func__);
             break;
         case PROFILE_BIAS_PERFORMANCE:
             ALOGV("%s: set quick mode [fake] ", __func__);
         case PROFILE_HIGH_PERFORMANCE:
             // Restore normal max freq
-            cpu_sysfs_write(MAX_FREQ_PATH, samsung_pwr->max_freq);
+            limit_cpufreq(samsung_pwr, CPUFREQ_MAX_RESTORE, 0);
+            limit_cpufreq(samsung_pwr, CPUFREQ_MIN_LIMIT, samsung_pwr->max_freq);
             ALOGV("%s: set performance mode", __func__);
             break;
         default:
@@ -311,7 +389,7 @@ static void set_power_profile(struct samsung_power_module *samsung_pwr,
     }
 
     set_lcd_fps(profile);
-    limit_gpu_frequency(samsung_pwr, profile);
+    set_gpu_core_scaler(samsung_pwr, profile);
     current_power_profile = profile;
 }
 
@@ -321,9 +399,45 @@ static void set_power_profile(struct samsung_power_module *samsung_pwr,
 
 static void init_cpufreqs(struct samsung_power_module *samsung_pwr)
 {
-    cpu_interactive_read(HISPEED_FREQ_PATH, samsung_pwr->hispeed_freq);
-    cpu_sysfs_read(MAX_FREQ_PATH, samsung_pwr->max_freq);
-    cpu_sysfs_read(MIN_FREQ_PATH, samsung_pwr->min_freq);
+    char governor_name[255];
+    cpu_sysfs_read(GOVNOR_NAME_PATH, governor_name);
+    strcat(cpu_governor_path, governor_name);
+
+    cpu_governor_read(HISPEED_FREQ_PATH, samsung_pwr->hispeed_freq);
+    cpu_sysfs_read(CPU_MAX_FREQ_PATH, samsung_pwr->max_freq);
+    cpu_sysfs_read(CPU_MIN_FREQ_PATH, samsung_pwr->min_freq);
+}
+
+static int init_cpu_limit()
+{
+    char buf[2];
+    if (sysfs_read(CPU_LIMIT_MAX, buf, 1) < 0 ||
+        sysfs_read(CPU_LIMIT_MIN, buf, 1) < 0)
+        return -1;
+
+    limit_cpufreq = set_cpufreq_limit;
+    return 0;
+}
+
+static void gpu_ctrl_open(struct samsung_power_module *samsung_pwr)
+{
+    char gpu_param[PARAM_MAXLEN];
+    int cores;
+    int ret;
+
+    // Check if we should enable gpu scaling on >= 2 cores
+    // NOTE: This code block is written for MALI 400 MP
+    // (where core count can be only up to four)
+    samsung_pwr->gpu_core_scale = 0;
+    ret = sysfs_read(GPU_CORE_NUM, gpu_param, PARAM_MAXLEN);
+    cores = gpu_param[0] - '0'; // total number of gpu cores
+    if (!ret && cores >= 2 && cores <= 4) {
+        // gpu core scaling switch
+        ret = sysfs_read(GPU_CORE_SCALER, gpu_param, PARAM_MAXLEN);
+
+        if (!ret)
+            samsung_pwr->gpu_core_scale = 1;
+    }
 }
 
 static void boost_open(struct samsung_power_module *samsung_pwr)
@@ -331,7 +445,7 @@ static void boost_open(struct samsung_power_module *samsung_pwr)
     char path[PATH_MAX];
 
     // the boost node is only valid for the LITTLE cluster
-    sprintf(path, "%s%s", CPU_INTERACTIVE_PATH, BOOST_PATH);
+    sprintf(path, "%s%s", cpu_governor_path, BOOST_PATH);
 
     samsung_pwr->boost_fd = open(path, O_WRONLY);
     if (samsung_pwr->boost_fd < 0) {
@@ -344,7 +458,7 @@ static void boostpulse_open(struct samsung_power_module *samsung_pwr)
     char path[PATH_MAX];
 
     // the boostpulse node is only valid for the LITTLE cluster
-    sprintf(path, "%s%s", CPU_INTERACTIVE_PATH, BOOSTPULSE_PATH);
+    sprintf(path, "%s%s", cpu_governor_path, BOOSTPULSE_PATH);
 
     samsung_pwr->boostpulse_fd = open(path, O_WRONLY);
     if (samsung_pwr->boostpulse_fd < 0) {
@@ -355,27 +469,34 @@ static void boostpulse_open(struct samsung_power_module *samsung_pwr)
 static void samsung_power_init(struct power_module *module)
 {
     struct samsung_power_module *samsung_pwr = (struct samsung_power_module *) module;
-    char gpu_cores[PARAM_MAXLEN];
+    int has_cpufreq_limit;
 
     init_cpufreqs(samsung_pwr);
+    gpu_ctrl_open(samsung_pwr);
 
-    // keep interactive boost fds opened
+
+    has_cpufreq_limit = init_cpu_limit();
+
+
+    // keep governor boost fds opened
     boost_open(samsung_pwr);
     boostpulse_open(samsung_pwr);
-
-    // Check if we should limit gpu frequency
-    sysfs_read(GPU_FREQ_CHECK, gpu_cores, PARAM_MAXLEN);
-    if (gpu_cores[0] == '4') // only enable this feature on 4 pp cores
-        samsung_pwr->limit_gpu_freq = 1;
-    else
-        samsung_pwr->limit_gpu_freq = 0;
 
     ALOGI("Initialized settings:");
     ALOGI("max_freq: %s", samsung_pwr->max_freq);
     ALOGI("min_freq: %s", samsung_pwr->min_freq);
+
+    ALOGI("Cpufreq governor path: %s", cpu_governor_path);
     ALOGI("hispeed_freq: %s", samsung_pwr->hispeed_freq);
-    ALOGI("boostpulse_fd: %d", samsung_pwr->boostpulse_fd);
-    ALOGI("Limit gpu frequency: %s", samsung_pwr->limit_gpu_freq ? "Yes" : "No");
+    ALOGI("CPU hint boost: %s",
+          samsung_pwr->boost_fd > 0 ? "Enabled" : "Disabled");
+    ALOGI("Interaction hint boost: %s",
+        samsung_pwr->boostpulse_fd > 0 ? "Enabled" : "Disabled");
+
+    ALOGI("Using cpufreq_limit interface: %s",
+        has_cpufreq_limit == 0 ? "Enabled" : "Disabled");
+    ALOGI("Scale GPU cores: %s",
+        samsung_pwr->gpu_core_scale? "Yes" : "Only soft frequency scaling");
 }
 
 /**********************************************************
@@ -389,7 +510,8 @@ static void samsung_power_set_interactive(struct power_module *module, int on)
     char ON[PARAM_MAXLEN]  = {"1"};
     char OFF[PARAM_MAXLEN] = {"0"};
 
-    cpu_interactive_write(IO_IS_BUSY_PATH, on ? ON : OFF);
+    cpu_governor_write(IO_IS_BUSY_PATH, on ? ON : OFF);
+    (void)module;
 
     ALOGV("power_set_interactive: %d done", on);
 }
@@ -400,6 +522,7 @@ static void samsung_power_hint(struct power_module *module,
 {
     struct samsung_power_module *samsung_pwr = (struct samsung_power_module *) module;
     int len;
+    int32_t duration_us;
 
     /* Bail out if low-power mode is active */
     if (current_power_profile == PROFILE_POWER_SAVE && hint != POWER_HINT_LOW_POWER
@@ -409,10 +532,11 @@ static void samsung_power_hint(struct power_module *module,
 
     switch (hint) {
         case POWER_HINT_VSYNC:
-            ALOGV("%s: POWER_HINT_VSYNC: %d", __func__, (int) *((intptr_t *)data));
+//             ALOGV("%s: POWER_HINT_VSYNC: ", __func__);
             break;
         case POWER_HINT_INTERACTION:
-            ALOGV("%s: POWER_HINT_INTERACTION", __func__);
+            duration_us = (int32_t) data;
+            ALOGV("%s: POWER_HINT_INTERACTION: %d", __func__, duration_us);
             send_boostpulse(samsung_pwr->boostpulse_fd);
             break;
         case POWER_HINT_LOW_POWER:
@@ -420,8 +544,8 @@ static void samsung_power_hint(struct power_module *module,
             set_power_profile(samsung_pwr, data ? PROFILE_POWER_SAVE : PROFILE_BALANCED);
             break;
         case POWER_HINT_CPU_BOOST:
-            ALOGV("%s: POWER_HINT_CPU_BOOST", __func__);
-            int32_t duration_us = *((int32_t *)data);
+            duration_us = *((int32_t *)data);
+            ALOGV("%s: POWER_HINT_CPU_BOOST: %d", __func__, duration_us);
             send_boost(samsung_pwr->boost_fd, duration_us);
             break;
         case POWER_HINT_SET_PROFILE:

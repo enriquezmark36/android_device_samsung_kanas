@@ -43,6 +43,23 @@ on boot
     chmod 0660 /sys/class/phy/phy_dev/phy_feq
     chown system system /sys/class/phy/phy_dev/phy_feq
 
+# Permissions for user-made power HAL
+    chown system system /sys/devices/system/cpu/cpufreq/sprdemand/boost
+    chown system system /sys/devices/system/cpu/cpufreq/sprdemand/boostpulse
+    chown system system /sys/devices/system/cpu/cpufreq/sprdemand/io_is_busy
+
+    chown system system /sys/devices/system/cpu/cpufreq/interactive/boost
+    chown system system /sys/devices/system/cpu/cpufreq/interactive/boostpulse
+    chown system system /sys/devices/system/cpu/cpufreq/interactive/io_is_busy
+
+    chown system system /sys/module/mali/parameters/mali_core_tarutil
+    chown system system /sys/module/mali/parameters/mali_core_minload
+    chown system system /sys/module/mali/parameters/mali_core_scaling
+    chown system system /sys/devices/virtual/dispc/dispc/fps
+
+    chown system system /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq
+    chown system system /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq
+
 # <Sensors>
 # Accelerometer_sensor
 # permissions for sensors (accelerometer)
