@@ -1,4 +1,13 @@
 <resources>
+    <!-- Device configuration adjusting the minfree tunable in the lowmemorykiller in the
+         kernel.  A high value will cause the lowmemorykiller to fire earlier, keeping more
+         memory in the file cache and preventing I/O thrashing, but allowing fewer processes
+         to stay in memory.  A low value will keep more processes in memory but may cause
+         thrashing if set too low.  Directly added to the default value chosen by
+         ActivityManager based on screen size and total memory for the largest lowmemorykiller
+         bucket, and scaled proportionally to the smaller buckets. 0 keeps the default.
+         Below will adjust 6 minfree buckets (in MB) to: 40, 50, 60, 70, 80, 100 -->
+    <integer name="config_lowMemoryKillerMinFreeKbytesAbsolute">102400</integer>
 
     <bool name="config_networkSamplingWakesDevice">false</bool>
 
