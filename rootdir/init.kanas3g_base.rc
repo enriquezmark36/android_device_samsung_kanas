@@ -335,10 +335,19 @@ on late-fs
     write /sys/block/mmcblk0/queue/read_ahead_kb 128
     write /sys/block/dm-0/queue/read_ahead_kb 128
 
+    # Prioritize inode and dentries than block/data caches
+    write /proc/sys/vm/vfs_cache_pressure 60
+
+    # Increase kswapd thread per node (needs a kernel patch)
+    write /proc/sys/vm/kswapd_threads 16
+
+    # Also increase the amount of memory to be reclaimed on the
+    # background by kswapd (also needs a kernel patch for v3.10)
+    write /proc/sys/vm/watermark_scale_factor 20
+
 on property:sys.boot_completed=1
     write /sys/block/mmcblk0/queue/read_ahead_kb 4
     write /sys/block/dm-0/queue/read_ahead_kb 4
-    write /proc/sys/vm/vfs_cache_pressure 200
 
 # When the default SIM for data connections is updated,
 # also update the DUN AT channel with the default SIM.
