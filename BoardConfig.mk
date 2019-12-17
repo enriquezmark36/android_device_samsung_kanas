@@ -34,6 +34,13 @@ WITH_SU := true
 # TODO: Not a proper solution, I think.
 TARGET_SPECIFIC_HEADER_PATH := device/samsung/kanas/include
 
+# As said on the Android Documentation,
+# CPUSETs can also help homogenous cpu systems like this one.
+# Simply by defining it, the cpuset support will be enabled
+# This is an experiment so if something goes awry, comment this out.
+ENABLE_CPUSETS := true
+
+
 # Img configuration
 BOARD_BOOTIMAGE_PARTITION_SIZE := 15728640
 BOARD_RECOVERYIMAGE_PARTITION_SIZE := 15728640
