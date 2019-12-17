@@ -69,9 +69,9 @@ fw.show_multiuserui=1
 fw.max_users=3
 
 # zRAM
-ro.config.swappiness=130
-ro.config.zram.compressor=zstd
-ro.config.zram.disksize=512M
+ro.config.zram.compressor=lz4
+ro.config.zram.disksize=739246080
+ro.config.swappiness=100
 
 # EGL blobs crash on screen off
 ro.egl.destroy_after_detach=true

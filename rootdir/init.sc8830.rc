@@ -431,3 +431,13 @@ on late-fs
     # Also suppose that 128 is NOT the default value for read_ahead_kb...
     write /sys/block/mmcblk0/queue/read_ahead_kb 128
     write /sys/block/dm-0/queue/read_ahead_kb 128
+
+    # Prioritize inode and dentries than block/data caches
+    write /proc/sys/vm/vfs_cache_pressure 60
+
+    # Increase kswapd thread per node (needs a kernel patch)
+    write /proc/sys/vm/kswapd_threads 16
+
+    # Also increase the amount of memory to be reclaimed on the
+    # background by kswapd (also needs a kernel patch for v3.10)
+    write /proc/sys/vm/watermark_scale_factor 20
