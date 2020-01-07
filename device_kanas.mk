@@ -45,9 +45,6 @@ KEYLAYOUT_FILES := \
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(KEYLAYOUT_FILES),$(f):system/usr/keylayout/$(notdir $(f)))
 
-# WiFi
-$(call inherit-product, hardware/broadcom/wlan/bcmdhd/config/config-bcm.mk)
-
 # Codecs
 PRODUCT_PACKAGES += \
 	libstagefright_sprd_soft_mpeg4dec \
@@ -96,6 +93,11 @@ AUDIO_CONFIGS := \
 	device/samsung/kanas/configs/audio/codec_pga.xml \
 	device/samsung/kanas/configs/audio/tiny_hw.xml
 
+WIFI_CONFIGS := \
+	device/samsung/kanas/configs/wifi/p2p_supplicant_overlay.conf \
+	device/samsung/kanas/configs/wifi/wpa_supplicant_overlay.conf \
+	device/samsung/kanas/configs/wifi/wpa_supplicant.conf
+
 INIT_FILES := \
 	device/samsung/kanas/rootdir/init.sc8830.rc
 
@@ -105,6 +107,7 @@ RAMDISK_FILES := \
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(MEDIA_CONFIGS),$(f):system/vendor/etc/$(notdir $(f))) \
 	$(foreach f,$(AUDIO_CONFIGS),$(f):system/vendor/etc/$(notdir $(f))) \
+	$(foreach f,$(WIFI_CONFIGS),$(f):system/vendor/etc/wifi/$(notdir $(f))) \
 	$(foreach f,$(INIT_FILES),$(f):root/$(notdir $(f))) \
 	$(foreach f,$(RAMDISK_FILES),$(f):root/$(notdir $(f))) \
 
