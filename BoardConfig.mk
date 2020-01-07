@@ -32,6 +32,7 @@ WITH_SU := true
 # Work arounds a zygote complaining about keeping open a possibly
 # deleted/closed fd.
 # TODO: Not a proper solution, I think.
+# NOTE: Also adds in scx35-common gps.h header
 TARGET_SPECIFIC_HEADER_PATH := device/samsung/kanas/include
 
 # As said on the Android Documentation,
