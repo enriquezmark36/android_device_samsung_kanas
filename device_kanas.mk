@@ -24,9 +24,10 @@ DEVICE_PACKAGE_OVERLAYS += device/samsung/kanas/overlay
 # ART prop overrides
 PRODUCT_PROPERTY_OVERRIDES += \
 	dalvik.vm.usejit=true \
-	dalvik.vm.jit.codecache=256K \
 	dalvik.vm.dex2oat-filter=space \
-	dalvik.vm.image-dex2oat-filter=speed \
+	dalvik.vm.image-dex2oat-filter=balanced \
+	dalvik.vm.heaptargetutilization=0.9 \
+	dalvik.vm.heapsize=96m \
 
 # Opt-out of SamsungDoze
 NO_SAMDOZE := true
