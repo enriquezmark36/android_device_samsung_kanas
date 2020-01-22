@@ -1,0 +1,210 @@
+From 219f45384d3bf09c19ce29ee1f26d07bef87f24d Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Mon, 13 Jan 2020 16:51:18 +0800
+Subject: [PATCH 19/23] omx: avcenc: scx15: Add the assembly version of the
+ neon RGB->YUV converter
+
+It should shave off about 1ms in conversion and should never run into
+"has text relocations" problem like the sc8830 version does.
+
+IMHO, it is much simpler to read than the C variant.
+
+The C version is still there for display...
+
+Change-Id: Ie712c84f15f6f58c22a1d93287df259309b0159f
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ .../video/avc_sprd/scx15/enc/Android.mk       |   1 +
+ .../avc_sprd/scx15/enc/SPRDAVCEncoder.cpp     |  17 ++-
+ .../video/avc_sprd/scx15/enc/rgb2yuv_neon.s   | 131 ++++++++++++++++++
+ 3 files changed, 148 insertions(+), 1 deletion(-)
+ create mode 100644 omx_components/video/avc_sprd/scx15/enc/rgb2yuv_neon.s
+
+diff --git a/omx_components/video/avc_sprd/scx15/enc/Android.mk b/omx_components/video/avc_sprd/scx15/enc/Android.mk
+index 578b060..99d7402 100644
+--- a/omx_components/video/avc_sprd/scx15/enc/Android.mk
++++ b/omx_components/video/avc_sprd/scx15/enc/Android.mk
+@@ -4,6 +4,7 @@ include $(CLEAR_VARS)
+ 
+ LOCAL_SRC_FILES := \
+ 	SPRDAVCEncoder.cpp \
++	rgb2yuv_neon.s
+ 
+ LOCAL_C_INCLUDES := \
+ 	frameworks/av/media/libstagefright/include \
+diff --git a/omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.cpp b/omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.cpp
+index d4adff8..7b42be7 100644
+--- a/omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.cpp
++++ b/omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.cpp
+@@ -184,6 +184,18 @@ inline static void inittable()
+     }
+ }
+ 
++/*
++ * This is the neon function in assembly. It requires that width_org to be
++ * aligned to 16B and height_org to be aligned to 2B
++ *
++ * If the CPU is not busy, then it should be able to deal with
++ * 1280*720 rgb data within 5-6ms.
++ *
++ * Should be faster than the C variant by 1 ms and does not need TEXTREL.
++ */
++extern "C" void neon_intrinsics_ARGB888ToYUV420Semi(uint8_t *inrgb, uint8_t* outy,uint8_t* outuv,
++                    int32_t width_org, int32_t height_org, int32_t width_dst, int32_t height_dst);
++
+ /*this is neon c function.It is need width_org align in 2Bytes.height_org align in 2Bytes*/
+ /*like ConvertARGB888ToYUV420SemiPlanar function parameters requirement*/
+ /*in cpu not busy status,it deal with 1280*720 rgb data in 5-6ms */
+@@ -287,8 +299,11 @@ inline static void ConvertARGB888ToYUV420SemiPlanar_neon(uint8_t *inrgb, uint8_t
+     }
+ 
+     int64_t start_encode = systemTime();
+-    neon_intrinsics_ARGB888ToYUV420Semi_c(inrgb,  y_ptr, uv_ptr,                         //  1280*720  =>  22ms in padv2
++    //neon_intrinsics_ARGB888ToYUV420Semi_c(inrgb,  y_ptr, uv_ptr,                         //  1280*720  =>  22ms in padv2
++    //                                    width_org,  height_org,  width_dst,  height_dst);
++    neon_intrinsics_ARGB888ToYUV420Semi(inrgb,  y_ptr, uv_ptr,
+                                         width_org,  height_org,  width_dst,  height_dst);
++
+     int64_t end_encode = systemTime();
+     ALOGI("wfd: ConvertARGB888ToYUV420SemiPlanar_neon:  rgb2yuv cost time: %d",(unsigned int)((end_encode-start_encode) / 1000000L));
+ }
+diff --git a/omx_components/video/avc_sprd/scx15/enc/rgb2yuv_neon.s b/omx_components/video/avc_sprd/scx15/enc/rgb2yuv_neon.s
+new file mode 100644
+index 0000000..79f73c0
+--- /dev/null
++++ b/omx_components/video/avc_sprd/scx15/enc/rgb2yuv_neon.s
+@@ -0,0 +1,131 @@
++
++@//this asm file is for fixed point IDCT
++
++@ W1 2841 /* 2048*sqrt(2)*cos(1*pi/16) */
++@ W2 2676 /* 2048*sqrt(2)*cos(2*pi/16) */
++@ W3 2408 /* 2048*sqrt(2)*cos(3*pi/16) */
++@ W5 1609 /* 2048*sqrt(2)*cos(5*pi/16) */
++@ W6 1108 /* 2048*sqrt(2)*cos(6*pi/16) */
++@ W7 565  /* 2048*sqrt(2)*cos(7*pi/16) */
++
++@/************register map begin**************/
++inrgb		.req		r0
++
++outy		.req		r1
++outuv		.req		r2
++
++width_org	.req		r3
++height_org	.req		r4
++
++width_dst	.req		r5
++height_dst	.req		r6
++
++i		.req		r4
++j		.req		r7
++
++inrgb_n		.req		r8
++outy_n		.req		r9
++
++@/************register map end**************/
++
++.equ		BLOCK_SIZE,	8
++
++				.text
++				.arm
++
++@//fixed point IDCT
++@//input: 8x8 block dct coefficient
++@//	r0: input rgb's pointer,
++@//	r1: point to output y frame
++@//	r2: point to output uv frame
++@//	r3: input width
++@//	r4: input height
++@//	r5: output width
++@//	r6: output height
++
++neon_intrinsics_ARGB888ToYUV420Semi:	@FUNCTION
++				.global neon_intrinsics_ARGB888ToYUV420Semi
++
++				push		{r4 - r12, r14}
++				add		r8, sp, #40
++				ldmia		r8, {height_org, width_dst, height_dst}
++
++				adr		r14, rgb2yuv_coeff_neon
++
++				ldmia		r14!,{r7, r8, r9, r10, r11, r12}
++				vdup.8		d0, r7	@//r1
++				vdup.8		d1, r8	@//g1
++				vdup.8		d2, r9  @//b1
++				vdup.8		d3, r10	@//r2
++				vdup.8		d4, r11	@//g2
++				vdup.8		d5, r12	@//b2, r3
++
++				ldmia		r14, {r7, r8, r9, r10}
++				vdup.8		d6, r7	@//g3
++				vdup.8		d7, r8	@//b3
++				vdup.8		d8, r9	@//y_base
++				vdup.8		d9, r10	@//uv_base
++
++loop_line:
++				mov		j, width_org, lsr #3
++loop_col_odd:
++				vld4.8		{d10, d11, d12, d13}, [inrgb]!
++				@//y
++				vmull.u8	q10, d10, d0
++				vmlal.u8	q10, d11, d1
++				vmlal.u8	q10, d12, d2
++				vshrn.u16	d30, q10, #8
++				vadd.i8		d30, d30, d8
++				vst1.u8		d30, [outy]!
++
++				@//u,v
++				vmull.u8	q10, d12, d5
++				vmull.u8	q11, d10, d5
++
++				vmlsl.u8	q10, d11, d4
++				vmlsl.u8	q11, d11, d6
++
++				vmlsl.u8	q10, d10, d3
++				vmlsl.u8	q11, d12, d7
++				vshrn.u16	d30, q10, #8
++				vshrn.u16	d31, q11, #8
++
++				vadd.i8		d30, d30, d9
++				vadd.i8		d31, d31, d9
++
++				vtrn.8		d31, d30
++				vst1.u8		d30, [outuv]!
++
++				subs		j, j, #1
++				bgt		loop_col_odd
++
++				mov		j, width_org, lsr #3
++loop_col_even:
++				vld4.8		{d10, d11, d12, d13}, [inrgb]!
++
++				@//y
++				vmull.u8	q10, d10, d0
++				vmlal.u8	q10, d11, d1
++				vmlal.u8	q10, d12, d2
++				vshrn.u16	d30, q10, #8
++				vadd.i8		d30, d30, d8
++				vst1.u8		d30, [outy]!
++
++				subs		j, j, #1
++				bgt		loop_col_even
++
++				subs		i, i, #2
++				bgt		loop_line
++
++				pop		{r4 - r12, pc}
++				@ENDFUNC
++
++
++				@AREA	DATA1, DATA, READONLY
++				.align	4
++rgb2yuv_coeff_neon:
++				.word	66, 129, 25, 38, 74, 112, 94, 18, 16, 128
++
++				.end
++
++
+-- 
+2.24.0
+
