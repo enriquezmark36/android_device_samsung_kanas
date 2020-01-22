@@ -1,0 +1,56 @@
+From f1d50960f5e6b4dfe5561d9fc418e9119b4c6856 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Mon, 13 Jan 2020 14:55:15 +0800
+Subject: [PATCH] Revert "Initialize tdls, p2p & pno scan configurations after
+ wpa_supplicant is ON."
+
+This reverts commit 4d7ba884046ab078e17fad9887c665b0c4753afe.
+This does initialize the default parameters (as intended) but does also
+override "vendor" defaults.
+
+With this patch, it seems that extra code has to be placed that will
+override these default init settings.
+---
+ service/java/com/android/server/wifi/WifiNative.java  | 11 -----------
+ .../com/android/server/wifi/WifiStateMachine.java     |  3 ---
+ 2 files changed, 14 deletions(-)
+
+diff --git a/service/java/com/android/server/wifi/WifiNative.java b/service/java/com/android/server/wifi/WifiNative.java
+index f6931c1fe..5d9abf8fa 100644
+--- a/service/java/com/android/server/wifi/WifiNative.java
++++ b/service/java/com/android/server/wifi/WifiNative.java
+@@ -898,17 +898,6 @@ public class WifiNative {
+         doBooleanCommand("SET update_config 1");
+     }
+ 
+-    public void enableTdlsExtControl() {
+-        doBooleanCommand("SET tdls_external_control 1");
+-    }
+-
+-    public void disableScanOffload() {
+-        doBooleanCommand("SET disable_scan_offload 1");
+-    }
+-
+-    public void setP2pDisable() {
+-        doBooleanCommand("SET p2p_disabled 1");
+-    }
+     public boolean saveConfig() {
+         return doBooleanCommand("SAVE_CONFIG");
+     }
+diff --git a/service/java/com/android/server/wifi/WifiStateMachine.java b/service/java/com/android/server/wifi/WifiStateMachine.java
+index f34d0b1e9..bfa3ae5a8 100644
+--- a/service/java/com/android/server/wifi/WifiStateMachine.java
++++ b/service/java/com/android/server/wifi/WifiStateMachine.java
+@@ -4619,9 +4619,6 @@ public class WifiStateMachine extends StateMachine implements WifiNative.WifiRss
+                         mWifiConfigManager.disableAllNetworksNative();
+                     }
+                     initializeWpsDetails();
+-                    mWifiNative.enableTdlsExtControl();
+-                    mWifiNative.disableScanOffload();
+-                    mWifiNative.setP2pDisable();
+ 
+                     sendSupplicantConnectionChangedBroadcast(true);
+                     transitionTo(mDriverStartedState);
+-- 
+2.24.0
+
