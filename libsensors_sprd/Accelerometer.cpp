@@ -122,9 +122,19 @@ int Accelerometer::setEnable(int32_t handle, int enabled)
 			what = Main;
 		break;
 		case ID_SM:
+			what = SignificantMotion;
+#ifndef USE_SMD_STUB
 			ALOGD("Accelerometer: Significant Motion enabled = %d", enabled);
 			enable_file = SIG_MOTION; // write to this file instead
-			what = SignificantMotion;
+#else
+			ALOGI("Accelerometer: Significant Motion is stubbed, not doing anything");
+			if (enabled)
+				mEnabled |= (1 << what);
+			else
+				mEnabled &= ~(1 << what);
+
+			return err;
+#endif
 		break;
 		case ID_LA:
 			ALOGD("Accelerometer: Linear Acceleration enabled = %d", enabled);
@@ -258,6 +268,7 @@ int Accelerometer::readEvents(sensors_event_t * data, int count)
 			 * after firing. Make sure the bitmask exposes this behavior
 			 */
 			mEnabled &= ~(1<<SignificantMotion);
+#ifndef USE_SMD_STUB
 			ALOGD_IF(DEBUG, "Accelerometer: Significant Motion occured!");
 
 			/* Because it only fires up one event, we can simply send it */
@@ -265,6 +276,7 @@ int Accelerometer::readEvents(sensors_event_t * data, int count)
 			*data++ = mPendingEvents[SignificantMotion];
 			count--;
 			numEventReceived++;
+#endif
 		} else if (type == EV_SYN) {
 			// ACK event when sensor is enabled, ignore otherwise.
 			if (mEnabled & (1<<Main)) {
