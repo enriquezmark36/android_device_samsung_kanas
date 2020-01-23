@@ -27,6 +27,7 @@ LOCAL_MODULE_TAGS := optional
 LOCAL_VENDOR_MODULE := true
 
 LOCAL_CFLAGS := -DLOG_TAG=\"Sensors\" -Wall
+LOCAL_CFLAGS := -DUSE_SMD_STUB
 
 LOCAL_SRC_FILES := \
 	Accelerometer.cpp \
