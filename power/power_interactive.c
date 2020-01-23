@@ -95,7 +95,7 @@ enum cpufreq_limit_e {
     CPUFREQ_MIN_RESTORE,
     CPUFREQ_MAX_RESTORE,
 };
-static enum power_profile_e current_power_profile = PROFILE_BALANCED;
+static enum power_profile_e current_power_profile = PROFILE_MAX;
 static char cpu_governor_path[255] = "/sys/devices/system/cpu/cpufreq/";
 
 /**********************************************************
