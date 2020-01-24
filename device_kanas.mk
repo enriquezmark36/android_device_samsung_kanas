@@ -26,6 +26,15 @@ DEVICE_PACKAGE_OVERLAYS += device/samsung/kanas/overlay
 PRODUCT_PROPERTY_OVERRIDES += \
 	ro.sys.sdcardfs=true
 
+# HWUI prop overrides
+PRODUCT_PROPERTY_OVERRIDES += \
+	ro.hwui.texture_cache_size=9 \
+	ro.hwui.layer_cache_size=6 \
+	ro.hwui.path_cache_size=1.5 \
+	ro.hwui.gradient_cache_size=0.5 \
+	ro.hwui.drop_shadow_cache_size=1 \
+	ro.hwui.r_buffer_cache_size=1 \
+
 # Inherit from scx35-common device configuration
 $(call inherit-product, device/samsung/scx35-common/common.mk)
 
