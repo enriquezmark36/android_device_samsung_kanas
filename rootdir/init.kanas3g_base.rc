@@ -22,12 +22,6 @@ on init
     symlink /storage/sdcard1 /mnt/sdcard1
     symlink /storage/usbdisk /mnt/usbdisk
 
-
-    # If the hotplugger interface is enabled
-    copy /sys/kernel/hotplugger/enable_driver /sys/kernel/hotplugger/disable_driver
-    # Disable cpu hotplug until further notice
-    write /sys/devices/system/cpu/cpufreq/sprdemand/cpu_hotplug_disable 1
-
     # update foreground cpuset now that processors are up
     # reserve CPU 3 for the top app
     write /dev/cpuset/top-app/cpus 0-3
