@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Just in case this is not yet defined,
+# May fix those using TARGET_COPY_OUT_VENDOR to copy their files
+# not actually copying their files.
+TARGET_COPY_OUT_VENDOR := system/vendor
+
 # Inherit from SCX35 common configs
 -include device/samsung/scx35-common/BoardConfigCommon.mk
 
