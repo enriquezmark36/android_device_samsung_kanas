@@ -1,0 +1,35 @@
+From e796c0b2275b42dddfd388c1d4fa9b3fa11260bc Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Wed, 22 Jan 2020 18:37:20 +0800
+Subject: [PATCH] audio: scx15: switch the AT+SSAM AT values when dealing with
+ BT NREC
+
+Exploring the case of noisy bluetooth headset microphone.
+Revert if does not change anything or if it results to a
+regression.
+
+Change-Id: I9bf028ea66c8dfe00ec7078efeaeab0a78d18ca9
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ audio/scx15/at_commands_generic.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/audio/scx15/at_commands_generic.c b/audio/scx15/at_commands_generic.c
+index 4db0f0d..2cdbb77 100644
+--- a/audio/scx15/at_commands_generic.c
++++ b/audio/scx15/at_commands_generic.c
+@@ -163,9 +163,9 @@ static int at_cmd_route(struct tiny_audio_device *adev)
+                     st_vbc_ctrl_thread_para->adev->cp_type, android_sim_num,adev);
+ 
+         if (adev->bluetooth_nrec) {
+-            at_cmd = "AT+SSAM=5";
+-        } else {
+             at_cmd = "AT+SSAM=6";
++        } else {
++            at_cmd = "AT+SSAM=5";
+         }
+     } else if (adev->out_devices & AUDIO_DEVICE_OUT_SPEAKER) {
+         at_cmd = "AT+SSAM=1";
+-- 
+2.25.0
+

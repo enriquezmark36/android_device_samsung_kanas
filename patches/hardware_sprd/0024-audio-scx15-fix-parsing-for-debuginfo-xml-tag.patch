@@ -1,0 +1,38 @@
+From cca50321c3609fb81b4b34dad1644bfa84538dba Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Wed, 22 Jan 2020 18:32:43 +0800
+Subject: [PATCH] audio: scx15: fix parsing for <debuginfo> xml tag
+
+After <voip> tag is parsed,
+any tags defined in the else if chain
+of conditions, after the condition for the voip tag, will not be parse
+anymore.
+
+In simpler terms, within the audio_hw.xml file, ifever a <debug>
+or <debuginfo> tag is placed after the <voip> tag, it
+will never be parse properly.
+
+The fix is a simple refactor of the condition.
+
+Change-Id: Idbf3ddf9504449c730e1c89c97d912fd17a1ff58
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ audio/scx15/audio_hw.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/audio/scx15/audio_hw.c b/audio/scx15/audio_hw.c
+index 898b0e7..a3c6a7a 100644
+--- a/audio/scx15/audio_hw.c
++++ b/audio/scx15/audio_hw.c
+@@ -4718,7 +4718,7 @@ static void adev_modem_start_tag(void *data, const XML_Char *tag_name,
+             }
+         }
+     }
+-    else if ((strcmp(tag_name, "voip")&& !modem->voip_res.is_done) == 0) {
++    else if (!modem->voip_res.is_done && !strcmp(tag_name, "voip")) {
+ 
+             char prop_t[PROPERTY_VALUE_MAX] = {0};
+             char prop_w[PROPERTY_VALUE_MAX] = {0};
+-- 
+2.25.0
+

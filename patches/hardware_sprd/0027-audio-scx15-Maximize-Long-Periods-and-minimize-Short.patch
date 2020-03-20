@@ -1,0 +1,65 @@
+From 398a85ce28d2cee421dddbfa8f254b35add2319b Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Sun, 15 Mar 2020 09:57:15 +0800
+Subject: [PATCH] audio: scx15: Maximize Long Periods and minimize Short
+ periods
+
+By convention, normal playbacks (short periods) usually have a latency around 20ms
+and deep buffers (long periods) have around 100ms. And, IRAM and the
+regular buffer size should be in 1:4 ratio.
+
+Unfortunately using IRAM, reaching 100 ms is impossible. Though, we could actually
+maximize the size as we're not using it fully any way.
+
+To make it fill all the way for the long period, we might want to reduce the short period
+multiplier to 5 (from 8) so that we could get a divisible number for the long period.
+This patch should entirely maximize the long period buffer size and theoretically
+cannot be expanded any further (I still haven't found my scratch for the math)
+
+The effect is that a less delayed sound in normal playback and a slightly larger
+(yet inconceivable for IRAM only) deep buffer.
+
+Based on a idle test with 76 sample size, using a 90ms deep buffer IRAM
+against 360ms of the regular deep buffer. The one with IRAM is 0.5% more idle
+than the other. And, that is pretty much worthless.
+
+Change-Id: Ife82baa113003d9c6e9781010a07d64e09bc7f55
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ audio/scx15/audio_hw.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/audio/scx15/audio_hw.c b/audio/scx15/audio_hw.c
+index a3c6a7a..65d795d 100644
+--- a/audio/scx15/audio_hw.c
++++ b/audio/scx15/audio_hw.c
+@@ -136,14 +136,14 @@
+ /* constraint imposed by VBC: all period sizes must be multiples of 160 */
+ #define VBC_BASE_FRAME_COUNT 160
+ /* number of base blocks in a short period (low latency) */
+-#define SHORT_PERIOD_MULTIPLIER 8 /* 29 ms */
++#define SHORT_PERIOD_MULTIPLIER 4 /* 18.125 ms */
+ /* number of frames per short period (low latency) */
+ #define SHORT_PERIOD_SIZE (VBC_BASE_FRAME_COUNT * SHORT_PERIOD_MULTIPLIER)
+ /* number of short periods in a long period (low power) */
+ #ifdef _LPA_IRAM
+-#define LONG_PERIOD_MULTIPLIER 3 /* 87 ms */
++#define LONG_PERIOD_MULTIPLIER 5 /* 90.625 ms */
+ #else
+-#define LONG_PERIOD_MULTIPLIER 6  /* 174 ms */
++#define LONG_PERIOD_MULTIPLIER 20  /* 362.5 ms */
+ #endif
+ /* number of frames per long period (low power) */
+ #define LONG_PERIOD_SIZE (SHORT_PERIOD_SIZE * LONG_PERIOD_MULTIPLIER)
+@@ -2240,7 +2240,7 @@ static ssize_t out_write(struct audio_stream_out *stream, const void* buffer,
+                 ALOGW("low_power out->write_threshold=%d, config.avail_min=%d, start_threshold=%d",
+                         out->write_threshold,out->config.avail_min, out->config.start_threshold);
+             } else {
+-                out->config.avail_min = SHORT_PERIOD_SIZE;
++                out->config.avail_min = SHORT_PERIOD_SIZE/2;
+                 ALOGW("out->write_threshold=%d, config.avail_min=%d, start_threshold=%d",
+                         out->write_threshold,out->config.avail_min, out->config.start_threshold);
+             }
+-- 
+2.25.0
+

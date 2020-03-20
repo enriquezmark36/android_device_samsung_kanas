@@ -1,0 +1,38 @@
+From 5fa30b8ef24d0761510e7752d957f0da095df34b Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Tue, 21 Jan 2020 17:28:42 +0800
+Subject: [PATCH] omx: avcenc: scx15: reduce size for the stream bufffer
+
+Change-Id: I96b209214d65b46a6a06580cc8a1ab8d066ba186
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.cpp | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.cpp b/omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.cpp
+index 69af8b5..283c3f6 100644
+--- a/omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.cpp
++++ b/omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.cpp
+@@ -491,7 +491,9 @@ OMX_ERRORTYPE SPRDAVCEncoder::initEncParams() {
+     int32 phy_addr = 0;
+     int32 size = 0;
+ 
+-    unsigned int size_extra = ((mVideoWidth+15)&(~15)) * ((mVideoHeight+15)&(~15)) * 3/2 * 2;
++    unsigned int size_of_yuv = ((mVideoWidth+15)&(~15)) * ((mVideoHeight+15)&(~15)) * 3/2;
++
++    unsigned int size_extra = size_of_yuv << 1;
+     size_extra += (406*2*sizeof(uint32));
+     size_extra += 1024;
+     if (mIOMMUEnabled) {
+@@ -522,7 +524,7 @@ OMX_ERRORTYPE SPRDAVCEncoder::initEncParams() {
+         }
+     }
+ 
+-    unsigned int size_stream = ONEFRAME_BITSTREAM_BFR_SIZE;
++    unsigned int size_stream = size_of_yuv >> 1;
+     if (mIOMMUEnabled) {
+         mPmem_stream = new MemoryHeapIon("/dev/ion", size_stream, MemoryHeapBase::NO_CACHING, ION_HEAP_ID_MASK_SYSTEM);
+     } else {
+-- 
+2.25.0
+

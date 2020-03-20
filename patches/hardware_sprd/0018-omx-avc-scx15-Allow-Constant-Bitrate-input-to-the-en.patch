@@ -1,0 +1,69 @@
+From 3bfb1b2a50fa6be2b08a498dca4f4322ac1500f7 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Sun, 12 Jan 2020 19:41:52 +0800
+Subject: [PATCH] omx: avc: scx15: Allow Constant Bitrate input to the encoder.
+
+This is not fully tested, but the encoder (both the library and the harware)
+should be able to handle the constant bitrates just fine.
+Actually, the library and the hardware decoder does not seem to care at all...
+
+This patch should have a wonderful side-effect of making screen mirroring
+or screen casting possible. At least, it's successful using Chromecast.
+
+Change-Id: I46ff3be04e84f04c55367832566bf00b4f0aeed4
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.cpp | 7 +++++--
+ omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.h   | 1 +
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.cpp b/omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.cpp
+index 064dfff..4413134 100644
+--- a/omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.cpp
++++ b/omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.cpp
+@@ -261,6 +261,7 @@ SPRDAVCEncoder::SPRDAVCEncoder(
+       mVideoHeight(144),
+       mVideoFrameRate(30),
+       mVideoBitRate(192000),
++      mVideoControlRate(OMX_Video_ControlRateVariable),
+       mVideoColorFormat(OMX_COLOR_FormatYUV420SemiPlanar),
+       mIDRFrameRefreshIntervalInSec(1),
+       mAVCEncProfile(AVC_BASELINE),
+@@ -716,7 +717,7 @@ OMX_ERRORTYPE SPRDAVCEncoder::internalGetParameter(
+             return OMX_ErrorUndefined;
+         }
+ 
+-        bitRate->eControlRate = OMX_Video_ControlRateVariable;
++        bitRate->eControlRate = mVideoControlRate;
+         bitRate->nTargetBitrate = mVideoBitRate;
+         return OMX_ErrorNone;
+     }
+@@ -845,10 +846,12 @@ OMX_ERRORTYPE SPRDAVCEncoder::internalSetParameter(
+             (OMX_VIDEO_PARAM_BITRATETYPE *) params;
+ 
+         if (bitRate->nPortIndex != 1 ||
+-                bitRate->eControlRate != OMX_Video_ControlRateVariable) {
++                (bitRate->eControlRate != OMX_Video_ControlRateVariable &&
++                bitRate->eControlRate != OMX_Video_ControlRateConstant)) {
+             return OMX_ErrorUndefined;
+         }
+ 
++        mVideoControlRate = bitRate->eControlRate;
+         mVideoBitRate = bitRate->nTargetBitrate;
+         return OMX_ErrorNone;
+     }
+diff --git a/omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.h b/omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.h
+index 58b4d54..41cc455 100644
+--- a/omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.h
++++ b/omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.h
+@@ -89,6 +89,7 @@ private:
+     int32_t  mVideoHeight;
+     int32_t  mVideoFrameRate;
+     int32_t  mVideoBitRate;
++    OMX_VIDEO_CONTROLRATETYPE  mVideoControlRate;
+     int32_t  mVideoColorFormat;
+     int32_t  mIDRFrameRefreshIntervalInSec;
+     AVCProfile mAVCEncProfile;
+-- 
+2.25.0
+
