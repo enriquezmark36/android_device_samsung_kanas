@@ -46,6 +46,12 @@ BOARD_HAS_LARGE_FILESYSTEM := true
 TARGET_USES_MKE2FS := true
 
 # Wifi
+# CONFIG_NL80211_TESTMODE is required in the kernel config
+# Also, take note of the "/vendor/..." as it is specified in the config
+#
+# We should also have this line below but
+# bcmdhd_p2p.bin and bcmdhd_sta.bin are copies of each other
+# WIFI_DRIVER_FW_PATH_P2P := "/vendor/etc/wifi/bcmdhd_p2p.bin"
 BOARD_WLAN_DEVICE := bcmdhd
 BOARD_WLAN_DEVICE_REV := bcm4330
 WPA_SUPPLICANT_VERSION := VER_0_8_X
@@ -53,7 +59,6 @@ BOARD_WPA_SUPPLICANT_DRIVER := NL80211
 BOARD_WPA_SUPPLICANT_PRIVATE_LIB := lib_driver_cmd_bcmdhd
 BOARD_HOSTAPD_DRIVER := NL80211
 BOARD_HOSTAPD_PRIVATE_LIB := lib_driver_cmd_bcmdhd
-WIFI_DRIVER_FW_PATH_PARAM := "/sys/module/dhd/parameters/firmware_path"
 WIFI_DRIVER_FW_PATH_PARAM := "/sys/module/dhd/parameters/firmware_path"
 WIFI_DRIVER_FW_PATH_STA := "/vendor/etc/wifi/bcmdhd_sta.bin"
 WIFI_DRIVER_FW_PATH_AP := "/vendor/etc/wifi/bcmdhd_apsta.bin"
@@ -63,10 +68,13 @@ WIFI_BAND := 802_11_ABG
 BOARD_HAVE_SAMSUNG_WIFI := true
 
 # Graphics
-USE_OVERLAY_COMPOSER_GPU := false
 TARGET_USE_3_FRAMEBUFFER := true
-BOARD_GLOBAL_CFLAGS += -DUSE_3_FRAMEBUFFER
 USE_SPRD_DITHER := false
+# Overlay Composer uses EGL but for some reason
+# the ANativeWindow being passed via hwbinder is an invalid
+# EGLNativeWindowType causing failures (black screens)
+# everytime OC is used to layout the layers.
+USE_OVERLAY_COMPOSER_GPU := false
 
 # Use mitigations to inherent compatibility issues
 # when gralloc is used as a HIDL pass-through module
@@ -109,9 +117,6 @@ MALLOC_SVELTE := true
 
 # Tell vold that we have a kernel based impl of exfat
 TARGET_EXFAT_DRIVER := exfat
-
-# Enable dex-preoptimization to speed up the first boot sequence
-WITH_DEXPREOPT := true
 
 # Camera
 TARGET_BOARD_CAMERA_HAL_VERSION := HAL1.0
