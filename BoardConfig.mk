@@ -70,6 +70,7 @@ BOARD_HAVE_SAMSUNG_WIFI := true
 # Graphics
 TARGET_USE_3_FRAMEBUFFER := true
 USE_SPRD_DITHER := false
+NUM_FRAMEBUFFER_SURFACE_BUFFERS := 3
 # Overlay Composer uses EGL but for some reason
 # the ANativeWindow being passed via hwbinder is an invalid
 # EGLNativeWindowType causing failures (black screens)
