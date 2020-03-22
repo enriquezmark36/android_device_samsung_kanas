@@ -1,0 +1,32 @@
+From 5abc1e2112ca979a04422998a1d82b7389260ccb Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Sun, 22 Mar 2020 09:20:18 +0800
+Subject: [PATCH] Add capabilities to wifi HAL service
+
+Backported from a46c6228226e9c696a66f4e6c2a6e3027fc1cd2f.
+
+Fixes the error regarding socket creation:
+android.hardware.wifi@1.0-service: Wifi HAL started
+android.hardware.wifi@1.0-service: Failed to open socket to set up/down state (Permission denied)
+android.hardware.wifi@1.0-service: Failed to set WiFi interface up
+android.hardware.wifi@1.0-service: Failed to start legacy HAL: UNKNOWN
+
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+Change-Id: I0680821572f775df09b8720afaac1575f82ca2f5
+---
+ wifi/1.1/default/android.hardware.wifi@1.0-service.rc | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/wifi/1.1/default/android.hardware.wifi@1.0-service.rc b/wifi/1.1/default/android.hardware.wifi@1.0-service.rc
+index 696b1f93..0dfb70f6 100644
+--- a/wifi/1.1/default/android.hardware.wifi@1.0-service.rc
++++ b/wifi/1.1/default/android.hardware.wifi@1.0-service.rc
+@@ -1,4 +1,5 @@
+ service wifi_hal_legacy /vendor/bin/hw/android.hardware.wifi@1.0-service
+     class hal
++    capabilities NET_ADMIN NET_RAW SYS_MODULE
+     user wifi
+     group wifi gps
+-- 
+2.25.0
+
