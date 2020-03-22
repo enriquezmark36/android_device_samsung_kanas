@@ -87,6 +87,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	mkf2fsuserimg.sh
 
+# HIDL. (hide-el)
+# Build extra services not included in scx35-common
+include device/samsung/kanas/hidl.mk
+
 # Prebuilt targets overrides:
 # These files are declared as prebuilt targets in some Android.mk files
 # but need some device specific modifications.

@@ -86,6 +86,11 @@ TARGET_USES_HIDL_WORKAROUNDS := true
 # BOARD_USE_LIBATCHANNEL_WRAPPER := true
 # BOARD_USES_SS_VOIP := true
 
+# HIDL
+# This version binderizes more components than the scx35-common
+# Comment out this line and the one in device.mk if you don't want that.
+DEVICE_MANIFEST_FILE := device/samsung/kanas/configs/manifest.xml
+
 # Bootanimation
 TARGET_BOOTANIMATION_HALF_RES := true
 
