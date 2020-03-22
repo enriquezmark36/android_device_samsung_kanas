@@ -112,16 +112,14 @@ WIFI_CONFIGS := \
 	device/samsung/kanas/configs/wifi/wpa_supplicant_overlay.conf \
 	device/samsung/kanas/configs/wifi/wpa_supplicant.conf
 
-INIT_FILES := \
-	device/samsung/kanas/rootdir/init.sc8830.rc
-
 RAMDISK_FILES := \
+	device/samsung/kanas/rootdir/ueventd.sc8830.rc \
 	device/samsung/kanas/rootdir/init.board.rc \
+	device/samsung/kanas/rootdir/init.sc8830.rc
 
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(MEDIA_CONFIGS),$(f):system/vendor/etc/$(notdir $(f))) \
 	$(foreach f,$(AUDIO_CONFIGS),$(f):system/vendor/etc/$(notdir $(f))) \
 	$(foreach f,$(WIFI_CONFIGS),$(f):system/vendor/etc/wifi/$(notdir $(f))) \
-	$(foreach f,$(INIT_FILES),$(f):root/$(notdir $(f))) \
 	$(foreach f,$(RAMDISK_FILES),$(f):root/$(notdir $(f))) \
 

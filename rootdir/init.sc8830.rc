@@ -12,7 +12,7 @@ on early-init
     write /proc/sys/kernel/core_pattern /dev/null
 
     chown system system /sys/devices/platform/panel/backlight/panel/brightness
-    chown system system /sys/class/input/event0/device/device/enable
+    chown system input /sys/class/input/event0/device/device/enable
     chmod 777 /sys/class/input/event0/device/device/enable
     mount debugfs /sys/kernel/debug /sys/kernel/debug
 
@@ -78,7 +78,6 @@ on post-fs-data
     copy /system/etc/bluetooth/bt_stack.conf /data/misc/bluedroid/bt_stack.conf
     chown bluetooth system /data/misc/bluedroid/bt_stack.conf
     chmod 0640 /data/misc/bluedroid/bt_stack.conf
-    mkdir /data/local/media 0770 media system
     mkdir /data/anr 0771 system system
     mkdir /data/tombstones 0771 system system
 
@@ -112,8 +111,14 @@ on early-boot
     # Support audio loopback test
     mkdir /dev/pipe 0755 system system
     exec -- /system/bin/mknod -m 666 /dev/pipe/mmi.audio.ctrl p
-    # Support audio parameter stored
-    mkdir /data/local/media 0775 media system
+
+    # Used by the camera HAL and Audio HAL, both also uses the camera group
+    mkdir /data/local/media 0775 media camera
+
+    # Double check. System will silently act wierd when this is not enforced
+    # Audio may suddenly sound too loud or camera may even sporadically fail
+    chown media camera /data/local/media
+    chmod 0775 /data/local/media
 
     chmod 660 /proc/cpt/wdtirq
     chmod 660 /proc/cpt/stop
@@ -168,7 +173,7 @@ on boot
     chown system system /sys/kernel/debug/mali0/memory_usage
 
     chmod 0660 /sys/devices/virtual/camera/rear/Cam_antibanding
-    chown media system /sys/devices/virtual/camera/rear/Cam_antibanding
+    chown camera system /sys/devices/virtual/camera/rear/Cam_antibanding
 
     chown system system /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
     chown system system /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed
@@ -197,15 +202,22 @@ on boot
 
 # SENSORS
 # Accelerometer_sensor
-    chown system radio /sys/class/sensors/accelerometer_sensor/raw_data
-    chown system radio /sys/class/sensors/accelerometer_sensor/calibration
-    chown system radio /sys/class/sensors/accelerometer_sensor/reactive_alert
-    chown system radio /sys/class/sensors/accelerometer_sensor/vendor
-    chown system radio /sys/class/sensors/accelerometer_sensor/name
-    chown system radio /efs/FactoryApp/accel_calibration_data
+    chown system input /sys/class/sensors/accelerometer_sensor/raw_data
+    chown system input /sys/class/sensors/accelerometer_sensor/calibration
+    chown system input /sys/class/sensors/accelerometer_sensor/reactive_alert
+    chown system input /sys/class/sensors/accelerometer_sensor/vendor
+    chown system input /sys/class/sensors/accelerometer_sensor/name
+    chown system input /efs/FactoryApp/accel_calibration_data
     chmod 0666 /efs/FactoryApp/accel_calibration_data
-    chown system radio /sys/class/input/input2/en_sig_motion
+    chown system input /sys/class/input/input2/en_sig_motion
     chmod 0664 /sys/class/input/input2/en_sig_motion
+
+# SensorService uses the group input
+    chown system input /sys/class/input/input2/enable
+    chmod 0664 /sys/class/input/input2/enable
+    chown system input /dev/input/event2
+    chown system input /dev/input/
+
 #audio pin mux
     chown system system /proc/pin_switch/bt_iis_sys_sel/cp0_iis2
     chown system system /proc/pin_switch/bt_iis_sys_sel/cp0_iis3
