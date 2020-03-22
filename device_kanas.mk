@@ -69,6 +69,7 @@ PRODUCT_PACKAGES += \
 
 # Graphics
 PRODUCT_PACKAGES += \
+	sprd_gsp.sc8830 \
 	hwcomposer.sc8830
 
 # MDNIE - modified for this device
