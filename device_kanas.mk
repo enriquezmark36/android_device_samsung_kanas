@@ -119,6 +119,7 @@ RAMDISK_FILES := \
 	device/samsung/kanas/rootdir/init.sc8830.rc
 
 INIT_FILES := \
+	device/samsung/kanas/system/etc/init/refnotify.rc \
 	device/samsung/kanas/system/etc/init/wpa_supplicant.rc
 
 PRODUCT_COPY_FILES += \
