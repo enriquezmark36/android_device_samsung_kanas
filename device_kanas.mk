@@ -119,6 +119,8 @@ RAMDISK_FILES := \
 	device/samsung/kanas/rootdir/init.sc8830.rc
 
 INIT_FILES := \
+	device/samsung/kanas/system/etc/init/rild_scx15.rc \
+	device/samsung/kanas/system/etc/init/kill_phone.rc \
 	device/samsung/kanas/system/etc/init/refnotify.rc \
 	device/samsung/kanas/system/etc/init/wpa_supplicant.rc
 
