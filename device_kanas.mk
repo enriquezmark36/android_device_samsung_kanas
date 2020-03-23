@@ -24,6 +24,7 @@ DEVICE_PACKAGE_OVERLAYS += device/samsung/kanas/overlay
 # Thanks to Google's common kernel source
 # YACK should be capable of using sdcardfs on Android M and newer
 PRODUCT_PROPERTY_OVERRIDES += \
+	ro.config.media_vol_steps=25 \
 	ro.sys.sdcardfs=true
 
 # HWUI prop overrides
