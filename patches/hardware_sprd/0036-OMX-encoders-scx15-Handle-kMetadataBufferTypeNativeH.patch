@@ -1,0 +1,91 @@
+From 95d0dc04f32c1e7ebcb104281060dccded017678 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Wed, 25 Mar 2020 20:38:59 +0800
+Subject: [PATCH 6/8] OMX: encoders: scx15: Handle
+ kMetadataBufferTypeNativeHandleSource
+
+This is a reprise of f8c7c902abd1fdb53f3461672774fc68ae0cc5eb
+(OMX: encoders: Handle kMetadataBufferTypeNativeHandleSource)
+applied over the scx15 code.
+
+I have doubts about the mentioned commit specially that the
+commit assumes that the inputData contained the native_handle_t
+rather than the VideoNativeHandleMetadata container that
+it should be in from the HAL1.0 code...
+Using that code as it is would either cause broken video,
+some form of NULL pointer deref or some undefined behavior.
+
+I can't test the sc8830 and cohorts versions so this patch doesn't affect them.
+
+Change-Id: I651d68aaf5648c466dc927d232721a052b9935e3
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ .../avc_sprd/scx15/enc/SPRDAVCEncoder.cpp      | 16 ++++++++++++----
+ .../scx15/enc/SPRDMPEG4Encoder.cpp             | 18 +++++++++---------
+ 2 files changed, 21 insertions(+), 13 deletions(-)
+
+diff --git a/omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.cpp b/omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.cpp
+index 283c3f6..9b7c714 100644
+--- a/omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.cpp
++++ b/omx_components/video/avc_sprd/scx15/enc/SPRDAVCEncoder.cpp
+@@ -1229,16 +1229,24 @@ void SPRDAVCEncoder::onQueueFilled(OMX_U32 portIndex) {
+ 
+             if (mStoreMetaData) {
+                 unsigned int type = *(unsigned int *) inputData;
+-                if (type == kMetadataBufferTypeCameraSource ||
+-					type == kMetadataBufferTypeNativeHandleSource) {
++                if (type == kMetadataBufferTypeNativeHandleSource) {
++                    VideoNativeHandleMetadata *packet = (VideoNativeHandleMetadata *)inData;
++                    native_handle_t *nh = packet->pHandle;
++
++                    py_phy = (uint8_t *) nh->data[1];
++                    py = (uint8_t *) nh->data[2];
++                    width = nh->data[3];
++                    height = nh->data[4];
++                    x = nh->data[5];
++                    y = nh->data[6];
++                } else if (type == kMetadataBufferTypeCameraSource) {
+                     py = (uint8_t*)(*((int *) inputData + 2));
+                     py_phy = (uint8_t*)(*((int *) inputData + 1));
+                     width = (uint32_t)(*((int *) inputData + 3));
+                     height = (uint32_t)(*((int *) inputData + 4));
+                     x = (uint32_t)(*((int *) inputData + 5));
+                     y = (uint32_t)(*((int *) inputData + 6));
+-                } else if (type == kMetadataBufferTypeGrallocSource ||
+-						   type == kMetadataBufferTypeNativeHandleSource) {
++                } else if (type == kMetadataBufferTypeGrallocSource) {
+                     if (mPbuf_yuv_v == NULL) {
+                         int32 yuv_size = ((mVideoWidth+15)&(~15)) * ((mVideoHeight+15)&(~15)) *3/2;
+                         if (mIOMMUEnabled) {
+diff --git a/omx_components/video/m4v_h263_sprd/scx15/enc/SPRDMPEG4Encoder.cpp b/omx_components/video/m4v_h263_sprd/scx15/enc/SPRDMPEG4Encoder.cpp
+index 9b1bc32..739087a 100644
+--- a/omx_components/video/m4v_h263_sprd/scx15/enc/SPRDMPEG4Encoder.cpp
++++ b/omx_components/video/m4v_h263_sprd/scx15/enc/SPRDMPEG4Encoder.cpp
+@@ -930,15 +930,15 @@ void SPRDMPEG4Encoder::onQueueFilled(OMX_U32 portIndex) {
+                     x = (uint32_t)(*((int *) inputData + 5));
+                     y = (uint32_t)(*((int *) inputData + 6));
+                 } else if (type == kMetadataBufferTypeNativeHandleSource) {
+-					unsigned int *mataData = (unsigned int *) inputData;
+-                    native_handle_t *nh = (native_handle_t*)(*(uint32_t *)mataData);
+-
+-                    py_phy = (uint8_t*)nh->data[1];
+-                    py = (uint8_t*)nh->data[2];
+-                    width = (uint32_t)nh->data[3];
+-                    height = (uint32_t)nh->data[4];
+-                    x = (uint32_t)nh->data[5];
+-                    y = (uint32_t)nh->data[6];
++                    VideoNativeHandleMetadata *packet = (VideoNativeHandleMetadata *)inData;
++                    native_handle_t *nh = packet->pHandle;
++
++                    py_phy = (uint8_t *) nh->data[1];
++                    py = (uint8_t *) nh->data[2];
++                    width = nh->data[3];
++                    height = nh->data[4];
++                    x = nh->data[5];
++                    y = nh->data[6];
+                 } else if (type == kMetadataBufferTypeGrallocSource) {
+                     if (mPbuf_yuv_v == NULL) {
+                         int32 yuv_size = ((mVideoWidth+15)&(~15)) * ((mVideoHeight+15)&(~15)) *3/2;
+-- 
+2.25.0
+

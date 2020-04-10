@@ -1,0 +1,31 @@
+From de9c5cc2ab48718097c78d3e4a18c052fef94bf6 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Sun, 5 Apr 2020 15:08:47 +0800
+Subject: [PATCH 7/8] libcamera: scx15: Call SENSOR_IOCTL_AF_ENABLE when
+ enabling a AF mode in YUV sensors
+
+Should be of use with YUV sensors with different AF modes for Macro, Infinity and etc...
+beside the usual Auto mode
+
+Change-Id: If727b8b3ee0974b196104ffd264e295572ed3d1c
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ libcamera/scx15/sc8830/src/cmr_set.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libcamera/scx15/sc8830/src/cmr_set.c b/libcamera/scx15/sc8830/src/cmr_set.c
+index bea25c4..895910b 100644
+--- a/libcamera/scx15/sc8830/src/cmr_set.c
++++ b/libcamera/scx15/sc8830/src/cmr_set.c
+@@ -1920,7 +1920,7 @@ int camera_init_af_mode(uint32_t af_mode, uint32_t *skip_mode, uint32_t *skip_nu
+ 		camera_param_to_isp(ISP_CTRL_AF_MODE,af_mode,&af_mode);
+ 		ret = isp_ioctl(ISP_CTRL_AF_MODE,(void *)&af_mode);
+ 	} else {
+-		CMR_LOGW ("set af: sensor not support\n");
++		ret = Sensor_Ioctl(SENSOR_IOCTL_AF_ENABLE, (uint32_t) af_mode);
+ 	}
+ 
+ 	return ret;
+-- 
+2.25.0
+

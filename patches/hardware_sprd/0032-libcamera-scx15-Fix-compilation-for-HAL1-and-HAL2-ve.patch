@@ -1,0 +1,62 @@
+From 6738a6a6fe93fc201bbe7a92b433f089ad899cf2 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Mon, 23 Mar 2020 17:06:08 +0800
+Subject: [PATCH 2/8] libcamera: scx15: Fix compilation for HAL1 and HAL2
+ versions
+
+Change-Id: I804eb814a1142a4bd91b1247bac903936cd32dde
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ libcamera/scx15/Camera.mk  | 5 +++++
+ libcamera/scx15/Camera2.mk | 5 +++++
+ 2 files changed, 10 insertions(+)
+
+diff --git a/libcamera/scx15/Camera.mk b/libcamera/scx15/Camera.mk
+index f9f1258..35f7f63 100644
+--- a/libcamera/scx15/Camera.mk
++++ b/libcamera/scx15/Camera.mk
+@@ -104,6 +104,7 @@ LOCAL_SRC_FILES+= \
+ endif
+ 
+ LOCAL_MODULE_RELATIVE_PATH := hw
++LOCAL_PROPRIETARY_MODULE := true
+ 
+ LOCAL_CFLAGS := -fno-strict-aliasing -D_VSP_ -DJPEG_ENC -D_VSP_LINUX_ -DCHIP_ENDIAN_LITTLE -DCONFIG_CAMERA_2M -DANDROID_4100
+ 
+@@ -258,6 +259,10 @@ LOCAL_MODULE_TAGS := optional
+ 
+ ifeq ($(strip $(sc8830like)),1)
+ LOCAL_SHARED_LIBRARIES := libexif libutils libbinder libcamera_client libskia libcutils libsqlite libhardware libmorpho_easy_hdr libcamera_metadata libmemoryheapion
++LOCAL_SHARED_LIBRARIES += \
++	libnativewindow \
++	libgui \
++	liblog
+ endif
+ 
+ ifdef CONFIG_CAMERA_ISP
+diff --git a/libcamera/scx15/Camera2.mk b/libcamera/scx15/Camera2.mk
+index 9a96baa..0cb39bd 100644
+--- a/libcamera/scx15/Camera2.mk
++++ b/libcamera/scx15/Camera2.mk
+@@ -106,6 +106,7 @@ LOCAL_SRC_FILES+= \
+ endif
+ 
+ LOCAL_MODULE_RELATIVE_PATH := hw
++LOCAL_PROPRIETARY_MODULE := true
+ LOCAL_CFLAGS := -fno-strict-aliasing -D_VSP_ -DJPEG_ENC -D_VSP_LINUX_ -DCHIP_ENDIAN_LITTLE -DCONFIG_CAMERA_2M  -DANDROID_4100
+ 
+ ifeq ($(strip $(TARGET_BOARD_PLATFORM)),scx15)
+@@ -255,6 +256,10 @@ LOCAL_MODULE_TAGS := optional
+ 
+ ifeq ($(strip $(sc8830like)),1)
+ LOCAL_SHARED_LIBRARIES := libexif libutils libbinder libcamera_client libskia libcutils libsqlite libhardware libmorpho_easy_hdr libcamera_metadata libmemoryheapion
++LOCAL_SHARED_LIBRARIES += \
++	libnativewindow \
++	libgui \
++	liblog
+ endif
+ 
+ ifdef CONFIG_CAMERA_ISP
+-- 
+2.25.0
+

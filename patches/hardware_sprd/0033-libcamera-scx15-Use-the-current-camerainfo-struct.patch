@@ -1,0 +1,108 @@
+From 2a7f4884ccda7bfe84f00bd02cda60809863afb2 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Mon, 23 Mar 2020 17:09:10 +0800
+Subject: [PATCH 3/8] libcamera: scx15: Use the current camerainfo struct
+
+I Still Do Not Know Why.
+
+The camerainfo struct can simply be upgraded from the old to the
+current by few simple adjustments as described in this patch.
+
+Change-Id: I3ed83d5277b0105d8cc0fd88f2875b2fd15269f2
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ .../sc8830/inc/SprdCameraHardwareInterface.h   | 18 ++----------------
+ .../sc8830/src/SprdCameraHardwareInterface.cpp | 16 ++++++++++++++--
+ 2 files changed, 16 insertions(+), 18 deletions(-)
+
+diff --git a/libcamera/scx15/sc8830/inc/SprdCameraHardwareInterface.h b/libcamera/scx15/sc8830/inc/SprdCameraHardwareInterface.h
+index 88a2a9f..5c4831d 100644
+--- a/libcamera/scx15/sc8830/inc/SprdCameraHardwareInterface.h
++++ b/libcamera/scx15/sc8830/inc/SprdCameraHardwareInterface.h
+@@ -54,20 +54,6 @@ typedef struct sprd_camera_memory {
+ 	bool busy_flag;
+ }sprd_camera_memory_t;
+ 
+-namespace hardware {
+-
+-class CameraInfoWrapper : public CameraInfo {
+-public:
+-	CameraInfoWrapper(int facing, int orientation) {
+-		this->facing = facing;
+-		this->orientation = orientation;
+-	}
+-};
+-
+-} // namespace hardware
+-
+-using hardware::CameraInfoWrapper;
+-
+ #define MAX_SUB_RAWHEAP_NUM 10
+ 
+ class SprdCameraHardware : public virtual RefBase {
+@@ -122,8 +108,8 @@ public:
+ 	static int                   getPropertyAtv();
+ 	static int                   getNumberOfCameras();
+ 	static int                   getCameraInfo(int cameraId, struct camera_info *cameraInfo);
+-	static const CameraInfoWrapper kCameraInfo[];
+-	static const CameraInfoWrapper kCameraInfo3[];
++	static const camera_info_t   kCameraInfo[];
++	static const camera_info_t   kCameraInfo3[];
+ 	static int                   switch_monitor_thread_init(void *p_data);
+ 	static int                   switch_monitor_thread_deinit(void *p_data);
+ 	static void*                 switch_monitor_thread_proc(void *p_data);
+diff --git a/libcamera/scx15/sc8830/src/SprdCameraHardwareInterface.cpp b/libcamera/scx15/sc8830/src/SprdCameraHardwareInterface.cpp
+index 47619e2..dea0110 100644
+--- a/libcamera/scx15/sc8830/src/SprdCameraHardwareInterface.cpp
++++ b/libcamera/scx15/sc8830/src/SprdCameraHardwareInterface.cpp
+@@ -108,33 +108,45 @@ bool gIsApctRead = false;
+ 
+ gralloc_module_t const* SprdCameraHardware::mGrallocHal = NULL;
+ 
+-const CameraInfoWrapper SprdCameraHardware::kCameraInfo[] = {
++#define CAMERA_INFO_HAL1 \
++    CAMERA_MODULE_API_VERSION_1_0, /* device_version */ \
++    NULL, /* static_camera_characteristics */ \
++    0,    /* resource_cost */ \
++    NULL, /* conflicting_devices */ \
++    0    /* conflicting_devices_length */
++
++const camera_info_t SprdCameraHardware::kCameraInfo[] = {
+ 	{
+ 		CAMERA_FACING_BACK,
+ 		90,/*orientation*/
++		CAMERA_INFO_HAL1
+ 	},
+ #ifndef CONFIG_DCAM_SENSOR_NO_FRONT_SUPPORT
+ 	{
+ 		CAMERA_FACING_FRONT,
+ 		270,/*orientation*/
++		CAMERA_INFO_HAL1
+ 	},
+ #endif
+ };
+ 
+-const CameraInfoWrapper SprdCameraHardware::kCameraInfo3[] = {
++const camera_info_t SprdCameraHardware::kCameraInfo3[] = {
+ 	{
+ 		CAMERA_FACING_BACK,
+ 		90,/*orientation*/
++		CAMERA_INFO_HAL1
+ 	},
+ 
+ 	{
+ 		CAMERA_FACING_FRONT,
+ 		270,/*orientation*/
++		CAMERA_INFO_HAL1
+ 	},
+ 
+ 	{
+ 		2,
+ 		0,/* orientation */
++		CAMERA_INFO_HAL1
+ 	}
+ };
+ 
+-- 
+2.25.0
+
