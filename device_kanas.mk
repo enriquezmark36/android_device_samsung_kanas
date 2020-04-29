@@ -85,6 +85,11 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	gps.default
 
+# Camera
+PRODUCT_PACKAGES += \
+	camera.sc8830 \
+	camera2.sc8830
+
 # Explicitly include mkf2fsuserimg.sh
 PRODUCT_PACKAGES += \
 	mkf2fsuserimg.sh

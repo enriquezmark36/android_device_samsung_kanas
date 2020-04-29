@@ -140,15 +140,21 @@ TARGET_BOARD_CAMERA_FACE_DETECT := false
 TARGET_BOARD_BACK_CAMERA_INTERFACE := mipi
 TARGET_BOARD_FRONT_CAMERA_INTERFACE := ccir
 TARGET_BOARD_CAMERA_CAF := false
-CONFIG_CAMERA_ISP := true
-BOARD_GLOBAL_CFLAGS += -DCONFIG_CAMERA_ISP
 TARGET_BOARD_CAMERA_IOCTL_HAS_SET_FLASH := true
 TARGET_BOARD_CAMERA_IOCTL_EXTRA_PARAMS := true
 TARGET_BOARD_CAMERA_IOCTL_HAS_POWER_ONOFF := true
+TARGET_CAMERA_OPEN_SOURCE := true
+TARGET_USES_MEDIA_EXTENSIONS := true
 
-# For Camera stock lib.I scream halp, I cannot get it to work yet :(
+# For the camera stock lib, if ever someone wants to try it.
+# The opensource version have reached feature parity.
 TARGET_LD_SHIM_LIBS += /system/vendor/lib/hw/camera.sc8830.so|libmemoryheapion.so
+
+# LineageOS HAL1.0 compatibility
 TARGET_NEEDS_LEGACY_CAMERA_HAL1_DYN_NATIVE_HANDLE := true
+# It seems that cameraserver and even the binderized passthrough HAL (HIDL)
+# works without merging cameraserver and mediaserver.
+# TARGET_HAS_LEGACY_CAMERA_HAL1 := true
 
 # Sensors
 TARGET_USES_SENSORS_WRAPPER := false
