@@ -1,0 +1,77 @@
+From 8f6d035480701473444a7626360d65ca4b3d50ca Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Sat, 25 Apr 2020 20:31:58 +0800
+Subject: [PATCH 3/3] hwcomposer: kanas: DONOTMERGE: Partially disable
+ PROCESS_VIDEO_USE_GSP
+
+GSP's blending YUV and RGB layers doesn't look right by a mile.
+The "SPRDevs" (pun intended) are right for using the YUV420 format
+for the output. RGB format just loses a lot of colors.
+
+But, the problem of having some sort of long
+vertical or horizontal "pixels" still exists. This problem
+should have been barely noticable if the video looks real
+(eg. real life shots) but its not on some CGI videos.
+
+To be consistent with the previous versions of the rom and the stock, turn off
+the GSP processing for YUV layers. PROCESS_VIDEO_USE_GSP also handles the
+second side of DIRECT_DISPLAY_SINGLE_OSD_LAYER which we might want to have.
+So, disabling PROCESS_VIDEO_USE_GSP is ng. Now, we have this patch.
+
+Change-Id: I04e6eb0994ee32b1994b44b3ff3d723d0c67cd75
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ hwcomposer/scx15/Android.mk                          |  6 ++++++
+ .../SprdPrimaryDisplayDevice/SprdHWLayerList.cpp     | 12 ++++++++++++
+ 2 files changed, 18 insertions(+)
+
+diff --git a/hwcomposer/scx15/Android.mk b/hwcomposer/scx15/Android.mk
+index 81ad854..aa80474 100644
+--- a/hwcomposer/scx15/Android.mk
++++ b/hwcomposer/scx15/Android.mk
+@@ -149,6 +149,12 @@ endif
+ 
+ ifeq ($(strip $(SOC_SCX35)),true)
+ LOCAL_CFLAGS += -DGSP_ADDR_TYPE_PHY
++
++# The First version of GSP deals badly with YUV colorspace
++# that it introduces weird artifacts beaming either
++# horizontally or vertically across the image giving
++# it a pixelated look.
++LOCAL_CFLAGS += -DPROCESS_VIDEO_DONT_USE_GSP
+ endif
+ 
+ # Use GSP to blend multiple OSD layers (not video layers)
+diff --git a/hwcomposer/scx15/SprdPrimaryDisplayDevice/SprdHWLayerList.cpp b/hwcomposer/scx15/SprdPrimaryDisplayDevice/SprdHWLayerList.cpp
+index 3c4a531..f845b43 100644
+--- a/hwcomposer/scx15/SprdPrimaryDisplayDevice/SprdHWLayerList.cpp
++++ b/hwcomposer/scx15/SprdPrimaryDisplayDevice/SprdHWLayerList.cpp
+@@ -263,6 +263,17 @@ int SprdHWLayerList:: revisitGeometry(int *DisplayFlag, SprdPrimaryDisplayDevice
+             continue;
+         }
+ 
++#ifdef PROCESS_VIDEO_DONT_USE_GSP
++        /*
++         * At this point, OVC might not be used to blend the YUV layer
++         * and the compile time flag suggests not to use GSP for YUV layer
++         * blending and processing
++         */
++        resetOverlayFlag(mVideoLayerList[i]);
++        mFBLayerCount++;
++        ALOGI_IF(mDebugFlag, "YUV layer ignored as per compile time flag");
++	continue;
++#else
+         /*
+          *  Our Display Controller cannot handle 2 or more than 2 video layers
+          *  at the same time.
+@@ -276,6 +287,7 @@ int SprdHWLayerList:: revisitGeometry(int *DisplayFlag, SprdPrimaryDisplayDevice
+ 
+         YUVLayer = mVideoLayerList[i];
+         YUVIndex = YUVLayer->getLayerIndex();
++#endif
+     }
+ 
+     /*
+-- 
+2.25.0
+

@@ -77,6 +77,18 @@ SF_START_GRAPHICS_ALLOCATOR_SERVICE := true
 # EGLNativeWindowType causing failures (black screens)
 # everytime OC is used to layout the layers.
 USE_OVERLAY_COMPOSER_GPU := false
+# Using the GSP to blend or transform layers requires IOMMU,
+# or layers must be in physically contiguous memory.
+# We don't have IOMMU.
+TARGET_FORCE_HWC_CONTIG := true
+# Make GSP blend multiple OSD (read: RGBA) layers instead of the
+# GPU. This one mitigation about the missing Overlay Composer.
+# Should help with system interactivity.
+# Spreadtrum codes point that the shark version (the first version)
+# of GSP can only blend two layers.
+# Empirical tests show that our first version chip can safely blend
+# up to 5 layers max. Reduce when needed.
+GSP_MAX_OSD_LAYERS := 5
 
 # Use mitigations to inherent compatibility issues
 # when gralloc is used as a HIDL pass-through module
