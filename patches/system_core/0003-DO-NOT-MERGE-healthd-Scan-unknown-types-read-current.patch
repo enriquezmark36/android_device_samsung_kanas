@@ -1,0 +1,96 @@
+From 985844ac70598bf02a45709dd91a3e39ac1bb732 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Thu, 30 Apr 2020 12:42:17 +0800
+Subject: [PATCH] DO NOT MERGE healthd: Scan unknown types; read current_now
+ before current_max
+
+This change is exclusive for SM-G355**, primarily for SM-G355H.
+
+The more appropiate fix to the wrong current and unknown types
+is to patch the kernel itself which may not be always possible.
+This patch exists as an alternative to that kernel change.
+
+For some reason, all the current measurement is located at
+'sec-charger' with type UNKNOWN and the current limit
+are located in current_now rather than current_max.
+current measurements are also in milli Amperes rather than
+micro Amperes
+
+Hack healthd to include UNKNOWN types and read from
+current_now rather than current_max converting units when needed.
+
+Change-Id: I564483db9888381894b79c5984e816c4f8a63477
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ healthd/BatteryMonitor.cpp | 38 +++++++++++++++++++++++++++++++++-----
+ 1 file changed, 33 insertions(+), 5 deletions(-)
+
+diff --git a/healthd/BatteryMonitor.cpp b/healthd/BatteryMonitor.cpp
+index afaf3219b..d5195189f 100644
+--- a/healthd/BatteryMonitor.cpp
++++ b/healthd/BatteryMonitor.cpp
+@@ -268,6 +268,7 @@ bool BatteryMonitor::update(void) {
+             case ANDROID_POWER_SUPPLY_TYPE_AC:
+             case ANDROID_POWER_SUPPLY_TYPE_USB:
+             case ANDROID_POWER_SUPPLY_TYPE_WIRELESS:
++            case ANDROID_POWER_SUPPLY_TYPE_UNKNOWN: // This shouldn't be here.
+                 path.clear();
+                 path.appendFormat("%s/%s/online", POWER_SUPPLY_SYSFS_PATH, name);
+                 if (access(path.string(), R_OK) == 0)
+@@ -297,14 +298,39 @@ bool BatteryMonitor::update(void) {
+             case ANDROID_POWER_SUPPLY_TYPE_WIRELESS:
+                 props.chargerWirelessOnline = true;
+                 break;
+-            default:
+-                KLOG_WARNING(LOG_TAG, "%s: Unknown power supply type\n",
+-                             mChargerNames[i].string());
++            /*
++             * There are power supply classes that are "virtual", representing
++             * the charger/regulator itself regardless of the source.
++             * It's always online but its type is usually 'Unknown'
++             * so ignore that warning. If these classes exists,
++             * these usually hold the current/voltage information
++             * rather than the usb/ac/wireless classes.
++             */
++            //default:
++            //    KLOG_WARNING(LOG_TAG, "%s: Unknown power supply type\n",
++            //                 mChargerNames[i].string());
+             }
+             path.clear();
+-            path.appendFormat("%s/%s/current_max", POWER_SUPPLY_SYSFS_PATH,
++
++            /*
++            /* Try accessing current_now instead of current_max
++             * Since on some devices, current_now holds the present current limit
++             * while current_max holds the theoretical maximum.
++             */
++            path.appendFormat("%s/%s/current_now", POWER_SUPPLY_SYSFS_PATH,
+                               mChargerNames[i].string());
+-            int ChargingCurrent =
++
++            // Convert mA(milliampere) to uA(micro-ampere)
++            int ChargingCurrent = 1000;
++
++            if (access(path.string(), R_OK) != 0) {
++                path.clear();
++                path.appendFormat("%s/%s/current_max", POWER_SUPPLY_SYSFS_PATH,
++                                  mChargerNames[i].string());
++                // Revert conversions; expect micro-ampere
++                ChargingCurrent = 1;
++            }
++            ChargingCurrent *=
+                     (access(path.string(), R_OK) == 0) ? getIntField(path) : 0;
+ 
+             path.clear();
+@@ -321,6 +347,8 @@ bool BatteryMonitor::update(void) {
+                 props.maxChargingCurrent = ChargingCurrent;
+                 props.maxChargingVoltage = ChargingVoltage;
+                 MaxPower = power;
++                KLOG_WARNING(LOG_TAG, "%s: Maxpower set at%f\n",
++                             mChargerNames[i].string(), power);
+             }
+         }
+     }
+-- 
+2.25.0
+
