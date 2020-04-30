@@ -85,6 +85,11 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	gps.default
 
+# Cell Radio
+PRODUCT_PACKAGES += \
+	refnotify \
+	nvitemd
+
 # Camera
 PRODUCT_PACKAGES += \
 	camera.sc8830 \
