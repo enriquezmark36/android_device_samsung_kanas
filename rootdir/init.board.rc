@@ -14,13 +14,13 @@ on early-boot
 
 on boot
     # Marvell GPS
-    chown system system /proc/driver/sirf
+    chown gps system /proc/driver/sirf
 
     # create filesystem for gps
-    mkdir /data/system/gps 0771 system system
-    mkdir /data/system/gps/mrvlgps 0771 system system
-    mkdir /data/system/gps/mrvlgps/rxn 0771 system system
-    mkdir /data/system/gps/mrvlgps/rxn/RXN 0771 system system
+    mkdir /data/system/gps 0771 gps system
+    mkdir /data/system/gps/mrvlgps 0771 gps system
+    mkdir /data/system/gps/mrvlgps/rxn 0771 gps system
+    mkdir /data/system/gps/mrvlgps/rxn/RXN 0771 gps system
 
 #To allow interfaces to get v6 address when tethering is enabled
     write /proc/sys/net/ipv6/conf/rmnet0/accept_ra 2

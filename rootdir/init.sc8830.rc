@@ -373,11 +373,6 @@ on boot
     chown radio system /efs
     chmod 0771 /efs
 
-# CSR GPS
-    chown system system /proc/driver/sirf
-    chown system system /dev/ttyS2
-    chmod 0660 /dev/ttyS2
-
 # permissions for bluetooth.
    setprop ro.bt.bdaddr_path "/efs/bluetooth/bt_addr"
    chown bluetooth net_bt_stack ro.bt.bdaddr_path
