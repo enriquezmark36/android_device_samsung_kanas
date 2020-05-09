@@ -14,6 +14,7 @@
 
 /dev/stty_td*           0660     radio       system
 /dev/stty_w*            0660     radio       system
+/dev/stty_w21           0660     gps         system
 /dev/slog_td            0660     system      system
 /dev/spipe_td0          0660     system      system
 /dev/spipe_td1          0660     system      system

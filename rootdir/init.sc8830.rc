@@ -219,33 +219,33 @@ on boot
     chown system input /dev/input/
 
 #audio pin mux
-    chown system system /proc/pin_switch/bt_iis_sys_sel/cp0_iis2
-    chown system system /proc/pin_switch/bt_iis_sys_sel/cp0_iis3
-    chown system system /proc/pin_switch/bt_iis_sys_sel/cp0_iis0
-    chown system system /proc/pin_switch/bt_iis_sys_sel/cp0_iis1
-    chown system system /proc/pin_switch/bt_iis_sys_sel/cp1_iis1
-    chown system system /proc/pin_switch/bt_iis_sys_sel/cp1_iis2
-    chown system system /proc/pin_switch/bt_iis_sys_sel/cp1_iis0
-    chown system system /proc/pin_switch/bt_iis_sys_sel/cp1_iis3
-    chown system system /proc/pin_switch/bt_iis_sys_sel/ap_iis3
-    chown system system /proc/pin_switch/bt_iis_sys_sel/ap_iis2
-    chown system system /proc/pin_switch/bt_iis_sys_sel/ap_iis1
-    chown system system /proc/pin_switch/bt_iis_sys_sel/ap_iis0
-    chown system system /proc/pin_switch/bt_iis_sys_sel/vbc_iis
-    chown system system /proc/pin_switch/iis01_loop_sel
-    chown system system /proc/pin_switch/iis23_loop_sel
-    chown system system /proc/pin_switch/iis12_loop_sel
-    chown system system /proc/pin_switch/iis02_loop_sel
-    chown system system /proc/pin_switch/iis03_loop_sel
-    chown system system /proc/pin_switch/iis13_loop_sel
-    chown system system /proc/pin_switch/iis1_sys_sel/ap_iis1
-    chown system system /proc/pin_switch/iis0_sys_sel/ap_iis0
-    chown system system /proc/pin_switch/iis0_sys_sel/cp0_iis0
-    chown system system /proc/pin_switch/iis0_sys_sel/cp1_iis0
-    chown system system /proc/pin_switch/iis0_sys_sel/cp2_iis0
-    chown system system /proc/pin_switch/iis1_sys_sel/cp2_iis1
-    chown system system /proc/pin_switch/iis1_sys_sel/cp0_iis1
-    chown system system /proc/pin_switch/iis1_sys_sel/cp1_iis1
+    chown audioserver camera /proc/pin_switch/bt_iis_sys_sel/cp0_iis2
+    chown audioserver camera /proc/pin_switch/bt_iis_sys_sel/cp0_iis3
+    chown audioserver camera /proc/pin_switch/bt_iis_sys_sel/cp0_iis0
+    chown audioserver camera /proc/pin_switch/bt_iis_sys_sel/cp0_iis1
+    chown audioserver camera /proc/pin_switch/bt_iis_sys_sel/cp1_iis1
+    chown audioserver camera /proc/pin_switch/bt_iis_sys_sel/cp1_iis2
+    chown audioserver camera /proc/pin_switch/bt_iis_sys_sel/cp1_iis0
+    chown audioserver camera /proc/pin_switch/bt_iis_sys_sel/cp1_iis3
+    chown audioserver camera /proc/pin_switch/bt_iis_sys_sel/ap_iis3
+    chown audioserver camera /proc/pin_switch/bt_iis_sys_sel/ap_iis2
+    chown audioserver camera /proc/pin_switch/bt_iis_sys_sel/ap_iis1
+    chown audioserver camera /proc/pin_switch/bt_iis_sys_sel/ap_iis0
+    chown audioserver camera /proc/pin_switch/bt_iis_sys_sel/vbc_iis
+    chown audioserver camera /proc/pin_switch/iis01_loop_sel
+    chown audioserver camera /proc/pin_switch/iis23_loop_sel
+    chown audioserver camera /proc/pin_switch/iis12_loop_sel
+    chown audioserver camera /proc/pin_switch/iis02_loop_sel
+    chown audioserver camera /proc/pin_switch/iis03_loop_sel
+    chown audioserver camera /proc/pin_switch/iis13_loop_sel
+    chown audioserver camera /proc/pin_switch/iis1_sys_sel/ap_iis1
+    chown audioserver camera /proc/pin_switch/iis0_sys_sel/ap_iis0
+    chown audioserver camera /proc/pin_switch/iis0_sys_sel/cp0_iis0
+    chown audioserver camera /proc/pin_switch/iis0_sys_sel/cp1_iis0
+    chown audioserver camera /proc/pin_switch/iis0_sys_sel/cp2_iis0
+    chown audioserver camera /proc/pin_switch/iis1_sys_sel/cp2_iis1
+    chown audioserver camera /proc/pin_switch/iis1_sys_sel/cp0_iis1
+    chown audioserver camera /proc/pin_switch/iis1_sys_sel/cp1_iis1
 
     chmod 0664 /proc/pin_switch/bt_iis_sys_sel/cp0_iis2
     chmod 0664 /proc/pin_switch/bt_iis_sys_sel/cp0_iis3
