@@ -74,5 +74,9 @@ ro.config.zram.compressor=lz4
 ro.config.zram.disksize=739246080
 ro.config.swappiness=100
 
+# Avoid some buffer dequeue errors
+# due to few buffers
+ro.sf.disable_triple_buffer=0
+
 # EGL blobs crash on screen off
 ro.egl.destroy_after_detach=true
