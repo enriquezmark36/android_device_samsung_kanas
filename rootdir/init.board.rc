@@ -46,3 +46,38 @@ on boot
     chown wifi wifi /data/misc/wifi/fwpath
     rmdir /data/system/wpa_supplicant
     setprop wifi.interface wlan0
+
+# BFQio CGroup support
+# This is a copy of lineage-iosched.rc since the
+# on init and on boot markers will have been passed by the time
+# that init file is parsed.
+on init
+    # Set up the BFQIO hierarchy
+    mkdir /dev/bfqio 0755 system system
+    mount cgroup none /dev/bfqio bfqio
+    chown system system /dev/bfqio/tasks
+    chmod 0664 /dev/bfqio/tasks
+    chmod 0220 /dev/bfqio/cgroup.event_control
+
+    # Soft realtime class for display service
+    mkdir /dev/bfqio/rt-display 0755 system system
+    write /dev/bfqio/rt-display/bfqio.ioprio_class 1
+    chown system system /dev/bfqio/rt-display/tasks
+    chmod 0664 /dev/bfqio/rt-display/tasks
+    chmod 0220 /dev/bfqio/rt-display/cgroup.event_control
+
+    # IDLE class for background services
+    mkdir /dev/bfqio/idle 0755 system system
+    write /dev/bfqio/idle/bfqio.ioprio_class 3
+    chown system system /dev/bfqio/idle/tasks
+    chmod 0664 /dev/bfqio/idle/tasks
+    chmod 0220 /dev/bfqio/idle/cgroup.event_control
+
+on boot
+    chown system system /sys/block/mmcblk0/queue/scheduler
+    chmod 0664 /sys/block/mmcblk0/queue/scheduler
+    restorecon /sys/block/mmcblk0/queue/scheduler
+
+    chown system system /sys/block/dm-0/queue/scheduler
+    chmod 0664 /sys/block/dm-0/queue/scheduler
+    restorecon /sys/block/dm-0/queue/scheduler
