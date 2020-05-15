@@ -97,7 +97,9 @@ PRODUCT_PACKAGES += \
 
 # Explicitly include mkf2fsuserimg.sh
 PRODUCT_PACKAGES += \
-	mkf2fsuserimg.sh
+	mkf2fsuserimg.sh \
+	badblocks \
+
 
 # HIDL. (hide-el)
 # Build extra services not included in scx35-common
