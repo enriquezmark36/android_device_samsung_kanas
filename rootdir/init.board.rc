@@ -49,8 +49,10 @@ on boot
 
 # BFQio CGroup support
 # This is a copy of lineage-iosched.rc since the
-# on init and on boot markers will have been passed by the time
+# "on init" and "on boot" markers will have been passed by the time
 # that init file is parsed.
+#
+# With/without some alterations.
 on init
     # Set up the BFQIO hierarchy
     mkdir /dev/bfqio 0755 system system
@@ -66,12 +68,21 @@ on init
     chmod 0664 /dev/bfqio/rt-display/tasks
     chmod 0220 /dev/bfqio/rt-display/cgroup.event_control
 
-    # IDLE class for background services
-    mkdir /dev/bfqio/idle 0755 system system
-    write /dev/bfqio/idle/bfqio.ioprio_class 3
-    chown system system /dev/bfqio/idle/tasks
-    chmod 0664 /dev/bfqio/idle/tasks
-    chmod 0220 /dev/bfqio/idle/cgroup.event_control
+    # background services
+    mkdir /dev/bfqio/background  0755 system system
+    chown system system /dev/bfqio/background/tasks
+    chmod 0664 /dev/bfqio/background/tasks
+    chmod 0220 /dev/bfqio/background/cgroup.event_control
+    write /dev/bfqio/background/bfqio.ioprio_class 2
+    write /dev/bfqio/system-background/bfqio.ioprio 7
+
+    # system background services
+    mkdir /dev/bfqio/system-background 0755 system system
+    chown system system /dev/bfqio/system-background/tasks
+    chmod 0664 /dev/bfqio/system-background/tasks
+    chmod 0220 /dev/bfqio/system-background/cgroup.event_control
+    write /dev/bfqio/system-background/bfqio.ioprio_class 2
+    write /dev/bfqio/system-background/bfqio.ioprio 4
 
 on boot
     chown system system /sys/block/mmcblk0/queue/scheduler
