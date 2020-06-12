@@ -1,0 +1,101 @@
+From 1d03808d411cff8d53b87f7baf9962e4e47ef7cf Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Tue, 26 May 2020 16:43:23 +0800
+Subject: [PATCH 08/12] shim: ril: Dynamically load property_get/set symbols
+ once
+
+This partially reverts 79ce2e8b94706781d40eea19928ac963c7fd9f64
+(shim: ril: shim property_get/set instead of LD_PRELOAD)
+
+Also, this fixes the buffer overflow problem due to the property_get
+shim not working (or not being called, to be exact).
+
+Problem specifics:
+Crash when activating cell data on Dual Sim Dual Standby (DSDS) mode
+And, a seemingly unhelpful trace is produced.
+DEBUG   : *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+DEBUG   : LineageOS Version: '15.1-20200513-UNOFFICIAL-Built_by_tayo-tayo-kanas'
+DEBUG   : Build fingerprint: 'samsung/lineage_kanas/kanas:8.1.0/OPM7.181205.001/10a6bf45cd:userdebug/test-keys'
+DEBUG   : Revision: '0'
+DEBUG   : ABI: 'arm'
+DEBUG   : pid: 289, tid: 289, name: rild  >>> /vendor/bin/hw/rild <<<
+DEBUG   : signal 6 (SIGABRT), code -6 (SI_TKILL), fault addr --------
+DEBUG   : Abort message: 'FORTIFY: strcpy: prevented write past end of 12-byte buffer'
+DEBUG   :     r0 00000000  r1 00000121  r2 00000006  r3 00000008
+DEBUG   :     r4 00000121  r5 00000121  r6 beb52ecc  r7 0000010c
+DEBUG   :     r8 00000000  r9 00000001  sl 00000000  fp b19647a4
+DEBUG   :     ip b1978680  sp beb52eb8  lr b1f73a3f  pc b1f6d470  cpsr 200f0030
+DEBUG   :
+DEBUG   : backtrace:
+DEBUG   :     #00 pc 0001a470  /system/lib/libc.so (abort+63)
+DEBUG   :     #01 pc 0001bf31  /system/lib/libc.so (__fortify_fatal(char const*, ...)+24)
+DEBUG   :     #02 pc 0001c663  /system/lib/libc.so (__strcpy_chk_fail+6)
+DEBUG   :     #03 pc 00000004  <unknown>
+
+Problem cause:
+property_get() trying to write 13 bytes of memory on a 8 byte buffer.
+
+Problem cause (in layman):
+property_get() writes 2 cellular network ids somewhere that SPECIFICALLY says that it only has a space for a single id.
+
+Change-Id: Iab7009943ed115c13ff0d837feb1edebc7d21a83
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ libshims/ril_shim.cpp | 30 ++++++++++++++++++++++++++----
+ 1 file changed, 26 insertions(+), 4 deletions(-)
+
+diff --git a/libshims/ril_shim.cpp b/libshims/ril_shim.cpp
+index 653a19c..37ca8ce 100644
+--- a/libshims/ril_shim.cpp
++++ b/libshims/ril_shim.cpp
+@@ -82,10 +82,24 @@ extern "C" void _ZN7android14acquire_objectERKNS_2spINS_12ProcessStateEEERK18fla
+     real_acquire_object(proc, obj, who, NULL);
+ }
+ 
+-/** property_get() */
+-extern "C" int ____prop_get(const char *key, char *value, const char *default_value)
++extern "C" int property_get(const char *key, char *value, const char *default_value)
+ {
+     auto search = KEY_MAP.find(key);
++
++    /*
++     * There are times when the symbol is not yet available.
++     * This is usually due to the order of linking cause by the method used to
++     * apply the shim layer.
++     */
++    if (__builtin_expect(!real_property_get, 0)) {
++        real_property_get = (int (*)(const char*, char*, const char*)) dlsym(RTLD_NEXT, "property_get");
++        if (!real_property_get) {
++            ALOGI("dlsym() cannot find the real_property_get() symbol: %s", dlerror());
++            strcpy(value, default_value);
++            return strlen(default_value);
++        }
++    }
++
+     if (search != KEY_MAP.end()) {
+         std::string actual_key = (*search).second.first;
+         size_t index = (*search).second.second;
+@@ -101,10 +115,18 @@ extern "C" int ____prop_get(const char *key, char *value, const char *default_va
+     return real_property_get(key, value, default_value);
+ }
+ 
+-/** property_set() */
+-extern "C" int ____prop_set(const char *key, const char *value)
++extern "C" int property_set(const char *key, const char *value)
+ {
+     auto search = KEY_MAP.find(key);
++
++    if (__builtin_expect(!real_property_set, 0)) {
++        real_property_set = (int (*)(const char*, const char*)) dlsym(RTLD_NEXT, "property_set");
++        if (!real_property_set) {
++            ALOGI("dlsym() cannot find the real_property_set() symbol: %s", dlerror());
++            return -1;
++        }
++    }
++
+     if (search != KEY_MAP.end()) {
+         std::string actual_key = (*search).second.first;
+         size_t index = (*search).second.second;
+-- 
+2.27.0
+
