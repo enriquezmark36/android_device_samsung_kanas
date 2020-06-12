@@ -1,0 +1,119 @@
+From 0acff25313427604b6e1435cadfab1186b26be46 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Fri, 12 Jun 2020 19:53:28 +0800
+Subject: [PATCH] shim: engpc: Redirect /etc/audio_para to
+ /vendor/etc/audio_para
+
+Before the treble configuration, the file is actually on /etc/audio_para
+which is a symlink to /system/etc/audio_para.
+
+I don't know to what extent does it affect the running system when enpgc
+cannot find this file. So, to be sure, intercept the open() calls and
+fix any references to that file.
+
+Change-Id: Ib5505566a75be8dbb0644c399ba3855e5b4ebe16
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ libshims/Android.mk     |  9 ++++++
+ libshims/engpc_shim.cpp | 72 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 81 insertions(+)
+ create mode 100644 libshims/engpc_shim.cpp
+
+diff --git a/libshims/Android.mk b/libshims/Android.mk
+index 451d1ea..842ceeb 100644
+--- a/libshims/Android.mk
++++ b/libshims/Android.mk
+@@ -43,3 +43,12 @@ LOCAL_MODULE_TAGS := optional
+ LOCAL_PROPRIETARY_MODULE := true
+ LOCAL_MODULE_CLASS := SHARED_LIBRARIES
+ include $(BUILD_SHARED_LIBRARY)
++
++include $(CLEAR_VARS)
++LOCAL_SRC_FILES := engpc_shim.cpp
++LOCAL_SHARED_LIBRARIES := liblog libcutils
++LOCAL_MODULE := libengpc_shim
++LOCAL_MODULE_TAGS := optional
++LOCAL_PROPRIETARY_MODULE := true
++LOCAL_MODULE_CLASS := SHARED_LIBRARIES
++include $(BUILD_SHARED_LIBRARY)
+diff --git a/libshims/engpc_shim.cpp b/libshims/engpc_shim.cpp
+new file mode 100644
+index 0000000..f1cd9a5
+--- /dev/null
++++ b/libshims/engpc_shim.cpp
+@@ -0,0 +1,72 @@
++/*
++ * Copyright (C) 2020 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++#include <dlfcn.h>
++
++#include <stdio.h>
++#include <stdint.h>
++#include <stdlib.h>
++
++#define LOG_NDEBUG 0
++#define LOG_TAG "ENGPC_SHIM"
++#include <cutils/log.h>
++
++/*
++ * Do not try to statically scan the symbol here as the linker
++ * may have not yet loaded the library yet, which is weird.
++ * I tried that and kept getting NULL from dlsym() so I'd deferred it
++ * till the first open()
++ */
++typedef int (*real_open_type)(const char *pathname, int flags, mode_t mode);
++static real_open_type real_open = NULL;
++
++extern "C" int open(const char *pathname, int flags, ...)
++{
++	int mode_int;
++	mode_t mode;
++	va_list ap;
++	va_start(ap, flags);
++	mode_int = va_arg(ap, int);
++	va_end(ap);
++
++	// open() only have one extra argument but it takes a byte
++	// rather than a word which va_args uses.
++	mode = (unsigned short) mode_int;
++
++	// Hint that the initialization (i.e. looking up the symbol)
++	// will only occur only once. when it is loaded we can just reuse it.
++	if (__builtin_expect(!real_open, 0)) {
++		real_open = (real_open_type)dlsym(RTLD_NEXT,"open");
++		if (!real_open) {
++			ALOGI("dlsym() cannot find the open() symbol: %s", dlerror());
++			return -1;
++		}
++	}
++
++	if (!pathname)
++		goto default_open;
++
++	if (__builtin_expect(strncmp("/etc/audio_para", pathname, 15) == 0, 0)){
++		ALOGI("Matched path '%s' overriding to '/vendor/etc/audio_para'", pathname);
++		return real_open("/vendor/etc/audio_para", flags, mode);
++	}
++
++default_open:
++	return real_open(pathname, flags, mode);
++}
+-- 
+2.27.0
+

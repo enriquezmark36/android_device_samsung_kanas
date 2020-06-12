@@ -100,6 +100,9 @@ PRODUCT_PACKAGES += \
 	mkf2fsuserimg.sh \
 	badblocks \
 
+# Extra shims
+PRODUCT_PACKAGES += \
+	libengpc_shim
 
 # HIDL. (hide-el)
 # Build extra services not included in scx35-common
