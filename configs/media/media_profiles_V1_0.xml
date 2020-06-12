@@ -148,18 +148,19 @@
             <Video codec="h264"
                    bitRate="10000000"
                    width="1280"
-                   height="720"
+                   height="960"
                    frameRate="30" />
             <Audio codec="aac"
                    bitRate="160000"
                    sampleRate="48000"
                    channels="1" />
         </EncoderProfile>
+
         <EncoderProfile quality="720p" fileFormat="mp4" duration="60">
             <Video codec="m4v"
                    bitRate="10000000"
                    width="1280"
-                   height="720"
+                   height="960"
                    frameRate="30" />
             <Audio codec="aac"
                    bitRate="160000"
@@ -171,7 +172,7 @@
             <Video codec="h264"
                    bitRate="10000000"
                    width="1280"
-                   height="720"
+                   height="960"
                    frameRate="30" />
             <!-- audio setting is ignored -->
             <Audio codec="aac"
@@ -183,7 +184,7 @@
             <Video codec="m4v"
                    bitRate="10000000"
                    width="1280"
-                   height="720"
+                   height="960"
                    frameRate="30" />
             <!-- audio setting is ignored -->
             <Audio codec="aac"

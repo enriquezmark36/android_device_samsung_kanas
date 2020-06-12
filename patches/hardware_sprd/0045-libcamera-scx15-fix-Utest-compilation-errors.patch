@@ -1,0 +1,65 @@
+From 291c3730aecad11f604f0245c92fb6148adfbc55 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Fri, 1 May 2020 15:44:39 +0800
+Subject: [PATCH 02/12] libcamera: scx15: fix Utest compilation errors
+
+Change-Id: I422f94f6ef9a46e35e08d73d77dd0510d732a44d
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ libcamera/scx15/Camera_Utest.mk  | 7 ++++++-
+ libcamera/scx15/Camera_Utest2.mk | 7 ++++++-
+ 2 files changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/libcamera/scx15/Camera_Utest.mk b/libcamera/scx15/Camera_Utest.mk
+index 77e5b50..9f76457 100644
+--- a/libcamera/scx15/Camera_Utest.mk
++++ b/libcamera/scx15/Camera_Utest.mk
+@@ -64,6 +64,7 @@ LOCAL_SRC_FILES:= \
+ 	sensor/sensor_hi702_ccir.c \
+ 	sensor/sensor_pattern.c \
+ 	sensor/sensor_sr352.c \
++	sensor/sensor_s5k4ecgx_mipi.c \
+ 	vsp/sc8830/src/jpg_drv_sc8830.c \
+ 	jpeg/jpeg_fw_8830/src/jpegcodec_bufmgr.c \
+ 	jpeg/jpeg_fw_8830/src/jpegcodec_global.c \
+@@ -235,7 +236,11 @@ LOCAL_MODULE := utest_camera_$(TARGET_BOARD_PLATFORM)
+ LOCAL_MODULE_TAGS := optional
+ 
+ ifeq ($(strip $(sc8830like)),1)
+-LOCAL_SHARED_LIBRARIES := libexif libutils libcamera_client libskia libcutils libsqlite libhardware libmorpho_easy_hdr libcamera_metadata libmemoryheapion_sprd
++LOCAL_SHARED_LIBRARIES := libexif libutils libcamera_client libskia libcutils libsqlite libhardware libmorpho_easy_hdr libcamera_metadata libmemoryheapion
++LOCAL_SHARED_LIBRARIES += \
++	libnativewindow \
++	libgui \
++	liblog
+ endif
+ 
+ ifdef CONFIG_CAMERA_ISP
+diff --git a/libcamera/scx15/Camera_Utest2.mk b/libcamera/scx15/Camera_Utest2.mk
+index 030992e..85330da 100644
+--- a/libcamera/scx15/Camera_Utest2.mk
++++ b/libcamera/scx15/Camera_Utest2.mk
+@@ -64,6 +64,7 @@ LOCAL_SRC_FILES:= \
+ 	sensor/sensor_hi702_ccir.c \
+ 	sensor/sensor_pattern.c \
+ 	sensor/sensor_sr352.c \
++	sensor/sensor_s5k4ecgx_mipi.c \
+ 	vsp/sc8830/src/jpg_drv_sc8830.c \
+ 	jpeg/jpeg_fw_8830/src/jpegcodec_bufmgr.c \
+ 	jpeg/jpeg_fw_8830/src/jpegcodec_global.c \
+@@ -232,7 +233,11 @@ LOCAL_MODULE := utest_camera2_$(TARGET_BOARD_PLATFORM)
+ LOCAL_MODULE_TAGS := optional
+ 
+ ifeq ($(strip $(sc8830like)),1)
+-LOCAL_SHARED_LIBRARIES := libexif libutils libcamera_client libskia libcutils libsqlite libhardware libmorpho_easy_hdr libcamera_metadata libmemoryheapion_sprd
++LOCAL_SHARED_LIBRARIES := libexif libutils libcamera_client libskia libcutils libsqlite libhardware libmorpho_easy_hdr libcamera_metadata libmemoryheapion
++LOCAL_SHARED_LIBRARIES += \
++	libnativewindow \
++	libgui \
++	liblog
+ endif
+ 
+ ifdef CONFIG_CAMERA_ISP
+-- 
+2.27.0
+

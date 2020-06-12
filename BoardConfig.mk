@@ -158,6 +158,13 @@ TARGET_BOARD_CAMERA_IOCTL_HAS_POWER_ONOFF := true
 TARGET_BOARD_CAMERA_DMA_COPY := false
 TARGET_CAMERA_OPEN_SOURCE := true
 TARGET_USES_MEDIA_EXTENSIONS := true
+# When true, the libcamera HAL will use SPRD's version of easyHDR
+# When false, the libcamera HAL will use Morpho INC's easyHDR
+# Both have hand written ARM Assembly but Morpho inc's easyHDR
+# also have tone mapping, contrast adjustments and does not
+# rely on layer blending unlike the SPRD's of easyHDR
+# If unsure, say false.
+TARGET_BOARD_CAMERA_HDR_CAPTURE := false
 
 # For the camera stock lib, if ever someone wants to try it.
 # The opensource version have reached feature parity.
