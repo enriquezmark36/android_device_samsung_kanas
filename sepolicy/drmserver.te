@@ -1,0 +1,3 @@
+allow drmserver init:dir search;
+allow drmserver init:file { open read };
+allow drmserver init:process getattr;

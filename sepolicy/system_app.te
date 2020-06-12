@@ -1,0 +1,4 @@
+# For AdvancedDisplay and MDNIE scenarios
+type sysfs_mdnie, fs_type, sysfs_type;
+
+allow system_app sysfs_mdnie:file { open read write getattr };

@@ -1,0 +1,8 @@
+type sensor_control_file, fs_type, sysfs_type;
+
+allow hal_sensors_default input_device:chr_file { ioctl open read };
+allow hal_sensors_default input_device:dir { open read };
+allow hal_sensors_default sensor_control_file:file { open write };
+
+# Calibration file on the efs partition
+allow hal_sensors_default efs_file:file { open read };

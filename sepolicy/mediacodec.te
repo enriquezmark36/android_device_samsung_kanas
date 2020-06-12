@@ -1,0 +1,3 @@
+# Vendor blobs regarding HW accelerated video encode/decode
+# was built using Text Relocations.
+allow mediacodec vendor_file:file execmod;

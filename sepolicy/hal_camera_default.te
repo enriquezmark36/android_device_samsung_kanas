@@ -1,0 +1,12 @@
+# type camera_library_exec, exec_type, file_type;
+type sysfs_cam_antibanding, fs_type, sysfs_type;
+
+allow hal_camera_default media_data_file:file { getattr open };
+allow hal_camera_default vndbinder_device:chr_file { ioctl open read write };
+allow hal_camera_default vendor_file:file { execmod execute getattr open read };
+allow hal_camera_default sysfs_dmcfreq_set_freq:file { getattr open read write };
+
+# FIXME:
+# This might be related to the ISP server library.
+# 05-05 17:06:04.946   266   266 I HwBinder:266_1: type=1400 audit(0.0:221): avc: denied { create } for scontext=u:r:hal_camera_default:s0 tcontext=u:r:hal_camera_default:s0 tclass=tcp_socket permissive=1
+# allow hal_camera_default self:tcp_socket create;

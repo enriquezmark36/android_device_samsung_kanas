@@ -1,0 +1,5 @@
+#set_prop(system_server, media_prop)
+get_prop(system_server, media_prop)
+
+# WARNING: Why is this needed just like with surfaceflinger?
+allow system_server ion_device:chr_file write;

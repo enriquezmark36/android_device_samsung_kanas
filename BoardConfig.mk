@@ -179,6 +179,9 @@ TARGET_NEEDS_LEGACY_CAMERA_HAL1_DYN_NATIVE_HANDLE := true
 # Sensors
 TARGET_USES_SENSORS_WRAPPER := false
 
+# SELinux policy -- common for most SPRD devices
+BOARD_SEPOLICY_DIRS += device/samsung/kanas/sepolicy
+
 # Recovery
 BOARD_HAS_DOWNLOAD_MODE := true
 TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"

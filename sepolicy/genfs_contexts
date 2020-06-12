@@ -1,0 +1,4 @@
+# Android Docs recommends to use generic prof label for vendor processes.
+# But the problem is that, that 'vendor process' is a library executed
+# by a platform process. Hence, it is also now a platform process.
+genfscon proc /driver/sirf u:object_r:gps_sirf:s0

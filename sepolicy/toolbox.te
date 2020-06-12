@@ -1,0 +1,2 @@
+allow toolbox radio_device:dir { add_name write };
+allow toolbox radio_device:fifo_file create;

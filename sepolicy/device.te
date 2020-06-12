@@ -1,0 +1,15 @@
+# Block device containing the patch for radio's NVRAM
+# Block device for the cell radio's NVRAM
+typealias radio_block_device alias { radio_fixnv_block_device radio_runnv_block_device };
+
+# Bootloader block device
+type bootloader_block_device, dev_type;
+
+# Block device mounted on /preload
+type preload_block_device, dev_type;
+
+# Uncategorized Block device
+# The author didnt know how this is used
+type reserved_block_device, dev_type;
+
+

@@ -1,0 +1,17 @@
+allow init tmpfs:lnk_file create_file_perms;
+dontaudit init kernel:system module_request;
+
+allow init block_device:blk_file write;
+allow init cpuctl_device:file { create open write };
+allow init debugfs:dir mounton;
+allow init devpts:chr_file setattr;
+allow init gadget_serial_device:chr_file { ioctl write };
+allow init hwservicemanager:binder { call transfer };
+allow init property_socket:sock_file write;
+allow init radio_device:chr_file write;
+allow init refnotify_device:chr_file write;
+allow init rtc_device:chr_file { ioctl write };
+allow init self:netlink_kobject_uevent_socket { bind create read setopt };
+allow init serial_device:chr_file { ioctl write };
+allow init slog_device:chr_file write;
+allow init spipe_device:chr_file write;

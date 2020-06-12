@@ -1,0 +1,37 @@
+type gps_vendor_hal, domain;
+type gps_sirf, fs_type;
+#typealias vendor_file alias gps_vendor_hal_exec;
+
+#domain_auto_trans(hal_gnss_default, gps_vendor_hal_exec, gps_vendor_hal)
+
+# TODO: Check this
+# We're giving full permissions to all files and directories under /data/system/gps
+# except for execution. Not sure if it's the right thing to give...
+allow hal_gnss_default gps_data_file:dir create_dir_perms;
+allow hal_gnss_default gps_data_file:file create_file_perms;
+
+allow hal_gnss_default gps_data_file:sock_file { create setattr write unlink };
+allow hal_gnss_default gps_serial_device:chr_file { ioctl open read write };
+allow hal_gnss_default gps_sirf:file { open write };
+
+allow hal_gnss_default radio_device:chr_file { ioctl open read write };
+
+allow hal_gnss_default vndbinder_device:chr_file { ioctl open read write };
+
+allow hal_gnss_default vendor_file:file { execute execmod getattr open read };
+
+# FIXME:
+# allow hal_gnss_default self:udp_socket create;
+
+# FIXME: This is not allowed on Android as of Android O.
+# This looks like it's just creating the /data/system/gps folders
+# by calling "sh" that also calls "mkdir" which is symbolically linked to "toybox".
+# If that's the case then it should be possible to ignore this with "dontaudit"
+# as the init files will do that before the GNSS/GPS HAL starts
+#
+# 05-08 12:12:12.297  6893  6893 I GnssLib : type=1400 audit(0.0:403): avc: denied { execute } for name="sh" dev="mmcblk0p20" ino=1134 scontext=u:r:hal_gnss_default:s0 tcontext=u:object_r:shell_exec:s0 tclass=file permissive=1
+# 05-08 12:12:12.301  6893  6893 I sh      : type=1400 audit(0.0:406): avc: denied { getattr } for path="/system/bin/sh" dev="mmcblk0p20" ino=1134 scontext=u:r:hal_gnss_default:s0 tcontext=u:object_r:shell_exec:s0 tclass=file permissive=1
+# 05-08 12:12:12.324  6893  6893 I sh      : type=1400 audit(0.0:407): avc: denied { getattr } for path="/system/bin/toybox" dev="mmcblk0p20" ino=1264 scontext=u:r:hal_gnss_default:s0 tcontext=u:object_r:toolbox_exec:s0 tclass=file permissive=1
+#allow hal_gnss_default shell_exec:file { execute execute_no_trans getattr open read };
+#allow hal_gnss_default toolbox_exec:file { execute execute_no_trans getattr open read };
+

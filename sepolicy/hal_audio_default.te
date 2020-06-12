@@ -1,0 +1,22 @@
+# Yes, this is a superset of which audioserver is a subset of
+# Only applicable when using the binderized audio HAL
+set_prop(hal_audio_default, media_prop)
+get_prop(hal_audio_default, media_prop)
+
+allow hal_audio_default init:unix_stream_socket connectto;
+allow hal_audio_default media_data_file:fifo_file { setattr open read};
+allow hal_audio_default media_data_file:file { getattr open write };
+allow hal_audio_default media_device:fifo_file { open read write };
+allow hal_audio_default property_socket:sock_file write;
+allow hal_audio_default rild:unix_stream_socket connectto;
+allow hal_audio_default modemd:unix_stream_socket connectto;
+
+allow hal_audio_default proc_pin_switch:dir search;
+allow hal_audio_default proc_pin_switch:file { open read write };
+
+# TODO: Check if this is still relevant
+allow hal_audio_default radio_device:chr_file { read write open };
+
+# FIXME:
+# 05-05 17:06:25.573   264   264 I HwBinder:264_2: type=1400 audit(0.0:259): avc: denied { execute } for path=2F6465762F7A65726F202864656C6574656429 dev="tmpfs" ino=22809 scontext=u:r:hal_audio_default:s0 tcontext=u:object_r:hal_audio_default_tmpfs:s0 tclass=file permissive=1
+#allow hal_audio_default hal_audio_default_tmpfs:file execute;

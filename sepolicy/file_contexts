@@ -1,0 +1,52 @@
+# GPS blobs still uses Text Relocations
+/system/vendor/lib/hw/gps\.vendor\.sc8830\.so    u:object_r:vendor_file:s0
+/system/vendor/lib/libagps_hal\.so               u:object_r:vendor_file:s0
+
+# Block labeling
+# Since the labels at scx35-common do not match our GPT partition table
+# We'll define it here, plus some extraneous labels
+/dev/block/mmcblk0                             u:object_r:root_block_device:s0
+/dev/block/mmcblk0p1                             u:object_r:radio_fixnv_block_device:s0
+/dev/block/mmcblk0p2                             u:object_r:radio_fixnv_block_device:s0
+/dev/block/mmcblk0p3                             u:object_r:bootloader_block_device:s0
+/dev/block/mmcblk0p4                             u:object_r:bootloader_block_device:s0
+/dev/block/mmcblk0p5                             u:object_r:radio_block_device:s0
+/dev/block/mmcblk0p6                             u:object_r:radio_block_device:s0
+/dev/block/mmcblk0p7                             u:object_r:radio_block_device:s0
+/dev/block/mmcblk0p8                             u:object_r:radio_block_device:s0
+/dev/block/mmcblk0p9                             u:object_r:reserved_block_device:s0
+/dev/block/mmcblk0p10                             u:object_r:reserved_block_device:s0
+/dev/block/mmcblk0p11                             u:object_r:radio_runnv_block_device:s0
+/dev/block/mmcblk0p12                             u:object_r:radio_runnv_block_device:s0
+/dev/block/mmcblk0p13                             u:object_r:bootloader_block_device:s0
+/dev/block/mmcblk0p14                             u:object_r:efs_block_device:s0
+/dev/block/mmcblk0p15                             u:object_r:prod_block_device:s0
+/dev/block/mmcblk0p16                             u:object_r:reserved_block_device:s0
+/dev/block/mmcblk0p17                             u:object_r:boot_block_device:s0
+/dev/block/mmcblk0p18                             u:object_r:recovery_block_device:s0
+/dev/block/mmcblk0p19                             u:object_r:cache_block_device:s0
+/dev/block/mmcblk0p20                             u:object_r:system_block_device:s0
+/dev/block/mmcblk0p21                             u:object_r:preload_block_device:s0
+/dev/block/mmcblk0p22                             u:object_r:userdata_block_device:s0
+
+# Used by the stock camera lib to determine the previous antibanding flicker setting
+# Not used and by the opensource re-impl.
+/sys/devices/virtual/camera/rear/Cam_antibanding  u:object_r:sysfs_cam_antibanding:s0
+
+# MDNIE sysfs files
+/sys/devices/virtual/mdnie/mdnie/scenario       u:object_r:sysfs_mdnie:s0
+/sys/devices/virtual/mdnie/mdnie/negative       u:object_r:sysfs_mdnie:s0
+/sys/devices/virtual/mdnie/mdnie/outdoor        u:object_r:sysfs_mdnie:s0
+
+# Camera's identify cached results
+# The second one is opensource re-impl specific.
+/data/misc/media/sensor\.file       u:object_r:camera_data_file:s0
+/data/local/media/sensor\.file      u:object_r:camera_data_file:s0
+
+# Camera's TEXTREL'd libraries
+/system/lib/libmorpho_easy_hdr.so   u:object_r:vendor_file:s0
+
+# Reconstructed sensors hal writes directly to these sysfs files
+# Note that this might only apply for kanas
+/sys/devices/virtual/input/input[0-9]?/enable          u:object_r:sensor_control_file:s0
+/sys/devices/virtual/input/input[0-9]?/en_sig_motion   u:object_r:sensor_control_file:s0
