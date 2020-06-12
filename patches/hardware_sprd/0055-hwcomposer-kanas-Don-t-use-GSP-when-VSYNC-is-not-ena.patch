@@ -1,0 +1,100 @@
+From c9810d79a4bdedc6a0f1903b433947f9ce318c3c Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Thu, 11 Jun 2020 18:43:45 +0800
+Subject: [PATCH 12/12] hwcomposer: kanas: Don't use GSP when VSYNC is not
+ enabled
+
+TL;DR;
+It causes screen tearing most often seen when displaying the
+screen of animation on Android.
+
+Full:
+I haven't researched deeply enough why but it seems that the
+DISPC overlay feature seems to be same to a double buffered display
+with a non physically contiguous memory. This means that the
+DISPC has to copy to a part of the frame buffer hopefully before
+it also start displaying that current being-copied buffer.
+Without VSync, there are no promises.
+
+Change-Id: Ic73e1ffd405b41b5d3f4ac92d186d4889fe35cd2
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ .../scx15/SprdPrimaryDisplayDevice/SprdHWLayerList.cpp |  5 +++--
+ .../SprdPrimaryDisplayDevice.cpp                       | 10 ++++++++--
+ .../SprdPrimaryDisplayDevice.h                         |  6 ++++++
+ 3 files changed, 17 insertions(+), 4 deletions(-)
+
+diff --git a/hwcomposer/scx15/SprdPrimaryDisplayDevice/SprdHWLayerList.cpp b/hwcomposer/scx15/SprdPrimaryDisplayDevice/SprdHWLayerList.cpp
+index 1b37ff9..5bb18f9 100644
+--- a/hwcomposer/scx15/SprdPrimaryDisplayDevice/SprdHWLayerList.cpp
++++ b/hwcomposer/scx15/SprdPrimaryDisplayDevice/SprdHWLayerList.cpp
+@@ -350,12 +350,13 @@ int SprdHWLayerList:: revisitGeometry(int *DisplayFlag, SprdPrimaryDisplayDevice
+         if ((mFBLayerCount) || // RGB Layers plus some layers handled by SF
+ #ifdef GSP_MAX_OSD_LAYERS
+             (mOSDLayerCount > mGspLimit) || // Above the arbitrary RGB layers limit
+-            (YUVLayer && YUVIndex && (mOSDLayerCount >= mGspLimit)) // A YUV layer and it's not at the bottom
++            (YUVLayer && YUVIndex && (mOSDLayerCount >= mGspLimit)) || // A YUV layer and it's not at the bottom
++            (mPrimary->isVsyncEnabled() == false) // Vsync is Off
+ #else
+             // A YUV layer and a RGB layer but GSP won't be used to blend them
+             (supportYUVLayerCond == false)
+ #endif
+-	){
++        ){
+             resetOverlayFlag(mOSDLayerList[i]);
+             mFBLayerCount++;
+             RGBLayer = NULL;
+diff --git a/hwcomposer/scx15/SprdPrimaryDisplayDevice/SprdPrimaryDisplayDevice.cpp b/hwcomposer/scx15/SprdPrimaryDisplayDevice/SprdPrimaryDisplayDevice.cpp
+index a2efeeb..9b3e986 100644
+--- a/hwcomposer/scx15/SprdPrimaryDisplayDevice/SprdPrimaryDisplayDevice.cpp
++++ b/hwcomposer/scx15/SprdPrimaryDisplayDevice/SprdPrimaryDisplayDevice.cpp
+@@ -53,7 +53,8 @@ SprdPrimaryDisplayDevice:: SprdPrimaryDisplayDevice()
+      mPostFrameBuffer(true),
+      mHWCDisplayFlag(HWC_DISPLAY_MASK),
+      mDebugFlag(0),
+-     mDumpFlag(0)
++     mDumpFlag(0),
++     mVsyncEnabled(false)
+     {
+ 
+     }
+@@ -780,6 +781,11 @@ void SprdPrimaryDisplayDevice:: eventControl(int enabled)
+         ALOGE("getVsyncEventHandle failed");
+         return;
+     }
+-
++    mVsyncEnabled = enabled;
+     VE->setEnabled(enabled);
+ }
++
++bool SprdPrimaryDisplayDevice:: isVsyncEnabled()
++{
++    return mVsyncEnabled;
++}
+diff --git a/hwcomposer/scx15/SprdPrimaryDisplayDevice/SprdPrimaryDisplayDevice.h b/hwcomposer/scx15/SprdPrimaryDisplayDevice/SprdPrimaryDisplayDevice.h
+index 710ea44..92b9c83 100644
+--- a/hwcomposer/scx15/SprdPrimaryDisplayDevice/SprdPrimaryDisplayDevice.h
++++ b/hwcomposer/scx15/SprdPrimaryDisplayDevice/SprdPrimaryDisplayDevice.h
+@@ -115,6 +115,11 @@ public:
+      * */
+     int reclaimPlaneBuffer(SprdHWLayer *YUVLayer);
+ 
++    /*
++     *  Returns true if Vsync is requested
++     * */
++    bool isVsyncEnabled();
++
+ private:
+     FrameBufferInfo   *mFBInfo;
+     SprdHWLayerList   *mLayerList;
+@@ -130,6 +135,7 @@ private:
+     int mHWCDisplayFlag;
+     int mDebugFlag;
+     int mDumpFlag;
++    int mVsyncEnabled;
+ 
+     inline SprdHWLayerList *getHWLayerList()
+     {
+-- 
+2.27.0
+
