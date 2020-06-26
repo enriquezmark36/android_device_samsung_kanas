@@ -1,0 +1,29 @@
+cc_binary {
+    proprietary: true,
+    defaults: ["hidl_defaults"],
+    relative_install_path: "hw",
+    name: "android.hardware.power@1.0-service.kanas",
+    init_rc: ["android.hardware.power@1.0-service.kanas.rc"],
+    srcs: [
+        "service.cpp",
+        "Power.cpp",
+        "power_kanas.c",
+    ],
+
+    cflags: [
+        "-Wall",
+        "-Werror",
+    ],
+
+    shared_libs: [
+        "liblog",
+        "libdl",
+        "libutils",
+        "libhardware",
+        "libhidlbase",
+        "libhidltransport",
+        "android.hardware.power@1.0",
+        "vendor.lineage.power@1.0",
+    ],
+}
+

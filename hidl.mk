@@ -34,3 +34,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	android.hardware.sensors@1.0-service \
 
+#Power
+ PRODUCT_PACKAGES += \
+	android.hardware.power@1.0-service.kanas

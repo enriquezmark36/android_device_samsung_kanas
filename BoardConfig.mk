@@ -186,6 +186,10 @@ BOARD_SEPOLICY_DIRS += device/samsung/kanas/sepolicy
 TARGET_LD_SHIM_LIBS += \
        /system/vendor/bin/engpc|libengpc_shim.so
 
+# Override PowerHal
+TARGET_POWERHAL_VARIANT := kanas
+SCX35_COMMON_POWERHAL_OVERRIDE := true
+
 # Disable Charger since we would like having the lpm binary do it for us
 BOARD_CHARGER_NO_UI := true
 
