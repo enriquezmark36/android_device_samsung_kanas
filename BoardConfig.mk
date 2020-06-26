@@ -186,6 +186,9 @@ BOARD_SEPOLICY_DIRS += device/samsung/kanas/sepolicy
 TARGET_LD_SHIM_LIBS += \
        /system/vendor/bin/engpc|libengpc_shim.so
 
+# Disable Charger since we would like having the lpm binary do it for us
+BOARD_CHARGER_NO_UI := true
+
 # Recovery
 BOARD_HAS_DOWNLOAD_MODE := true
 TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"

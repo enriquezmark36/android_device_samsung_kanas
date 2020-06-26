@@ -64,18 +64,25 @@ on fs
     chmod 660 /dev/fb0
 
 on charger
+    # Mount /system/ as readonly, lpm and its dependencies reside in there
+    mount ext4 /dev/block/platform/sprd-sdhci.3/by-name/system /system ro wait
+
+    # Reduce CPU clocks and offline all secondary CPUs
     write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor "powersave"
-    mount ext4 /dev/block/platform/sprd-sdhci.3/by-name/system /system ro,barrier=1 wait
+    write /sys/devices/system/cpu/cpu0/online "1"
+    write /sys/devices/system/cpu/cpu1/online "0"
+    write /sys/devices/system/cpu/cpu2/online "0"
+    write /sys/devices/system/cpu/cpu3/online "0"
 
-service charger /charger
+    # Try to favor the 200MHz clock in the DDR memory
+    write /sys/devices/platform/scxx30-dmcfreq.0/devfreq/scxx30-dmcfreq.0/ondemand/set_upthreshold 100
+
+    start lpm
+
+service lpm /system/vendor/bin/lpm
     class charger
     group log
-    critical
-    seclabel u:r:healthd:s0
-
-service charger /system/bin/lpm
-    class charger
-    group log
+    disabled
     critical
     seclabel u:r:healthd:s0
 
