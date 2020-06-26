@@ -26,6 +26,7 @@
  */
 #include <ctype.h>
 #include <dirent.h>
+#include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <malloc.h>
@@ -99,6 +100,41 @@
 #define CPU_SUST_FREQ     "1000000"
 
 /*
+ * Android O and above has removed the support for earlysuspend.
+ * That's fine for newer devices, not so much for us though.
+ * wakeup_count is the future as it's the only mechanism supported.
+ * Luckily, the 3.10.17 kernel this phone came with does support it
+ * but with earlysuspend enabled, it brings complications.
+ * wakeup_count can handle the suspend, but it can't handle
+ * the resume that a lateresume will do.
+ *
+ * A simple short reason why we can't migrate away from earlysuspend
+ * is that "vendor blobs depend on it". 'refnotify' is one example.
+ *
+ * A fix by the maintainer of scx35-common is a patch to add back
+ * the earlysuspend support.
+ *
+ * A much more simple, non-intrusive, fix is to use the fact that
+ * Android calls the setInteractive() or power_set_interactive()
+ * of this module everytime a suspend or wake request is sent.
+ *
+ * So the fix? Just issue an "on" state to trigger a manual "lateresume"
+ * a matter that was also done by Android before removing the support.
+ * config_powerDecoupleInteractiveModeFromDisplay has to be false
+ * so that this assumption is always true.
+ */
+#define EARLYSUSPEND_SYS_POWER_STATE "/sys/power/state"
+#define EARLYSUSPEND_WAIT_FOR_FB_WAKE "/sys/power/wait_for_fb_wake"
+#define EARLYSUSPEND_WAIT_FOR_FB_SLEEP "/sys/power/wait_for_fb_sleep"
+/*
+ * To detect whether the fix I mentioned (created by the maintainer)
+ * is in use, we can simply find the symbol. When it exists,
+ * just call it a day and forget the fix I wrote up above.
+ */
+#define LIBSUSPEND_PATH "/system/lib/libsuspend.so"
+#define LIBSUSPEND_SYMBOL "autosuspend_earlysuspend_init"
+
+/*
  * Interactive governor.
  * The cpu_interactive_read/write() helper functions are removed
  * in favor of just chdir'ing to the cpufreq governor directory.
@@ -116,6 +152,7 @@ char g_has_gpu_core_scaler = 0;
 char g_has_hispeed_freq = 0;
 char g_has_boostpulse = 0;
 char g_has_dispc_fps_notif = 0;
+char g_need_lateresume = 0;
 
 enum power_profile_e {
 	PROFILE_POWER_SAVE = 0,
@@ -495,6 +532,31 @@ static void gpu_ctrl_open(void)
 			g_has_gpu_core_scaler = 1;
 	}
 }
+
+static int check_earlysuspend_libsuspend(void)
+{
+	void *handle;
+	char *error;
+
+
+	handle = dlopen(LIBSUSPEND_PATH, RTLD_LAZY | RTLD_LOCAL);
+	if (!handle) {
+		ALOGD("Failed to load %s: %s", LIBSUSPEND_PATH, dlerror());
+		return -1;
+	}
+
+	// We are just locating the symbol, no need to store the address
+	dlsym(handle, LIBSUSPEND_SYMBOL);
+	error = dlerror();
+	if (error) {
+		ALOGD("Cannot find symbol: %s", error);
+		ALOGD("The previous line is not an error.");
+		return -1;
+	}
+
+	dlclose(handle);
+	return 0;
+}
 /*
  * The init function performs power management setup actions at runtime
  * startup, such as to set default cpufreq parameters.  This is called only by
@@ -527,8 +589,12 @@ void power_init() {
 	// Check if we can change the LCD display's refresh rate on the fly
 	if (!access(LCD_FPS_PATH, F_OK))
 		g_has_dispc_fps_notif = 1;
-
 	ALOGI("Using DISPC dynamic fps: %s", g_has_dispc_fps_notif ? "Yes" : strerror(errno));
+
+	// Check if we have libsuspend patched with earlysuspend
+	if (check_earlysuspend_libsuspend())
+		g_need_lateresume = 1;
+	ALOGI("Trigger lateresume: %s", g_need_lateresume? "Yes" : "No");
 }
 
 /*
@@ -560,6 +626,12 @@ void power_set_interactive(int on)
 
 	if (!access(IO_IS_BUSY_PATH, W_OK | F_OK))
 		sysfs_write(IO_IS_BUSY_PATH, on ? "1" : "0");
+
+	if (g_need_lateresume && on) {
+		char buff[6];
+		sysfs_write(EARLYSUSPEND_SYS_POWER_STATE, "on"); // issue request
+		sysfs_read(EARLYSUSPEND_WAIT_FOR_FB_WAKE, buff, sizeof(buff)); // wait
+	}
 
 	ALOGV("power_set_interactive: %d done\n", on);
 }
