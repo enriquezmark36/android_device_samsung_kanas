@@ -184,7 +184,9 @@ BOARD_SEPOLICY_DIRS += device/samsung/kanas/sepolicy
 
 # Extra shims
 TARGET_LD_SHIM_LIBS += \
-       /system/vendor/bin/engpc|libengpc_shim.so
+       /system/vendor/bin/engpc|libengpc_shim.so \
+       /system/vendor/lib/libomx_avcenc_hw_sprd_newer.so|libvsp_shim.so \
+       /system/vendor/lib/libomx_avcdec_hw_sprd_newer.so|libvsp_shim.so \
 
 # Override PowerHal
 TARGET_POWERHAL_VARIANT := kanas

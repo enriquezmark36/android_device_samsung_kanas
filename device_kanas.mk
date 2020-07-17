@@ -102,7 +102,8 @@ PRODUCT_PACKAGES += \
 
 # Extra shims
 PRODUCT_PACKAGES += \
-	libengpc_shim
+	libengpc_shim \
+	libvsp_shim \
 
 # HIDL. (hide-el)
 # Build extra services not included in scx35-common
