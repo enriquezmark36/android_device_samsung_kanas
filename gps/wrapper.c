@@ -40,12 +40,23 @@ static GpsInterface my_gps_interface;
 static GpsCallbacks *real_gps_callbacks;
 static GpsCallbacks_v1 my_gps_callbacks;
 
-static const AGpsInterface *real_agps_interface;
-static AGpsInterface_v1 my_agps_interface;
+static const AGpsInterface *real_agps_interface = NULL;
+static AGpsInterface my_agps_interface;
 
 static const AGpsCallbacks *real_agps_callbacks;
 static AGpsCallbacks my_agps_callbacks;
 
+static int wrapper_data_conn_open_with_apn_ip_type(const char *apn, ApnIpType apnIpType) {
+	ALOGW("[%s]: We shouldn't be here; we're using AGpsInterface_v1.", __func__);
+
+	if (!real_agps_interface) {
+		ALOGE("[%s]: Also, real_agps_callbacks is still NULL", __func__);
+		return -1;
+	}
+
+	ALOGD("[%s]: Redirecting call to data_conn_open()", __func__);
+	return real_agps_interface->data_conn_open(apn);
+}
 static const void* wrapper_get_extension(const char* name) {
 	const void *ret;
 
@@ -54,13 +65,13 @@ static const void* wrapper_get_extension(const char* name) {
 
 	if (strcmp(AGPS_INTERFACE, name) == 0) {
 		real_agps_interface = (AGpsInterface *) ret;
-		memcpy(&my_agps_interface, real_agps_interface,
-		       sizeof(AGpsInterface_v1));
-		my_agps_interface.size = sizeof(AGpsInterface_v1);
+		memcpy(&my_agps_interface, real_agps_interface, sizeof(AGpsInterface_v1));
 
-		ALOGI("[%s] %s: Using AGpsInterface_v1 struct,"
-		" size changes from %d B => %d B",
-		__func__, name, sizeof(AGpsInterface), my_agps_interface.size);
+		my_agps_interface.size = sizeof(AGpsInterface_v1);
+		my_agps_interface.data_conn_open_with_apn_ip_type = wrapper_data_conn_open_with_apn_ip_type;
+
+		ALOGI("[%s] %s: Using AGpsInterface_v1, size changes from %d to %d Bytes",
+		__func__, name, real_agps_interface->size, sizeof(AGpsInterface_v1));
 
 		return &my_agps_interface;
 	}
