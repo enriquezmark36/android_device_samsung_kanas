@@ -15,6 +15,7 @@ on early-boot
 on boot
     # Marvell GPS
     chown gps system /proc/driver/sirf
+    chmod 664 /proc/driver/sirf
 
     # create filesystem for gps
     mkdir /data/system/gps 0771 gps system
