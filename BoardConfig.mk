@@ -19,11 +19,22 @@ BOARD_VENDOR := samsung
 BOARD_KERNEL_BASE := 0x00000000
 BOARD_KERNEL_CMDLINE := console=ttyS1,115200n8 androidboot.selinux=permissive androidboot.hardware=sc8830
 BOARD_KERNEL_PAGESIZE := 2048
-TARGET_PREBUILT_KERNEL := device/samsung/kanas/kernel
-#TARGET_KERNEL_CONFIG := impasta_kanas_cm14_1_defconfig
-#TARGET_KERNEL_SOURCE := kernel/samsung/kanas
 
-# fix this up by examining /proc/mtd on a running device
+# TWRP devs suggest to just use a prebuilt kernel blob when
+# only building TWRP (without the ROM and the whole Android OS)
+ifeq ($(wildcard kernel/samsung/kanas),)
+TARGET_PREBUILT_KERNEL := device/samsung/kanas/kernel
+else
+# You could pretty much ignore these stuff
+BOARD_KERNEL_TAGS_OFFSET := 0x01d88000
+BOARD_RAMDISK_OFFSET := 0x01000000
+BOARD_KERNEL_IMAGE_NAME := zImage
+TARGET_KERNEL_CROSS_COMPILE_PREFIX := arm-eabi-
+KERNEL_TOOLCHAIN := $(ANDROID_BUILD_TOP)/prebuilts/gcc/linux-x86/arm/arm-eabi-4.8/bin
+TARGET_KERNEL_SOURCE := kernel/samsung/kanas
+TARGET_KERNEL_CONFIG := TWRP_7.1_defconfig
+endif
+
 BOARD_BOOTIMAGE_PARTITION_SIZE := 15728640
 BOARD_RECOVERYIMAGE_PARTITION_SIZE := 15728640
 BOARD_SYSTEMIMAGE_PARTITION_SIZE := 1195376640
