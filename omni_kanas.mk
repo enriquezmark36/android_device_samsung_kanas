@@ -11,6 +11,12 @@ $(call inherit-product, vendor/omni/config/common.mk)
 PRODUCT_COPY_FILES += \
     bionic/libc/zoneinfo/tzdata:recovery/root/system/usr/share/zoneinfo/tzdata
 
+# Some additional tools
+TWRP_REQUIRED_MODULES += \
+	badblocks
+
+RELINK_SOURCE_FILES += $(TARGET_OUT_EXECUTABLES)/badblocks
+
 ## Device identifier. This must come after all inclusions
 PRODUCT_NAME := omni_kanas
 PRODUCT_DEVICE := kanas
