@@ -35,21 +35,42 @@ TARGET_USERIMAGES_USE_F2FS := true
 BOARD_HAS_LARGE_FILESYSTEM := true
 
 # TWRP specific build flags
-TW_THEME := portrait_hdpi
-TW_INTERNAL_STORAGE_PATH := "/data/media/0"
-TW_EXTERNAL_STORAGE_PATH := "/sdcard"
+TW_THEME := portrait_mdpi
+TW_EXTRA_LANGUAGES := true
 TW_CUSTOM_CPU_TEMP_PATH := "/sys/devices/platform/sec-thermistor/temperature"
-TW_NO_REBOOT_BOOTLOADER := true
 TW_BRIGHTNESS_PATH := "/sys/devices/platform/panel/backlight/panel/brightness"
 TARGET_USE_CUSTOM_LUN_FILE_PATH := "/sys/devices/virtual/android_usb/android0/f_mass_storage/lun/file"
-TW_MAX_BRIGHTNESS := 255
-TW_DEFAULT_BRIGHTNESS := 162
 TW_INCLUDE_NTFS_3G := true
 TW_EXCLUDE_SUPERSU := true
 RECOVERY_SDCARD_ON_DATA := true
 TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"
 TW_HAS_DOWNLOAD_MODE := true
-TW_USE_TOOLBOX := true
-TWRP_INCLUDE_LOGCAT := true
-TWHAVE_SELINUX := true
+
 TW_INCLUDE_CRYPTO := true
+
+# Backlight kernel driver code specifies that the default is at 148
+TW_MAX_BRIGHTNESS := 255
+TW_DEFAULT_BRIGHTNESS := 148
+
+# On stock kernels, the vibration will often get stuck.
+# On some custom kernels, this problem has been fixed.
+# The kernel that comes with this has this problem fixed.
+# So if ever, you're using an unpatched kernel
+# Uncomment this out.
+# TW_NO_HAPTICS := true
+
+# Do not allow logcat to work, or you may not be able to
+# unmount /system when it's mounted (even if it's on RO mode)
+TARGET_USES_LOGD := false
+TWRP_INCLUDE_LOGCAT := false
+
+# Rely on the kernel driver instead of the FUSE implementation
+TW_NO_EXFAT_FUSE := true
+
+# Use Busybox instead of toolbox/toybox
+# Busybox has a wider set of tools compared to the latter
+TW_USE_TOOLBOX := false
+
+# Rebooting to bootloader does not make sense to this device
+# We can have reboot to download mode but not the bootloader.
+TW_NO_REBOOT_BOOTLOADER := true
