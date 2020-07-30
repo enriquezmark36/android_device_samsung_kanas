@@ -77,22 +77,58 @@ SF_START_GRAPHICS_ALLOCATOR_SERVICE := true
 # EGLNativeWindowType causing failures (black screens)
 # everytime OC is used to layout the layers.
 USE_OVERLAY_COMPOSER_GPU := false
-# Using the GSP to blend or transform layers requires IOMMU,
-# or layers must be in physically contiguous memory.
-# We don't have IOMMU.
-TARGET_FORCE_HWC_CONTIG := true
-# Make GSP blend multiple OSD (read: RGBA) layers instead of the
-# GPU. This one mitigation about the missing Overlay Composer.
-# Should help with system interactivity.
-# Spreadtrum codes point that the shark version (the first version)
-# of GSP can only blend two layers.
-# Empirical tests show that our first version chip can safely blend
-# up to 5 layers max. Reduce when needed.
-GSP_MAX_OSD_LAYERS := 5
-
-# Use mitigations to inherent compatibility issues
-# when gralloc is used as a HIDL pass-through module
+# Enables workarounds within Gralloc that allows it to work under HIDL
+# This is a must for compiling on Android O and above without the libui patch
 TARGET_USES_HIDL_WORKAROUNDS := true
+
+##############################
+## Experimental Graphics flags
+##############################
+# GSP needs IOMMU or layers must be in physically contiguous memory.
+# We don't have IOMMU, but we could do the latter by forcing layers
+# how/where they are allocated. This is what this flags does.
+# If conditions are met, GSP will do layer blending rather than the GPU.
+TARGET_FORCE_HWC_CONTIG := true
+# Allow GSP blend multiple OSD layers up to n layers.
+# The scx15 SPRDHWC code only allows only 1 layer processing or
+# 2 layer processing (IFF there is exactly 1 video and 1 OSD layer)
+# The sc8830 SPRDHWC can blend multiple layers but cannot simply be
+# backported to the scx15 one so I had to write it as an extension.
+GSP_MAX_OSD_LAYERS := 5
+# Fallback failed allocations to an extra carveout.
+# The kernel can be patched to have a bit of memory reserved, unused for
+# normal allocations  via the CONFIG_SPRD_ION_RESERVED_SIZE.
+# This memory will be a fallback when ever the main ION allocation fails
+# WARNING: This had compatibility problems with kernels without that patch.
+TARGET_HAS_RESERVED_CARVEOUT := false
+# Applies additional logic under the assumption that the ION_HEAP_ID_MASK_OVERLAY
+# is reserved. This sets up a fallback mechanism for ION_HEAP_ID_MASK_MM and
+# redirects GRALLOC_USAGE_OVERLAY_BUFFER to ION_HEAP_ID_MASK_MM. This also
+# sets up ION_HEAP_ID_MASK_MM as a fallback mechanism when HWC layers
+# cannot be allocated in the ION_HEAP_ID_MASK_OVERLAY.
+#
+# Background:
+# Using TARGET_FORCE_HWC_CONTIG will put pressure the CMA and will fail sooner
+# even if there's still a half of the CMA memory and the system is not under
+# memory pressure. Thus TARGET_HAS_RESERVED_CARVEOUT is born.
+#
+# Then in an observation, the allocation speeds in CMA and vmalloc are magnitudes
+# slower than the gen_pool_alloc used for carveout memory. CMA and vmalloc
+# works under few msec, gen_pool_alloc under some hundred usecs.
+#
+# In my mind was "Why not make SF allocate there and make the carveout large enough so
+# it can serve as a fallback for CMA?" Thus, TARGET_ION_OVERLAY_IS_CARVEOUT is born.
+#
+# Preliminary observations seems to point out that the allocation speed seems to be
+# consistent even in memory pressure. Nevertheless, compared to the flag
+# TARGET_HAS_RESERVED_CARVEOUT, this is harmless when enabled on a
+# kernel where ION_HEAP_ID_MASK_OVERLAY is in CMA.
+TARGET_ION_OVERLAY_IS_CARVEOUT := true
+# Use the HWC2ON1 adapter to let SF run on HWC2
+# This will fix the LiveDisplay feature permanently disabling the HWC
+# but Client composition doesn't work as of now.
+# TARGET_USES_HWC2 := false
+
 
 # Audio
 # BOARD_USE_LIBATCHANNEL_WRAPPER := true
