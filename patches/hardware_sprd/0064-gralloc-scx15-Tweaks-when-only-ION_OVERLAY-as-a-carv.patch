@@ -1,0 +1,235 @@
+From a75f1dd7bb9d3364175ab8c4a090de0d9fc7a7e5 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Wed, 29 Jul 2020 16:42:52 +0800
+Subject: [PATCH 7/8] gralloc: scx15: Tweaks when only ION_OVERLAY as a
+ carveout; Support for an extra heap
+
+A lot of this are explain on the Android.mk and alloc_device.cpp so
+I'll skim through.
+
+There's an observation that vmalloc is slow and CMA is also slow and that
+SurfaceFlinger often allocates and deallocates memory. By default,
+without the TARGET_FORCE_HWC_CONTIG flag, SF buffers are vmalloc'd.
+Then with TARGET_FORCE_HWC_CONTIG, SF buffers go through CMA.
+An allocation on CMA is around 0-4 msecs, and  vmalloc 0-4 msec.
+but it should be faster than CMA (if CMA would do some migration).
+On a carveout memory, it should be under a couple microseconds.
+vmalloc and CMA allocation success depends on whether the system can
+still fullfil it. Carveout memory are outside of regular system usage
+and should still be usable even under low memory conditions, provided
+there are still some memory left in the carveout.
+
+So... If we have SF get buffers from a craveout, not only we can have a
+fast allocation regardless of memory pressure but also a physically
+contiguous memory. That's the reason for the first one.
+
+The extra heap support's raison d'etre is to have a fallback for failing
+allocations. Like I said, carveouts are not affected by memory pressure
+from the regular allocations in the system, let it be apps or something.
+Specially for the camera, which takes at least 20MiB every single shot,
+often fails when the system memory has few remaining contiguous blocks
+and none fits the allocation requirement.
+
+I may later on remove the extra heap support or improve on it after some
+tests. To be honest, extra heap is dangerously incompatible with unpatched
+kernels. So, -1 point for it?
+
+Change-Id: I021541e61d4cee232b177ac9c31b607b07a7a757
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ gralloc/scx15/Android.mk       | 50 ++++++++++++++++++++-
+ gralloc/scx15/alloc_device.cpp | 80 +++++++++++++++++++++++++++++-----
+ 2 files changed, 117 insertions(+), 13 deletions(-)
+
+diff --git a/gralloc/scx15/Android.mk b/gralloc/scx15/Android.mk
+index 12516bb..e48343a 100644
+--- a/gralloc/scx15/Android.mk
++++ b/gralloc/scx15/Android.mk
+@@ -72,6 +72,9 @@ LOCAL_CFLAGS += -DSPRD_DITHER_ENABLE
+ LOCAL_SHARED_LIBRARIES += libdither
+ endif
+ 
++##
++## HIDL workarounds
++##
+ ifeq ($(TARGET_USES_HIDL_WORKAROUNDS), true)
+ # Creates a dummy fd when travelling via hwbinder
+ LOCAL_CFLAGS += -DHIDL_INVALID_FD
+@@ -85,12 +88,55 @@ LOCAL_CFLAGS += -DHIDL_NO_FREE_FB
+ LOCAL_CFLAGS += -DHIDL_DEFER_FREE
+ endif
+ 
+-# Tries to make HWC layer buffers be contiguous
+-# will revert to virtual memory if it fails.
++##
++## Optimizations and tweaks
++##
++
++# Forces HWC layer buffers to be contiguous as much as possible.
++# This allows devices without IOMMU to use GSP in the Hardware Composer.
++# Will fallback to virtual memory allocation if it fails.
+ ifeq ($(TARGET_FORCE_HWC_CONTIG), true)
+ LOCAL_CFLAGS += -DFORCE_HWC_CONTIG
++
++# Indicates that the ION_HEAP_ID_MASK_OVERLAY is in a carveout
++# and the ION_HEAP_ID_MASK_MM is in CMA.
++# Should be safe to use even when this assumption is false.
++#
++# This tweaks the logic a bit and forces all GRALLOC_USAGE_OVERLAY_BUFFER
++# to MM and all HWC buffer to the carveout.
++#
++# Will also enable TARGET_ION_MM_FALLBACK if not set so that the OVERLAY will act
++# as a fallback buffer when an MM allocation fails.
++#
++# Lastly, when allocation for the HWC fail, it will be retried on MM.
++# Only when it fails again, then it falls back to virtual memory allocation.
++ifeq ($(TARGET_ION_OVERLAY_IS_CARVEOUT), true)
++LOCAL_CFLAGS += -DION_OVERLAY_IS_CARVEOUT
++
++	# Set TARGET_ION_MM_FALLBACK to true if not set
++	ifeq ($(TARGET_ION_MM_FALLBACK), )
++	TARGET_ION_MM_FALLBACK := true
++	endif
++endif
++endif
++
++# When allocation fails under ION_HEAP_ID_MASK_MM, retry again
++# under ION_HEAP_ID_MASK_OVERLAY supposing the two are in two
++# separate memory pools.
++ifeq ($(TARGET_ION_MM_FALLBACK), true)
++LOCAL_CFLAGS += -DALLOW_MM_FALLBACK
++endif
++
++# Indicates that the kernel has an extra ION carveout at mask 0x16
++# and can be used to retry failed allocations.
++# WARNING: The kernel MUST have that extra carveout or it may cause problems.
++ifeq ($(TARGET_HAS_RESERVED_CARVEOUT), true)
++LOCAL_CFLAGS += -DKERNEL_HAS_RESERVED_CARVEOUT
+ endif
+ 
++# Make Gralloc assume the FB have 3 screen buffers (triple buffers)
++# An FB IOCTL fails when gralloc uses double buffers. If that fails,
++# Gralloc also fails to set the appropiate parameters like the xdpi/ydpi.
+ ifeq ($(TARGET_USE_3_FRAMEBUFFER), true)
+ LOCAL_CFLAGS += -DUSE_3_FRAMEBUFFER
+ endif
+diff --git a/gralloc/scx15/alloc_device.cpp b/gralloc/scx15/alloc_device.cpp
+index 61f92f9..1bd0676 100644
+--- a/gralloc/scx15/alloc_device.cpp
++++ b/gralloc/scx15/alloc_device.cpp
+@@ -256,27 +256,44 @@ static int gralloc_alloc_buffer(alloc_device_t* dev, size_t size, int usage, buf
+         private_handle_t *hnd = NULL;
+ 
+         if (usage & (GRALLOC_USAGE_VIDEO_BUFFER|GRALLOC_USAGE_CAMERA_BUFFER))
+-        { 
++        {
+             ion_heap_mask = ION_HEAP_ID_MASK_MM;
+         }
++#ifdef ION_OVERLAY_IS_CARVEOUT
++        /*
++         * Addendum 5: Move GRALLOC_USAGE_OVERLAY_BUFFER to MM
++         * Since ION_OVERLAY_IS_CARVEOUT is only active with FORCE_HWC_CONTIG,
++         * Expect SF to overwhelm ION_HEAP_ID_MASK_OVERLAY with layer buffers.
++         *
++         * Besides GRALLOC_USAGE_OVERLAY_BUFFER are usually the plane buffers
++         * used in SPRDHWC that are allocated once.
++         */
++        else if(usage & GRALLOC_USAGE_OVERLAY_BUFFER)
++        {
++            ion_heap_mask = ION_HEAP_ID_MASK_MM;
++        }
++#else
+         else if(usage & GRALLOC_USAGE_OVERLAY_BUFFER)
+         {
+             ion_heap_mask = ION_HEAP_ID_MASK_OVERLAY;
+         }
++#endif
+ #ifdef FORCE_HWC_CONTIG
+         /*
+-         * Addendum 1: When having a buffer for use with the HWComposer
+-         * make sure it's always contiguous so that GSP can work its
+-         * wonders.
++         * Addendum 1: When allocating for use with the HWComposer
++         * try to make it contiguous so that GSP can work its wonders.
++         *
++         * Addendum 3: HWC buffers are different from GRALLOC_USAGE_OVERLAY_BUFFER.
++         * Each HWC buffer corresponds to a layer which may take a bit of memory
++         * (about 15 MB on 480x800). Hence, use the MM area.
+          *
+-         * Addendum 3: HWC buffers are different from the GRALLOC_USAGE_OVERLAY_BUFFER
+-         * SPRDHWC uses. HWC buffers handle all the layers sent to HWC which takes
+-         * a lot of memory (15 MB overall average on 480x800).
+-         * Thus, use the MM area which should be large enough.
++         * Addendum 4: In CMA, the MM and OVERLAY are pooled together meaning
++         * all allocations from MM and OVERLAY goes to a single part of memory.
++         * So, setting ION_HEAP_ID_MASK_OVERLAY should be no problem.
+          */
+         else if (usage & GRALLOC_USAGE_HW_COMPOSER)
+         {
+-            ion_heap_mask = ION_HEAP_ID_MASK_MM;
++            ion_heap_mask = ION_HEAP_ID_MASK_OVERLAY;
+         }
+ #endif
+         else
+@@ -290,6 +307,19 @@ static int gralloc_alloc_buffer(alloc_device_t* dev, size_t size, int usage, buf
+         }
+ 
+         ret = ion_alloc(m->ion_client, size, 0, ion_heap_mask, ion_flag, &ion_hnd);
++
++#if defined(ALLOW_MM_FALLBACK)
++         /*
++          * Addendum 6: Retry failed allocations from MM in Overlay.
++          * Suppose OVERLAY and MM is separate, try to borrow memory in OVERLAY.
++          */
++        if (ret && (usage & (GRALLOC_USAGE_VIDEO_BUFFER|GRALLOC_USAGE_CAMERA_BUFFER))){
++            ALOGW("Cannot allocate in ION MM, falling back to OVERLAY");
++            ion_heap_mask = ION_HEAP_ID_MASK_OVERLAY;
++            ret = ion_alloc(m->ion_client, size, 0, ion_heap_mask, ion_flag, &ion_hnd);
++        }
++#endif
++
+ #ifdef FORCE_HWC_CONTIG
+         /*
+          * Addendum 2: If the assumption on Addendum 1 fails, revert back to
+@@ -300,8 +330,36 @@ static int gralloc_alloc_buffer(alloc_device_t* dev, size_t size, int usage, buf
+         if (ret && (usage & GRALLOC_USAGE_HW_COMPOSER) &&
+             !(usage & (GRALLOC_USAGE_VIDEO_BUFFER|GRALLOC_USAGE_CAMERA_BUFFER|GRALLOC_USAGE_OVERLAY_BUFFER))
+         ){
+-            ALOGW("CMA allocation failed, using virtual memory allocation instead.");
+-            ion_heap_mask = ION_HEAP_ID_MASK_SYSTEM;
++
++#if defined(ALLOW_MM_FALLBACK)
++            ALOGW("HWC buffer allocation failed, falling back to MM");
++            ion_heap_mask = ION_HEAP_ID_MASK_MM;
++            ret = ion_alloc(m->ion_client, size, 0, ion_heap_mask, ion_flag, &ion_hnd);
++#endif
++
++            if (ret) {
++                ALOGW("HWC buffer allocation failed, falling back to vmalloc");
++                ion_heap_mask = ION_HEAP_ID_MASK_SYSTEM;
++                ret = ion_alloc(m->ion_client, size, 0, ion_heap_mask, ion_flag, &ion_hnd);
++            }
++        }
++#endif
++
++#ifdef KERNEL_HAS_RESERVED_CARVEOUT
++        /*
++         * Addendum 4: It's possible that even with the page migration powers of CMA
++         * or in low memory conditions, an allocation is not possible. This is
++         * often the case when allocating megabytes of physically contiguous
++         * memory like a 5MP camera buffer -- 1.5*5*10^6 (~7.15MB)
++         * or a video decoder buffer for 1080p videos. (~2.9MB).
++         *
++         * GRALLOC_USAGE_HW_COMPOSER should _NOT_ be given another chance nor
++         * GRALLOC_USAGE_OVERLAY_BUFFER.
++         */
++        if (ret && (usage & (GRALLOC_USAGE_VIDEO_BUFFER|GRALLOC_USAGE_CAMERA_BUFFER)))
++        {
++            ALOGW("Allocation failed, Trying to use the reserved carveout.");
++            ion_heap_mask = ION_HEAP_ID_MASK_RESERVED;
+             ret = ion_alloc(m->ion_client, size, 0, ion_heap_mask, ion_flag, &ion_hnd);
+         }
+ #endif
+-- 
+2.17.1
+

@@ -1,0 +1,109 @@
+From 46011d8fa5714c94e769071d72e7ba4f553bee11 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Fri, 24 Jul 2020 14:35:54 +0800
+Subject: [PATCH 4/8] gralloc: scx15: HIDL_DEFER_FREE FrameBuffer memory as
+ well [WIP]
+
+Framebuffer from gralloc aren't actually meant to be registered but with
+the magic of the new-fangled HIDL, it's a impossibility made reality
+along with directly freeing the handle after registering it.
+
+Jokes aside, this patch will also defer freeing or releasing the
+FB -- the gralloc's handle specifically. The problem with the current
+HIDL_NO_FREE_FB is that you can only allocate up to 3 buffers from the FB
+even after freeing all of them because the buffermask gralloc uses
+never gets refreshed.
+
+Combining with the logic of HIDL_DEFER_FREE, we could now restore the buffermask
+allowing that case to happen.
+
+Unfortunately, I have yet to see the SurfaceFlinger to unregister the FB.
+It usually just allocates 3 buffers all at once and just cycles around without
+unregistering or freeing any of them. In other terms, I cannot test this.
+
+Change-Id: I6efb2c828d9af36610f3f22aeb74676d9a39b93f
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ gralloc/scx15/alloc_device.cpp   | 20 ++++++++------------
+ gralloc/scx15/gralloc_module.cpp | 19 ++++++++++++++++++-
+ 2 files changed, 26 insertions(+), 13 deletions(-)
+
+diff --git a/gralloc/scx15/alloc_device.cpp b/gralloc/scx15/alloc_device.cpp
+index ce0f7ab..61f92f9 100644
+--- a/gralloc/scx15/alloc_device.cpp
++++ b/gralloc/scx15/alloc_device.cpp
+@@ -657,7 +657,7 @@ AllocNormalBuffer:
+ 		}
+ 	}
+ 
+-	ALOGE("%s handle:0x%x end err is %d",__FUNCTION__,(unsigned int)*pHandle,err);
++	ALOGV("%s handle:0x%x end err is %d",__FUNCTION__,(unsigned int)*pHandle,err);
+ 	if (err < 0)
+ 	{
+ 		return err;
+@@ -750,22 +750,18 @@ static int alloc_device_free(alloc_device_t* dev, buffer_handle_t handle)
+ #endif
+ 	if (hnd->flags & private_handle_t::PRIV_FLAGS_FRAMEBUFFER)
+ 	{
+-	// We won't actually free the FB when in when the
+-	// workaround HIDL_NO_FREE_FB is active since the HIDL implementation
+-	// will call free() the moment the allocation had succeeded then has been
+-	// registered twice, one in this module, second in the HIDL implementation.
+-#ifndef HIDL_NO_FREE_FB
++	/*
++	 * We won't actually free the FB when in when the workaround
++	 * HIDL_NO_FREE_FB is active. The HIDL implementation will call
++	 * free() the moment the allocation had succeeded.
++	 * HIDL_DEFER_FREE also implements HIDL_NO_FREE_FB.
++	 */
++#if !defined(HIDL_DEFER_FREE) && !defined(HIDL_NO_FREE_FB)
+ 		// free this buffer
+ 		private_module_t* m = reinterpret_cast<private_module_t*>(dev->common.module);
+ 		const size_t bufferSize = m->finfo.line_length * m->info.yres;
+ 		int index = (hnd->base - m->framebuffer->base) / bufferSize;
+ 		m->bufferMask &= ~(1<<index);
+-		/*
+-		 * We won't actually close this FB when using the HIDL workarounds
+-		 * especially the INVALID FD workaround.
+-		 * I don't understand the internals of the closed source libMali blob
+-		 * but it doesn't play well with closing this fildes.
+-		 */
+ 		close(hnd->fd);
+ #endif
+ 
+diff --git a/gralloc/scx15/gralloc_module.cpp b/gralloc/scx15/gralloc_module.cpp
+index 8d922da..124adea 100644
+--- a/gralloc/scx15/gralloc_module.cpp
++++ b/gralloc/scx15/gralloc_module.cpp
+@@ -241,10 +241,27 @@ static int gralloc_unregister_buffer(gralloc_module_t const *module, buffer_hand
+ 
+ 	private_handle_t *hnd = (private_handle_t *)handle;
+ 
+-#if HIDL_INVALID_FD
++#if defined(HIDL_INVALID_FD) || defined(HIDL_DEFER_FREE)
+ 	if (hnd->flags & private_handle_t::PRIV_FLAGS_FRAMEBUFFER)
+ 	{
++#ifdef HIDL_INVALID_FD
+ 		AINF("Working around the FD issue Prt3. Silently ignore calls to unregister the FB: %p\n", handle);
++#endif
++
++#ifdef HIDL_DEFER_FREE
++		/*
++		 * If we do unregister the FB memory, we'd close the file descriptor
++		 * Mali will segfault when it uses this handle afterwards.
++		 * As usual, check if it's the same client.
++		 */
++		private_module_t* m = (private_module_t*)(module);
++		if (m->ion_client == hnd->ion_client) {
++			const size_t bufferSize = m->finfo.line_length * m->info.yres;
++			int index = (hnd->base - m->framebuffer->base) / bufferSize;
++			m->bufferMask &= ~(1<<index);
++			close(hnd->fd);
++		}
++#endif
+ 		return 0;
+ 	}
+ #endif
+-- 
+2.17.1
+
