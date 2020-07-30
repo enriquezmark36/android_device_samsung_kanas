@@ -1,0 +1,61 @@
+From 589ce816f91b5d643d961775dedc84967fee3759 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Mon, 20 Jul 2020 19:30:11 +0800
+Subject: [PATCH 1/8] libcamera: scx15: Copy libmorpho_easy_hdr and libisp to
+ /vendor/lib, for real
+
+The previous commit with a simillar way uses an inappropiate variable
+TARGET_COPY_OUT_VENDOR where as the actual variable is supposed to be
+TARGET_OUT_VENDOR.
+
+TARGET_OUT_VENDOR will contain an absolute file path to the directory
+holding the /vendor partition. Though, it's /system/vendor for us
+since we don't have a separate /vendor partition.
+
+On the other hand, TARGET_COPY_OUT_VENDOR will just point to either
+system/vendor or vendor. That's just it. It's a relative path but to where?
+The top of the Android source tree.
+If you're building the libcamera for scx15, Check the system/ folder where
+the core folder from system/core project is located. There will be a
+suspicious vendor folder there.
+
+Change-Id: I565ab310c4ac94f022ced00e6977d620ec5687ef
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ libcamera/scx15/Camera.mk | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/libcamera/scx15/Camera.mk b/libcamera/scx15/Camera.mk
+index 05d56b2..bf21933 100644
+--- a/libcamera/scx15/Camera.mk
++++ b/libcamera/scx15/Camera.mk
+@@ -296,7 +296,7 @@ LOCAL_MODULE_CLASS := SHARED_LIBRARIES
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_SUFFIX := .so
+ LOCAL_SRC_FILES := sc8830/isp/libisp.so
+-LOCAL_MODULE_PATH := $(TARGET_COPY_OUT_VENDOR)/lib
++LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR)/lib
+ include $(BUILD_PREBUILT)
+ endif
+ 
+@@ -306,7 +306,7 @@ LOCAL_MODULE_CLASS := SHARED_LIBRARIES
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_SUFFIX := .so
+ LOCAL_SRC_FILES := arithmetic/sc8830/libmorpho_easy_hdr.so
+-LOCAL_MODULE_PATH := $(TARGET_COPY_OUT_VENDOR)/lib
++LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR)/lib
+ include $(BUILD_PREBUILT)
+ 
+ ifeq ($(strip $(TARGET_BOARD_CAMERA_HDR_CAPTURE)),true)
+@@ -316,7 +316,7 @@ ifeq ($(strip $(TARGET_BOARD_CAMERA_HDR_CAPTURE)),true)
+ 	LOCAL_MODULE_TAGS := optional
+ 	LOCAL_MODULE_SUFFIX := .so
+ 	LOCAL_SRC_FILES := arithmetic/sc8830/libsprd_easy_hdr.so
+-	LOCAL_MODULE_PATH := $(TARGET_COPY_OUT_VENDOR)/lib
++	LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR)/lib
+ 	include $(BUILD_PREBUILT)
+ endif
+ 
+-- 
+2.17.1
+
