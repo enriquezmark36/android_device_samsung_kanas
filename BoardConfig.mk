@@ -189,6 +189,14 @@ TARGET_LD_SHIM_LIBS += \
        /system/vendor/lib/libomx_avcenc_hw_sprd_newer.so|libvsp_shim.so \
        /system/vendor/lib/libomx_avcdec_hw_sprd_newer.so|libvsp_shim.so \
 
+
+# Shims to the missing earlysuspend support in libsuspend
+# Use this shim if we're NOT USING the patch that reverts
+# the removal of the said support
+TARGET_LD_SHIM_LIBS += \
+       /system/vendor/bin/lpm|liblpm_shim.so \
+       /sbin/charger|liblpm_shim.so \
+
 # Override PowerHal
 TARGET_POWERHAL_VARIANT := kanas
 SCX35_COMMON_POWERHAL_OVERRIDE := true

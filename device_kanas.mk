@@ -108,6 +108,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	libengpc_shim \
 	libvsp_shim \
+	liblpm_shim \
 
 # HIDL. (hide-el)
 # Build extra services not included in scx35-common

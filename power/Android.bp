@@ -27,3 +27,22 @@ cc_binary {
     ],
 }
 
+cc_library {
+    proprietary: true,
+    name: "liblpm_shim",
+    srcs: [
+        "liblpm_shim.cpp",
+    ],
+
+    cflags: [
+        "-Wall",
+        "-Werror",
+    ],
+
+    shared_libs: [
+        "liblog",
+        "libdl",
+        "libutils",
+    ],
+}
+
