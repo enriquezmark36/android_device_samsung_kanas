@@ -1,0 +1,124 @@
+From 8bc44db5e563cc27a568ac6ec34d71aa9e171e0a Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Fri, 26 Jun 2020 13:39:23 +0800
+Subject: [PATCH 1/2] cutils: iosched_policy/sched_policy: Extend cpusets to
+ bfqio groups
+
+This adds support to some additional bfqio groups:
+system-bacground and background, which also corresponds to the
+cpusets groups.
+
+The goal for this is to penalize background processes and boost
+the forground processes responsiveness to the user.
+
+There are a couple of reason why only to "penalize" but no reward.
+One is because of the earlier patch that gives RT priority to
+some apps under the rt-display bfqio group and most of them
+are in a foreground cpuset group.
+
+These should not extend nor change the ABI and should work
+seamlessly when all conditions are met.
+
+Change-Id: Iec2bd08788f99f00e5afb8172ecd96fb454f8970
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ libcutils/sched_policy.cpp | 36 +++++++++++++++++++++++++++++++++++-
+ 1 file changed, 35 insertions(+), 1 deletion(-)
+
+diff --git a/libcutils/sched_policy.cpp b/libcutils/sched_policy.cpp
+index b00fa8561..998994048 100644
+--- a/libcutils/sched_policy.cpp
++++ b/libcutils/sched_policy.cpp
+@@ -59,6 +59,12 @@ static int bg_cpuset_fd = -1;
+ static int fg_cpuset_fd = -1;
+ static int ta_cpuset_fd = -1; // special cpuset for top app
+ 
++// special cfqio groups
++static int system_bg_bfqio_fd = -1;
++static int bg_bfqio_fd = -1;
++static int root_bfqio_fd = -1;
++
++
+ // File descriptors open to /dev/stune/../tasks, setup by initialize, or -1 on error
+ static int bg_schedboost_fd = -1;
+ static int fg_schedboost_fd = -1;
+@@ -138,6 +144,13 @@ bool schedboost_enabled() {
+     return enabled;
+ }
+ 
++static bool bfqio_enabled() {
++    static bool enabled = (access("/dev/bfqio/tasks", F_OK) == 0);
++
++    return enabled;
++}
++
++
+ static void __initialize() {
+     const char* filename;
+ 
+@@ -153,6 +166,16 @@ static void __initialize() {
+             filename = "/dev/cpuset/top-app/tasks";
+             ta_cpuset_fd = open(filename, O_WRONLY | O_CLOEXEC);
+ 
++	    if (bfqio_enabled()) {
++		filename = "/dev/bfqio/background/tasks";
++		bg_bfqio_fd = open(filename, O_WRONLY | O_CLOEXEC);
++		filename = "/dev/bfqio/system-background/tasks";
++		system_bg_bfqio_fd = open(filename, O_WRONLY | O_CLOEXEC);
++		filename = "/dev/bfqio/tasks";
++		root_bfqio_fd = open(filename, O_WRONLY | O_CLOEXEC);
++	    }
++
++
+             if (schedboost_enabled()) {
+                 filename = "/dev/stune/top-app/tasks";
+                 ta_schedboost_fd = open(filename, O_WRONLY | O_CLOEXEC);
+@@ -291,26 +314,31 @@ int set_cpuset_policy(int tid, SchedPolicy policy)
+ 
+     int fd = -1;
+     int boost_fd = -1;
++    int bfqio_fd = -1;
+     switch (policy) {
+     case SP_BACKGROUND:
+         fd = bg_cpuset_fd;
+         boost_fd = bg_schedboost_fd;
++	bfqio_fd = bg_bfqio_fd;
+         break;
+     case SP_FOREGROUND:
+     case SP_AUDIO_APP:
+     case SP_AUDIO_SYS:
+         fd = fg_cpuset_fd;
+         boost_fd = fg_schedboost_fd;
++	bfqio_fd = root_bfqio_fd;
+         break;
+     case SP_TOP_APP :
+         fd = ta_cpuset_fd;
+         boost_fd = ta_schedboost_fd;
++	bfqio_fd = root_bfqio_fd;
+         break;
+     case SP_SYSTEM:
+         fd = system_bg_cpuset_fd;
++	bfqio_fd = system_bg_bfqio_fd;
+         break;
+     default:
+-        boost_fd = fd = -1;
++        bfqio_fd = boost_fd = fd = -1;
+         break;
+     }
+ 
+@@ -319,6 +347,12 @@ int set_cpuset_policy(int tid, SchedPolicy policy)
+             return -errno;
+     }
+ 
++    // HACK: Add this to the BFQ CGroup for idle class
++    // If this fails then it fails.
++    if (bfqio_enabled() && (bfqio_fd > 0)) {
++	add_tid_to_cgroup(tid, bfqio_fd);
++    }
++
+     if (schedboost_enabled()) {
+         if (boost_fd > 0 && add_tid_to_cgroup(tid, boost_fd) != 0) {
+             if (errno != ESRCH && errno != ENOENT)
+-- 
+2.27.0
+

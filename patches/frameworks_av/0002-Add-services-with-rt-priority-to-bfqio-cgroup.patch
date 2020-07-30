@@ -1,0 +1,91 @@
+From e3ab524fcad7c888a076c712e76ffd8f7c6928dd Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Fri, 31 Jul 2020 14:29:26 +0800
+Subject: [PATCH] Add services with rt priority to "bfqio" cgroup
+
+The bfqio cgroup is a io cgroup based on the cgroup from cfq.
+This support was added in the regular LineageOS tree via the libbfqio
+library. We could attempt to insert a call to that function that will
+add it to the cgroup but I think this is much simpler.
+
+Tasks under the bfqio are given an IOPRIO_CLASS_RT which is also what the
+"ioprio rt #" line also does but this makes is explicit and "known" to the
+bfq iosched.
+
+Change-Id: Ib5eea7d9c9ef3e341bdf8252c011c41a926ed13b
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ camera/cameraserver/cameraserver.rc       | 2 +-
+ media/audioserver/audioserver.rc          | 2 +-
+ media/mediaserver/mediaserver.rc          | 2 +-
+ services/mediaanalytics/mediametrics.rc   | 2 +-
+ services/mediadrm/mediadrmserver.rc       | 2 +-
+ services/mediaextractor/mediaextractor.rc | 2 +-
+ 6 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/camera/cameraserver/cameraserver.rc b/camera/cameraserver/cameraserver.rc
+index fea5a1d5c..3e2e87f15 100644
+--- a/camera/cameraserver/cameraserver.rc
++++ b/camera/cameraserver/cameraserver.rc
+@@ -3,4 +3,4 @@ service cameraserver /system/bin/cameraserver
+     user cameraserver
+     group audio camera input drmrpc
+     ioprio rt 4
+-    writepid /dev/cpuset/camera-daemon/tasks /dev/stune/top-app/tasks
++    writepid /dev/cpuset/camera-daemon/tasks /dev/stune/top-app/tasks /dev/bfqio/rt-display/tasks
+diff --git a/media/audioserver/audioserver.rc b/media/audioserver/audioserver.rc
+index 9d42bce06..be08317ba 100644
+--- a/media/audioserver/audioserver.rc
++++ b/media/audioserver/audioserver.rc
+@@ -4,7 +4,7 @@ service audioserver /system/bin/audioserver
+     # media gid needed for /dev/fm (radio) and for /data/misc/media (tee)
+     group audio camera drmrpc inet media mediadrm net_bt net_bt_admin net_bw_acct
+     ioprio rt 4
+-    writepid /dev/cpuset/foreground/tasks /dev/stune/foreground/tasks
++    writepid /dev/cpuset/foreground/tasks /dev/stune/foreground/tasks /dev/bfqio/rt-display/tasks
+     onrestart restart audio-hal-2-0
+ 
+ on property:vts.native_server.on=1
+diff --git a/media/mediaserver/mediaserver.rc b/media/mediaserver/mediaserver.rc
+index f6c325c98..eb7215cba 100644
+--- a/media/mediaserver/mediaserver.rc
++++ b/media/mediaserver/mediaserver.rc
+@@ -3,4 +3,4 @@ service media /system/bin/mediaserver
+     user media
+     group audio camera inet net_bt net_bt_admin net_bw_acct drmrpc mediadrm
+     ioprio rt 4
+-    writepid /dev/cpuset/foreground/tasks /dev/stune/foreground/tasks
++    writepid /dev/cpuset/foreground/tasks /dev/stune/foreground/tasks /dev/bfqio/rt-display/tasks
+diff --git a/services/mediaanalytics/mediametrics.rc b/services/mediaanalytics/mediametrics.rc
+index 1efde5e0e..708004929 100644
+--- a/services/mediaanalytics/mediametrics.rc
++++ b/services/mediaanalytics/mediametrics.rc
+@@ -3,4 +3,4 @@ service mediametrics /system/bin/mediametrics
+     user media
+     group media
+     ioprio rt 4
+-    writepid /dev/cpuset/foreground/tasks /dev/stune/foreground/tasks
++    writepid /dev/cpuset/foreground/tasks /dev/stune/foreground/tasks /dev/bfqio/rt-display/tasks
+diff --git a/services/mediadrm/mediadrmserver.rc b/services/mediadrm/mediadrmserver.rc
+index 359c2cf76..515d1b00c 100644
+--- a/services/mediadrm/mediadrmserver.rc
++++ b/services/mediadrm/mediadrmserver.rc
+@@ -3,4 +3,4 @@ service mediadrm /system/bin/mediadrmserver
+     user media
+     group mediadrm drmrpc
+     ioprio rt 4
+-    writepid /dev/cpuset/foreground/tasks
++    writepid /dev/cpuset/foreground/tasks /dev/bfqio/rt-display/tasks
+diff --git a/services/mediaextractor/mediaextractor.rc b/services/mediaextractor/mediaextractor.rc
+index 5fc294111..0226389f9 100644
+--- a/services/mediaextractor/mediaextractor.rc
++++ b/services/mediaextractor/mediaextractor.rc
+@@ -3,4 +3,4 @@ service mediaextractor /system/bin/mediaextractor
+     user mediaex
+     group drmrpc mediadrm
+     ioprio rt 4
+-    writepid /dev/cpuset/foreground/tasks
++    writepid /dev/cpuset/foreground/tasks /dev/bfqio/rt-display/tasks
+-- 
+2.17.1
+

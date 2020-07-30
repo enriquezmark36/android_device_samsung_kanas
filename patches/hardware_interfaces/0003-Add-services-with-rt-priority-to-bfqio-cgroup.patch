@@ -1,0 +1,69 @@
+From 13216f0f5f4d85a6dc6d4ef3adf1ef687bb512f2 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Fri, 31 Jul 2020 14:23:05 +0800
+Subject: [PATCH] Add services with rt priority to "bfqio" cgroup
+
+The bfqio cgroup is a io cgroup based on the cgroup from cfq.
+This support was added in the regular LineageOS tree via the libbfqio
+library. We could attempt to insert a call to that function that will
+add it to the cgroup but I think this is much simpler.
+
+Tasks under the bfqio are given an IOPRIO_CLASS_RT which is also what the
+"ioprio rt #" line also does but this makes is explicit and "known" to the
+bfq iosched.
+
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+Change-Id: I2ddc5bf06276b1db2328bcaab8e7f4bb4fd3310f
+---
+ audio/2.0/default/android.hardware.audio@2.0-service.rc         | 2 +-
+ .../2.4/default/android.hardware.camera.provider@2.4-service.rc | 2 +-
+ cas/1.0/default/android.hardware.cas@1.0-service.rc             | 2 +-
+ drm/1.0/default/android.hardware.drm@1.0-service.rc             | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/audio/2.0/default/android.hardware.audio@2.0-service.rc b/audio/2.0/default/android.hardware.audio@2.0-service.rc
+index eeaf71b2..08f054bc 100644
+--- a/audio/2.0/default/android.hardware.audio@2.0-service.rc
++++ b/audio/2.0/default/android.hardware.audio@2.0-service.rc
+@@ -4,7 +4,7 @@ service audio-hal-2-0 /vendor/bin/hw/android.hardware.audio@2.0-service
+     # media gid needed for /dev/fm (radio) and for /data/misc/media (tee)
+     group audio camera drmrpc inet media mediadrm net_bt net_bt_admin net_bw_acct
+     ioprio rt 4
+-    writepid /dev/cpuset/foreground/tasks /dev/stune/foreground/tasks
++    writepid /dev/cpuset/foreground/tasks /dev/stune/foreground/tasks /dev/bfqio/rt-display/tasks
+     # audioflinger restarts itself when it loses connection with the hal
+     # and its .rc file has an "onrestart restart audio-hal" rule, thus
+     # an additional auto-restart from the init process isn't needed.
+diff --git a/camera/provider/2.4/default/android.hardware.camera.provider@2.4-service.rc b/camera/provider/2.4/default/android.hardware.camera.provider@2.4-service.rc
+index 2bf309b4..178db57d 100644
+--- a/camera/provider/2.4/default/android.hardware.camera.provider@2.4-service.rc
++++ b/camera/provider/2.4/default/android.hardware.camera.provider@2.4-service.rc
+@@ -4,4 +4,4 @@ service camera-provider-2-4 /vendor/bin/hw/android.hardware.camera.provider@2.4-
+     group audio camera input drmrpc
+     ioprio rt 4
+     capabilities SYS_NICE
+-    writepid /dev/cpuset/camera-daemon/tasks /dev/stune/top-app/tasks
++    writepid /dev/cpuset/camera-daemon/tasks /dev/stune/top-app/tasks /dev/bfqio/rt-display/tasks
+diff --git a/cas/1.0/default/android.hardware.cas@1.0-service.rc b/cas/1.0/default/android.hardware.cas@1.0-service.rc
+index 93de7944..36b5e036 100644
+--- a/cas/1.0/default/android.hardware.cas@1.0-service.rc
++++ b/cas/1.0/default/android.hardware.cas@1.0-service.rc
+@@ -3,4 +3,4 @@ service cas-hal-1-0 /vendor/bin/hw/android.hardware.cas@1.0-service
+     user media
+     group mediadrm drmrpc
+     ioprio rt 4
+-    writepid /dev/cpuset/foreground/tasks
++    writepid /dev/cpuset/foreground/tasks /dev/bfqio/rt-display/tasks
+diff --git a/drm/1.0/default/android.hardware.drm@1.0-service.rc b/drm/1.0/default/android.hardware.drm@1.0-service.rc
+index e7beca35..f9ccca6c 100644
+--- a/drm/1.0/default/android.hardware.drm@1.0-service.rc
++++ b/drm/1.0/default/android.hardware.drm@1.0-service.rc
+@@ -3,4 +3,4 @@ service drm-hal-1-0 /vendor/bin/hw/android.hardware.drm@1.0-service
+     user media
+     group mediadrm drmrpc
+     ioprio rt 4
+-    writepid /dev/cpuset/foreground/tasks
++    writepid /dev/cpuset/foreground/tasks /dev/bfqio/rt-display/tasks
+-- 
+2.17.1
+
