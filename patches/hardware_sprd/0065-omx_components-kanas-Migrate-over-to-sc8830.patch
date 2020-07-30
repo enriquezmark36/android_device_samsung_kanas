@@ -1,0 +1,1069 @@
+From aeea24a99245b7dddaaae09203228f52b2b0ba62 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Wed, 29 Jul 2020 19:43:14 +0800
+Subject: [PATCH 8/8] omx_components: kanas: Migrate over to sc8830
+
+The vendor should have the corresponding libraries for these
+a bit newer de/encoders.
+
+Change-Id: I56b5286f7055290fa4499c1ba27b5a8db285344b
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ .../scx15/include/SprdOMXComponent.h          | 19 ++++
+ omx_components/video/avc_sprd/Android.mk      |  5 -
+ .../avc_sprd/sc8830/dec/SPRDAVCDecoder.cpp    |  1 +
+ .../video/avc_sprd/sc8830/enc/Android.mk      | 10 +-
+ .../avc_sprd/sc8830/enc/SPRDAVCEncoder.cpp    | 98 ++++++++++++++++++-
+ .../avc_sprd/sc8830/enc/SPRDAVCEncoder.h      |  4 +
+ omx_components/video/m4v_h263_sprd/Android.mk |  6 --
+ .../video/m4v_h263_sprd/sc8830/dec/Android.mk | 10 +-
+ .../sc8830/dec/SPRDMPEG4Decoder.cpp           | 59 +++++++++++
+ .../sc8830/dec/SPRDMPEG4Decoder.h             |  4 +
+ .../video/m4v_h263_sprd/sc8830/enc/Android.mk | 11 ++-
+ .../sc8830/enc/SPRDMPEG4Encoder.cpp           | 67 ++++++++++++-
+ .../sc8830/enc/SPRDMPEG4Encoder.h             |  4 +
+ omx_components/video/vpx_sprd/Android.mk      |  4 -
+ .../video/vpx_sprd/sc8830/dec/Android.mk      | 10 +-
+ .../vpx_sprd/sc8830/dec/SPRDVPXDecoder.cpp    | 55 +++++++++++
+ .../vpx_sprd/sc8830/dec/SPRDVPXDecoder.h      |  4 +
+ 17 files changed, 347 insertions(+), 24 deletions(-)
+
+diff --git a/libstagefrighthw/scx15/include/SprdOMXComponent.h b/libstagefrighthw/scx15/include/SprdOMXComponent.h
+index 14de735..757e5f1 100644
+--- a/libstagefrighthw/scx15/include/SprdOMXComponent.h
++++ b/libstagefrighthw/scx15/include/SprdOMXComponent.h
+@@ -44,8 +44,27 @@ typedef enum SPRD_OMX_INDEXTYPE {
+     OMX_IndexParamStoreMetaDataBuffer,
+     OMX_IndexParamPrependSPSPPSToIDR,
+     OMX_IndexConfigThumbnailMode,
++    OMX_IndexConfigEncSceneMode,
++    OMX_IndexParamDescribeColorFormat,
+ } SPRD_OMX_INDEXTYPE;
+ 
++/**
++ * Defines Encoder Scene Mode setting
++ *
++ * STRUCT MEMBERS:
++ *  nSize            : Size of the structure in bytes
++ *  nVersion         : OMX specification version information
++ *  nPortIndex       : Port that this structure applies to
++ *  nMode : Encoding scene mode(1:Volte, 2:Wfd, 0:Normal)
++ */
++
++typedef struct OMX_VIDEO_CONFIG_ENCODERSCENEMODE {
++    OMX_U32 nSize;
++    OMX_VERSIONTYPE nVersion;
++    OMX_U32 nPortIndex;
++    OMX_U32 nMode;
++} OMX_VIDEO_CONFIG_ENCODERSCENEMODE;
++
+ typedef struct BufferCtrlStruct
+ {
+     OMX_U32 iRefCount;
+diff --git a/omx_components/video/avc_sprd/Android.mk b/omx_components/video/avc_sprd/Android.mk
+index e88dff4..a7b6d50 100644
+--- a/omx_components/video/avc_sprd/Android.mk
++++ b/omx_components/video/avc_sprd/Android.mk
+@@ -22,12 +22,7 @@ ifneq (,$(filter scx15 sc8830,$(TARGET_BOARD_PLATFORM)))
+ include_list := \
+ 	$(LOCAL_PATH)/thumbnail/Android.mk \
+ 
+-ifeq ($(SOC_SCX35),true)
+-include_list += $(call all-named-subdir-makefiles, scx15/enc sc8830/dec )
+-else
+ include_list += $(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM))
+-endif
+-
+ include $(include_list)
+ 
+ endif
+diff --git a/omx_components/video/avc_sprd/sc8830/dec/SPRDAVCDecoder.cpp b/omx_components/video/avc_sprd/sc8830/dec/SPRDAVCDecoder.cpp
+index 20ac2a0..35a4c7d 100644
+--- a/omx_components/video/avc_sprd/sc8830/dec/SPRDAVCDecoder.cpp
++++ b/omx_components/video/avc_sprd/sc8830/dec/SPRDAVCDecoder.cpp
+@@ -256,6 +256,7 @@ SPRDAVCDecoder::SPRDAVCDecoder(
+ 
+ #ifdef SOC_SCX35
+     mIOMMUEnabled = MemoryHeapIon::Mm_iommu_is_enabled();
++    mIOMMUID = mIOMMUEnabled ? 1/*ION_MM*/ : -1;
+ #else
+     if (MemoryHeapIon::IOMMU_is_enabled(ION_MM)) {
+         mIOMMUEnabled = true;
+diff --git a/omx_components/video/avc_sprd/sc8830/enc/Android.mk b/omx_components/video/avc_sprd/sc8830/enc/Android.mk
+index fca4dd5..e341539 100644
+--- a/omx_components/video/avc_sprd/sc8830/enc/Android.mk
++++ b/omx_components/video/avc_sprd/sc8830/enc/Android.mk
+@@ -10,7 +10,6 @@ LOCAL_C_INCLUDES := \
+ 	frameworks/native/include/media/openmax \
+ 	frameworks/native/include/media/hardware \
+ 	frameworks/native/include \
+-	$(LOCAL_PATH)/../../../../../gralloc/$(TARGET_BOARD_PLATFORM) \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video
+ 
+ LOCAL_ADDITIONAL_DEPENDENCIES += \
+@@ -20,6 +19,15 @@ LOCAL_CFLAGS := \
+ 	-DOSCL_EXPORT_REF= \
+ 	-DOSCL_IMPORT_REF=
+ 
++ifeq ($(strip $(SOC_SCX35)),true)
++LOCAL_C_INCLUDES += \
++	$(LOCAL_PATH)/../../../../../gralloc/scx15
++LOCAL_CFLAGS += -DSOC_SCX35
++else
++LOCAL_C_INCLUDES += \
++	$(LOCAL_PATH)/../../../../../gralloc/$(TARGET_BOARD_PLATFORM)
++endif
++
+ LOCAL_LDFLAGS += -Wl,--no-warn-shared-textrel
+ 
+ LOCAL_ARM_MODE := arm
+diff --git a/omx_components/video/avc_sprd/sc8830/enc/SPRDAVCEncoder.cpp b/omx_components/video/avc_sprd/sc8830/enc/SPRDAVCEncoder.cpp
+index 4cb7635..9a23c59 100644
+--- a/omx_components/video/avc_sprd/sc8830/enc/SPRDAVCEncoder.cpp
++++ b/omx_components/video/avc_sprd/sc8830/enc/SPRDAVCEncoder.cpp
+@@ -620,11 +620,14 @@ SPRDAVCEncoder::SPRDAVCEncoder(
+     mHandle->userData = this;
+ 
+     memset(&mEncInfo, 0, sizeof(mEncInfo));
+-
+     CHECK_EQ(openEncoder("libomx_avcenc_hw_sprd.so"), true);
+ 
+     ALOGI("%s, line:%d, name: %s", __FUNCTION__, __LINE__, name);
+ 
++#ifdef SOC_SCX35
++    mIOMMUEnabled = MemoryHeapIon::Mm_iommu_is_enabled();
++    mIOMMUID = mIOMMUEnabled ? 1/*ION_MM*/ : -1;
++#else
+     if (MemoryHeapIon::IOMMU_is_enabled(ION_MM)) {
+         mIOMMUEnabled = true;
+         mIOMMUID = ION_MM;
+@@ -632,6 +635,7 @@ SPRDAVCEncoder::SPRDAVCEncoder(
+         mIOMMUEnabled = true;
+         mIOMMUID = ION_VSP;
+     }
++#endif
+     ALOGI("%s, is IOMMU enabled: %d, ID: %d", __FUNCTION__, mIOMMUEnabled, mIOMMUID);
+ 
+     MMCodecBuffer InterMemBfr;
+@@ -735,7 +739,7 @@ OMX_ERRORTYPE SPRDAVCEncoder::initEncParams() {
+ 
+     mEncParams->use_overrun_buffer = AVC_OFF;
+ 
+-#ifdef VIDEOENC_CURRENT_OPT
++#if defined VIDEOENC_CURRENT_OPT && !defined(SOC_SCX35)
+     if (((mVideoWidth <= 720) && (mVideoHeight <= 480)) || ((mVideoWidth <= 480) && (mVideoHeight <= 720))) {
+         set_ddr_freq("200000");
+         mSetFreqCount ++;
+@@ -767,11 +771,18 @@ OMX_ERRORTYPE SPRDAVCEncoder::initEncParams() {
+     }
+ 
+     int ret;
++#ifdef SOC_SCX35
++    if (mIOMMUEnabled)
++       ret = mPmem_extra->get_mm_iova((int *)&phy_addr, (int *)&size);
++    else
++        ret = mPmem_extra->get_phy_addr_from_ion((int *)&phy_addr, (int *)&size);
++#else
+     if (mIOMMUEnabled) {
+        ret = mPmem_extra->get_iova(mIOMMUID, &phy_addr, &size);
+     } else {
+         ret = mPmem_extra->get_phy_addr_from_ion(&phy_addr, &size);
+     }
++#endif
+     if (ret < 0) {
+         ALOGE("Failed to alloc extra buffer, get phy addr failed");
+         return OMX_ErrorInsufficientResources;
+@@ -792,11 +803,18 @@ OMX_ERRORTYPE SPRDAVCEncoder::initEncParams() {
+         return OMX_ErrorInsufficientResources;
+     }
+ 
++#ifdef SOC_SCX35
++    if (mIOMMUEnabled)
++        ret = mPmem_stream->get_mm_iova((int *)&phy_addr, (int *)&size);
++    else
++        ret = mPmem_stream->get_phy_addr_from_ion((int *)&phy_addr, (int *)&size);
++#else
+     if (mIOMMUEnabled) {
+         ret = mPmem_stream->get_iova(mIOMMUID, &phy_addr, &size);
+     } else {
+         ret = mPmem_stream->get_phy_addr_from_ion(&phy_addr, &size);
+     }
++#endif
+     if (ret < 0) {
+         ALOGE("Failed to alloc stream buffer, get phy addr failed");
+         return OMX_ErrorInsufficientResources;
+@@ -841,7 +859,11 @@ OMX_ERRORTYPE SPRDAVCEncoder::initEncParams() {
+     mEncConfig->targetBitRate = mVideoBitRate;
+     mEncConfig->FrameRate = mVideoFrameRate;
+     mEncConfig->PFrames = mPFrames;
+-    mEncConfig->QP_IVOP = 36;
++    if (mEncSceneMode == 0) {
++        mEncConfig->QP_IVOP = 28;
++    }else {
++        mEncConfig->QP_IVOP = 36;
++    }
+     mEncConfig->QP_PVOP = 28;
+     mEncConfig->vbv_buf_size = mVideoBitRate/2;
+     mEncConfig->profileAndLevel = 1;
+@@ -868,6 +890,25 @@ OMX_ERRORTYPE SPRDAVCEncoder::initEncParams() {
+ OMX_ERRORTYPE SPRDAVCEncoder::initEncoder() {
+     CHECK(!mStarted);
+ 
++#ifdef SOC_SCX35
++    /*
++     * Default to I-frames when using FormatAndroidOpaque
++     * Since the entire process with that format gets
++     * more expensive as the resolution grows since
++     * the buffer size grows exponentially along with the
++     * resolution.
++     *
++     * Otherwise, to conserve bandwidth, go with P-frames.
++     */
++    if ((mVideoColorFormat == OMX_COLOR_FormatAndroidOpaque) &&
++        (mVideoWidth * mVideoHeight) > 768000) {
++        mEncSceneMode = 2;
++        mPFrames = 0;
++
++        set_ddr_freq("500000");
++        mSetFreqCount ++;
++    }
++#endif
+     OMX_ERRORTYPE errType = OMX_ErrorNone;
+     if (OMX_ErrorNone != (errType = initEncParams())) {
+         ALOGE("Failed to initialized encoder params");
+@@ -901,7 +942,11 @@ OMX_ERRORTYPE SPRDAVCEncoder::releaseResource() {
+ 
+     if (mPbuf_extra_v != NULL) {
+         if (mIOMMUEnabled) {
++#ifdef SOC_SCX35
++            mPmem_extra->free_mm_iova(mPbuf_extra_p, mPbuf_extra_size);
++#else
+             mPmem_extra->free_iova(mIOMMUID, mPbuf_extra_p, mPbuf_extra_size);
++#endif
+         }
+         mPmem_extra.clear();
+         mPbuf_extra_v = NULL;
+@@ -911,7 +956,11 @@ OMX_ERRORTYPE SPRDAVCEncoder::releaseResource() {
+ 
+     if (mPbuf_stream_v != NULL) {
+         if (mIOMMUEnabled) {
++#ifdef SOC_SCX35
++            mPmem_stream->free_mm_iova(mPbuf_stream_p, mPbuf_stream_size);
++#else
+             mPmem_stream->free_iova(mIOMMUID, mPbuf_stream_p, mPbuf_stream_size);
++#endif
+         }
+         mPmem_stream.clear();
+         mPbuf_stream_v = NULL;
+@@ -921,7 +970,11 @@ OMX_ERRORTYPE SPRDAVCEncoder::releaseResource() {
+ 
+     if (mPbuf_yuv_v != NULL) {
+         if (mIOMMUEnabled) {
++#ifdef SOC_SCX35
++            mYUVInPmemHeap->free_mm_iova(mPbuf_yuv_p, mPbuf_yuv_size);
++#else
+             mYUVInPmemHeap->free_iova(mIOMMUID, mPbuf_yuv_p, mPbuf_yuv_size);
++#endif
+         }
+         mYUVInPmemHeap.clear();
+         mPbuf_yuv_v = NULL;
+@@ -1259,7 +1312,11 @@ OMX_ERRORTYPE SPRDAVCEncoder::internalSetParameter(
+             (OMX_VIDEO_PARAM_BITRATETYPE *) params;
+ 
+         if (bitRate->nPortIndex != 1 ||
+-                bitRate->eControlRate != OMX_Video_ControlRateVariable) {
++                (bitRate->eControlRate != OMX_Video_ControlRateVariable &&
++#ifdef SOC_SCX35
++                 bitRate->eControlRate != OMX_Video_ControlRateConstant
++#endif
++        )) {
+             return OMX_ErrorUndefined;
+         }
+ 
+@@ -1672,11 +1729,19 @@ void SPRDAVCEncoder::onQueueFilled(OMX_U32 portIndex) {
+                         int ret;
+                         unsigned long phy_addr;
+                         size_t buffer_size;
++#ifdef SOC_SCX35
++                        if(mIOMMUEnabled)
++                            ret = mYUVInPmemHeap->get_mm_iova((int *)&phy_addr, (int *)&buffer_size);
++                        else
++                            ret = mYUVInPmemHeap->get_phy_addr_from_ion((int *)&phy_addr, (int *)&buffer_size);
++#else
+                         if(mIOMMUEnabled) {
+                             ret = mYUVInPmemHeap->get_iova(mIOMMUID, &phy_addr, &buffer_size);
+                         } else {
+                             ret = mYUVInPmemHeap->get_phy_addr_from_ion(&phy_addr, &buffer_size);
+                         }
++
++#endif
+                         if(ret) {
+                             ALOGE("Failed to get_iova or get_phy_addr_from_ion %d", ret);
+                             return;
+@@ -1710,11 +1775,18 @@ void SPRDAVCEncoder::onQueueFilled(OMX_U32 portIndex) {
+                                 int fd = private_h->share_fd;
+                                 int ret = 0;
+ 
++#ifdef SOC_SCX35
++                                if (mIOMMUEnabled)
++                                    ret = MemoryHeapIon::Get_mm_iova(fd, (int *)&py_addr, (int *)&buf_size);
++                                else
++                                    ret = MemoryHeapIon::Get_phy_addr_from_ion(fd, (int *)&py_addr, (int *)&buf_size);
++#else
+                                 if (mIOMMUEnabled) {
+                                     ret = MemoryHeapIon::Get_iova(ION_MM, fd,&py_addr,&buf_size);
+                                 } else {
+                                     ret = MemoryHeapIon::Get_phy_addr_from_ion(fd,&py_addr,&buf_size);
+                                 }
++#endif
+                                 if(ret) {
+                                     ALOGE("Failed to Get_iova or Get_phy_addr_from_ion %d", ret);
+                                     return;
+@@ -1743,11 +1815,18 @@ void SPRDAVCEncoder::onQueueFilled(OMX_U32 portIndex) {
+                         int ret = 0;
+                         //ALOGD("private_h->format:0x%x",private_h->format);
+ 
++#ifdef SOC_SCX35
++                        if (mIOMMUEnabled)
++                            ret = MemoryHeapIon::Get_mm_iova(fd, (int *)&py_addr, (int *)&buf_size);
++                        else
++                            ret = MemoryHeapIon::Get_phy_addr_from_ion(fd, (int *)&py_addr, (int *)&buf_size);
++#else
+                         if (mIOMMUEnabled) {
+                             ret = MemoryHeapIon::Get_iova(mIOMMUID, fd,&py_addr,&buf_size);
+                         } else {
+                             ret = MemoryHeapIon::Get_phy_addr_from_ion(fd,&py_addr,&buf_size);
+                         }
++#endif
+                         if(ret) {
+                             ALOGE("Failed to Get_iova or Get_phy_addr_from_ion %d", ret);
+                             return;
+@@ -1791,11 +1870,18 @@ void SPRDAVCEncoder::onQueueFilled(OMX_U32 portIndex) {
+                     int ret;
+                     unsigned long phy_addr;
+                     size_t buffer_size;
++#ifdef SOC_SCX35
++                    if(mIOMMUEnabled)
++                        ret = mYUVInPmemHeap->get_mm_iova((int *)&phy_addr, (int *)&buffer_size);
++                    else
++                        ret = mYUVInPmemHeap->get_phy_addr_from_ion((int *)&phy_addr, (int *)&buffer_size);
++#else
+                     if(mIOMMUEnabled) {
+                         ret = mYUVInPmemHeap->get_iova(mIOMMUID, &phy_addr, &buffer_size);
+                     } else {
+                         ret = mYUVInPmemHeap->get_phy_addr_from_ion(&phy_addr, &buffer_size);
+                     }
++#endif
+                     if(ret) {
+                         ALOGE("Failed to get_iova or get_phy_addr_from_ion %d", ret);
+                         return;
+@@ -1872,7 +1958,11 @@ void SPRDAVCEncoder::onQueueFilled(OMX_U32 portIndex) {
+ 
+             if (needUnmap) {
+                 ALOGV("Free_iova, fd: %d, iova: 0x%lx, size: %zd", bufFd, iova, iovaLen);
++#ifdef SOC_SCX35
++                MemoryHeapIon::Free_mm_iova(bufFd, iova, iovaLen);
++#else
+                 MemoryHeapIon::Free_iova(mIOMMUID, bufFd, iova, iovaLen);
++#endif
+             }
+ 
+             if ((vid_out.strmSize < 0) || (ret != MMENC_OK)) {
+diff --git a/omx_components/video/avc_sprd/sc8830/enc/SPRDAVCEncoder.h b/omx_components/video/avc_sprd/sc8830/enc/SPRDAVCEncoder.h
+index 2f95cbb..ecf9e75 100644
+--- a/omx_components/video/avc_sprd/sc8830/enc/SPRDAVCEncoder.h
++++ b/omx_components/video/avc_sprd/sc8830/enc/SPRDAVCEncoder.h
+@@ -56,6 +56,10 @@ protected:
+ 
+ private:
+     enum {
++#ifdef SOC_SCX35
++        kInputPortIndex   = 0,
++        kOutputPortIndex  = 1,
++#endif
+         kNumBuffers = 4,
+     };
+ 
+diff --git a/omx_components/video/m4v_h263_sprd/Android.mk b/omx_components/video/m4v_h263_sprd/Android.mk
+index c5591d8..c6c99ea 100644
+--- a/omx_components/video/m4v_h263_sprd/Android.mk
++++ b/omx_components/video/m4v_h263_sprd/Android.mk
+@@ -22,12 +22,6 @@ ifneq (,$(filter scx15 sc8830,$(TARGET_BOARD_PLATFORM)))
+ include_list := \
+ 	$(LOCAL_PATH)/thumbnail/Android.mk \
+ 
+-ifeq ($(SOC_SCX35),true)
+-include_list += $(call all-named-subdir-makefiles, scx15)
+-else
+ include_list += $(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM))
+-endif
+-
+ include $(include_list)
+-
+ endif
+diff --git a/omx_components/video/m4v_h263_sprd/sc8830/dec/Android.mk b/omx_components/video/m4v_h263_sprd/sc8830/dec/Android.mk
+index d6b3a12..726cbb8 100644
+--- a/omx_components/video/m4v_h263_sprd/sc8830/dec/Android.mk
++++ b/omx_components/video/m4v_h263_sprd/sc8830/dec/Android.mk
+@@ -12,7 +12,6 @@ LOCAL_C_INCLUDES := \
+ 	frameworks/native/include/ui \
+ 	frameworks/native/include/utils \
+ 	frameworks/native/include/media/hardware \
+-	$(LOCAL_PATH)/../../../../../gralloc/$(TARGET_BOARD_PLATFORM) \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video
+ 
+ LOCAL_ADDITIONAL_DEPENDENCIES += \
+@@ -22,6 +21,15 @@ LOCAL_CFLAGS := \
+ 	-DOSCL_EXPORT_REF= \
+ 	-DOSCL_IMPORT_REF=
+ 
++ifeq ($(strip $(SOC_SCX35)),true)
++LOCAL_C_INCLUDES += \
++	$(LOCAL_PATH)/../../../../../gralloc/scx15
++LOCAL_CFLAGS += -DSOC_SCX35
++else
++LOCAL_C_INCLUDES += \
++	$(LOCAL_PATH)/../../../../../gralloc/$(TARGET_BOARD_PLATFORM)
++endif
++
+ LOCAL_ARM_MODE := arm
+ 
+ LOCAL_SHARED_LIBRARIES := \
+diff --git a/omx_components/video/m4v_h263_sprd/sc8830/dec/SPRDMPEG4Decoder.cpp b/omx_components/video/m4v_h263_sprd/sc8830/dec/SPRDMPEG4Decoder.cpp
+index daa5cb6..0583d91 100644
+--- a/omx_components/video/m4v_h263_sprd/sc8830/dec/SPRDMPEG4Decoder.cpp
++++ b/omx_components/video/m4v_h263_sprd/sc8830/dec/SPRDMPEG4Decoder.cpp
+@@ -184,6 +184,10 @@ SPRDMPEG4Decoder::SPRDMPEG4Decoder(
+         mInitCheck = OMX_ErrorInsufficientResources;
+     }
+ 
++#ifdef SOC_SCX35
++    mIOMMUEnabled = MemoryHeapIon::Mm_iommu_is_enabled();
++    mIOMMUID = mIOMMUEnabled ? 1 /*ION_MM*/ : -1;
++#else
+     if (MemoryHeapIon::IOMMU_is_enabled(ION_MM)) {
+         mIOMMUEnabled = true;
+         mIOMMUID = ION_MM;
+@@ -191,6 +195,7 @@ SPRDMPEG4Decoder::SPRDMPEG4Decoder(
+         mIOMMUEnabled = true;
+         mIOMMUID = ION_VSP;
+     }
++#endif
+     ALOGI("%s, is IOMMU enabled: %d, ID: %d", __FUNCTION__, mIOMMUEnabled, mIOMMUID);
+ 
+     if(mDecoderSwFlag) {
+@@ -394,11 +399,18 @@ status_t SPRDMPEG4Decoder::initDecoder() {
+             return OMX_ErrorInsufficientResources;
+         } else {
+             int ret;
++#ifdef SOC_SCX35
++            if (mIOMMUEnabled)
++                ret = mPmem_stream->get_mm_iova((int *) &phy_addr, (int *)&size);
++            else
++                ret = mPmem_stream->get_phy_addr_from_ion((int *)&phy_addr, (int *)&size);
++#else
+             if (mIOMMUEnabled) {
+                 ret = mPmem_stream->get_iova(mIOMMUID, &phy_addr, &size);
+             } else {
+                 ret = mPmem_stream->get_phy_addr_from_ion(&phy_addr, &size);
+             }
++#endif
+             if (ret < 0) {
+                 ALOGE("Failed to alloc bitstream pmem buffer, get phy addr failed");
+                 return OMX_ErrorInsufficientResources;
+@@ -456,9 +468,14 @@ void SPRDMPEG4Decoder::releaseDecoder() {
+             free(mPbuf_stream_v);
+             mPbuf_stream_v = NULL;
+         } else {
++#ifdef SOC_SCX35
++            if (mIOMMUEnabled)
++                mPmem_stream->free_mm_iova(mPbuf_stream_p, mPbuf_stream_size);
++#else
+             if (mIOMMUEnabled) {
+                 mPmem_stream->free_iova(mIOMMUID, mPbuf_stream_p, mPbuf_stream_size);
+             }
++#endif
+             mPmem_stream.clear();
+             mPbuf_stream_v = NULL;
+             mPbuf_stream_p = 0;
+@@ -467,9 +484,14 @@ void SPRDMPEG4Decoder::releaseDecoder() {
+     }
+ 
+     if(mPbuf_extra_v != NULL) {
++#ifdef SOC_SCX35
++        if (mIOMMUEnabled)
++            mPmem_extra->free_mm_iova(mPbuf_extra_p, mPbuf_extra_size);
++#else
+         if (mIOMMUEnabled) {
+             mPmem_extra->free_iova(mIOMMUID, mPbuf_extra_p, mPbuf_extra_size);
+         }
++#endif
+         mPmem_extra.clear();
+         mPbuf_extra_v = NULL;
+         mPbuf_extra_p = 0;
+@@ -733,7 +755,9 @@ OMX_ERRORTYPE SPRDMPEG4Decoder::internalUseBuffer(
+         CHECK((*header)->pOutputPortPrivate != NULL);
+         BufferCtrlStruct* pBufCtrl= (BufferCtrlStruct*)((*header)->pOutputPortPrivate);
+         pBufCtrl->iRefCount = 1; //init by1
++#ifndef SOC_SCX35
+         pBufCtrl->id = mIOMMUID;
++#endif
+         if(mAllocateBuffers) {
+             if(bufferPrivate != NULL) {
+                 pBufCtrl->pMem = ((BufferPrivateStruct*)bufferPrivate)->pMem;
+@@ -752,7 +776,11 @@ OMX_ERRORTYPE SPRDMPEG4Decoder::internalUseBuffer(
+                 size_t bufferSize = 0;
+                 native_handle_t *pNativeHandle = (native_handle_t *)((*header)->pBuffer);
+                 struct private_handle_t *private_h = (struct private_handle_t *)pNativeHandle;
++#ifdef SOC_SCX35
++                MemoryHeapIon::Get_mm_iova(private_h->share_fd, (int *)&picPhyAddr, (int *)&bufferSize);
++#else
+                 MemoryHeapIon::Get_iova(mIOMMUID, private_h->share_fd, &picPhyAddr, &bufferSize);
++#endif
+ 
+                 pBufCtrl->pMem = NULL;
+                 pBufCtrl->bufferFd = private_h->share_fd;
+@@ -817,6 +845,19 @@ OMX_ERRORTYPE SPRDMPEG4Decoder::allocateBuffer(
+                 return OMX_ErrorInsufficientResources;
+             }
+ 
++#ifdef SOC_SCX35
++            if (mIOMMUEnabled) {
++                if(pMem->get_mm_iova((int *)&phyAddr, (int *)&bufferSize)) {
++                    ALOGE("get_mm_iova fail");
++                    return OMX_ErrorInsufficientResources;
++                }
++            } else {
++                if(pMem->get_phy_addr_from_ion((int *)&phyAddr, (int *)&bufferSize)) {
++                    ALOGE("get_phy_addr_from_ion fail");
++                    return OMX_ErrorInsufficientResources;
++                }
++            }
++#else
+             if (mIOMMUEnabled) {
+                 if(pMem->get_iova(mIOMMUID, &phyAddr, &bufferSize)) {
+                     ALOGE("get_mm_iova fail");
+@@ -828,6 +869,7 @@ OMX_ERRORTYPE SPRDMPEG4Decoder::allocateBuffer(
+                     return OMX_ErrorInsufficientResources;
+                 }
+             }
++#endif
+ 
+             pBuffer = (OMX_U8 *)(pMem->getBase());
+             BufferPrivateStruct* bufferPrivate = new BufferPrivateStruct();
+@@ -863,9 +905,14 @@ OMX_ERRORTYPE SPRDMPEG4Decoder::freeBuffer(
+         if(pBufCtrl != NULL) {
+             if(pBufCtrl->pMem != NULL) {
+                 ALOGI("freeBuffer, phyAddr: 0x%lx", pBufCtrl->phyAddr);
++#ifdef SOC_SCX35
++                if (mIOMMUEnabled)
++                    pBufCtrl->pMem->free_mm_iova(pBufCtrl->phyAddr, pBufCtrl->bufferSize);
++#else
+                 if (mIOMMUEnabled) {
+                     pBufCtrl->pMem->free_iova(mIOMMUID, pBufCtrl->phyAddr, pBufCtrl->bufferSize);
+                 }
++#endif
+                 pBufCtrl->pMem.clear();
+             }
+             return SprdSimpleOMXComponent::freeBuffer(portIndex, header);
+@@ -1143,7 +1190,11 @@ void SPRDMPEG4Decoder::onQueueFilled(OMX_U32 portIndex) {
+                     native_handle_t *pNativeHandle = (native_handle_t *)outHeader->pBuffer;
+                     struct private_handle_t *private_h = (struct private_handle_t *)pNativeHandle;
+                     size_t bufferSize = 0;
++#ifdef SOC_SCX35
++                    MemoryHeapIon::Get_phy_addr_from_ion(private_h->share_fd, (int *)&picPhyAddr, (int *)&bufferSize);
++#else
+                     MemoryHeapIon::Get_phy_addr_from_ion(private_h->share_fd, &picPhyAddr, &bufferSize);
++#endif
+                     pBufCtrl->phyAddr = picPhyAddr;
+                 }
+             }
+@@ -1516,11 +1567,19 @@ int SPRDMPEG4Decoder::extMemoryAlloc(unsigned int extra_mem_size) {
+             unsigned long phy_addr;
+             size_t buffer_size;
+ 
++#ifdef SOC_SCX35
++            if (mIOMMUEnabled) {
++                ret = mPmem_extra->get_mm_iova((int *)&phy_addr, (int *)&buffer_size);
++            } else {
++                ret = mPmem_extra->get_phy_addr_from_ion((int *)&phy_addr, (int *)&buffer_size);
++            }
++#else
+             if (mIOMMUEnabled) {
+                 ret = mPmem_extra->get_iova(mIOMMUID, &phy_addr, &buffer_size);
+             } else {
+                 ret = mPmem_extra->get_phy_addr_from_ion(&phy_addr, &buffer_size);
+             }
++#endif
+             if(ret < 0) {
+                 ALOGE ("mPmem_extra: get phy addr fail %d",ret);
+                 return -1;
+diff --git a/omx_components/video/m4v_h263_sprd/sc8830/dec/SPRDMPEG4Decoder.h b/omx_components/video/m4v_h263_sprd/sc8830/dec/SPRDMPEG4Decoder.h
+index fe370f2..c17d1dc 100644
+--- a/omx_components/video/m4v_h263_sprd/sc8830/dec/SPRDMPEG4Decoder.h
++++ b/omx_components/video/m4v_h263_sprd/sc8830/dec/SPRDMPEG4Decoder.h
+@@ -81,6 +81,10 @@ protected:
+ 
+ private:
+     enum {
++#ifdef SOC_SCX35
++        kInputPortIndex   = 0,
++        kOutputPortIndex  = 1,
++#endif
+         kNumInputBuffers  = 8,
+         kNumOutputBuffers = 3,
+     };
+diff --git a/omx_components/video/m4v_h263_sprd/sc8830/enc/Android.mk b/omx_components/video/m4v_h263_sprd/sc8830/enc/Android.mk
+index 1f55ff4..35f8a89 100644
+--- a/omx_components/video/m4v_h263_sprd/sc8830/enc/Android.mk
++++ b/omx_components/video/m4v_h263_sprd/sc8830/enc/Android.mk
+@@ -10,7 +10,6 @@ LOCAL_C_INCLUDES := \
+ 	frameworks/native/include/media/openmax \
+ 	frameworks/native/include/media/hardware \
+ 	frameworks/native/include \
+-	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video \
+ 	$(LOCAL_PATH)/../../../../../gralloc/$(TARGET_BOARD_PLATFORM)
+ 
+ LOCAL_ADDITIONAL_DEPENDENCIES += \
+@@ -20,6 +19,16 @@ LOCAL_CFLAGS := \
+ 	-DOSCL_EXPORT_REF= \
+ 	-DOSCL_IMPORT_REF=
+ 
++ifeq ($(strip $(SOC_SCX35)),true)
++LOCAL_C_INCLUDES += \
++	$(LOCAL_PATH)/../../../../../gralloc/scx15 \
++	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video
++LOCAL_CFLAGS += -DSOC_SCX35
++else
++LOCAL_C_INCLUDES += \
++	$(LOCAL_PATH)/../../../../../gralloc/$(TARGET_BOARD_PLATFORM)
++endif
++
+ LOCAL_ARM_MODE := arm
+ 
+ LOCAL_SHARED_LIBRARIES := \
+diff --git a/omx_components/video/m4v_h263_sprd/sc8830/enc/SPRDMPEG4Encoder.cpp b/omx_components/video/m4v_h263_sprd/sc8830/enc/SPRDMPEG4Encoder.cpp
+index ebe0560..35fcace 100644
+--- a/omx_components/video/m4v_h263_sprd/sc8830/enc/SPRDMPEG4Encoder.cpp
++++ b/omx_components/video/m4v_h263_sprd/sc8830/enc/SPRDMPEG4Encoder.cpp
+@@ -263,6 +263,10 @@ SPRDMPEG4Encoder::SPRDMPEG4Encoder(
+     initPorts();
+     ALOGI("Construct SPRDMPEG4Encoder");
+ 
++#ifdef SOC_SCX35
++    mIOMMUEnabled = MemoryHeapIon::Mm_iommu_is_enabled();
++    mIOMMUID = mIOMMUEnabled ? 1/*ION_MM*/ : -1;
++#else
+     if (MemoryHeapIon::IOMMU_is_enabled(ION_MM)) {
+         mIOMMUEnabled = true;
+         mIOMMUID = ION_MM;
+@@ -270,6 +274,7 @@ SPRDMPEG4Encoder::SPRDMPEG4Encoder(
+         mIOMMUEnabled = true;
+         mIOMMUID = ION_VSP;
+     }
++#endif
+     ALOGI("%s, is IOMMU enabled: %d, ID: %d", __FUNCTION__, mIOMMUEnabled, mIOMMUID);
+ 
+     MMCodecBuffer InterMemBfr;
+@@ -357,11 +362,18 @@ OMX_ERRORTYPE SPRDMPEG4Encoder::initEncParams() {
+     } else
+     {
+         int ret;
++#ifdef SOC_SCX35
++        if(mIOMMUEnabled)
++            ret = mPmem_extra->get_mm_iova((int *)&phy_addr, (int *)&size);
++        else
++            ret = mPmem_extra->get_phy_addr_from_ion((int *)&phy_addr, (int *)&size);
++#else
+         if(mIOMMUEnabled) {
+             ret = mPmem_extra->get_iova(mIOMMUID, &phy_addr, &size);
+         } else {
+             ret = mPmem_extra->get_phy_addr_from_ion(&phy_addr, &size);
+         }
++#endif
+         if (ret < 0)
+         {
+             ALOGE("Failed to alloc extra buffer, get phy addr failed");
+@@ -386,11 +398,18 @@ OMX_ERRORTYPE SPRDMPEG4Encoder::initEncParams() {
+     } else
+     {
+         int ret;
++#ifdef SOC_SCX35
++        if(mIOMMUEnabled)
++            ret = mPmem_stream->get_mm_iova((int *)&phy_addr, (int *)&size);
++        else
++            ret = mPmem_stream->get_phy_addr_from_ion((int *)&phy_addr, (int *)&size);
++#else
+         if(mIOMMUEnabled) {
+             ret = mPmem_stream->get_iova(mIOMMUID, &phy_addr, &size);
+         } else {
+             ret = mPmem_stream->get_phy_addr_from_ion(&phy_addr, &size);
+         }
++#endif
+         if (ret < 0)
+         {
+             ALOGE("Failed to alloc stream buffer, get phy addr failed");
+@@ -480,7 +499,11 @@ OMX_ERRORTYPE SPRDMPEG4Encoder::releaseEncoder() {
+     if (mPbuf_extra_v != NULL)
+     {
+         if(mIOMMUEnabled) {
++#ifdef SOC_SCX35
++            mPmem_extra->free_mm_iova(mPbuf_extra_p, mPbuf_extra_size);
++#else
+             mPmem_extra->free_iova(mIOMMUID, mPbuf_extra_p, mPbuf_extra_size);
++#endif
+         }
+         mPmem_extra.clear();
+         mPbuf_extra_v = NULL;
+@@ -491,7 +514,11 @@ OMX_ERRORTYPE SPRDMPEG4Encoder::releaseEncoder() {
+     if (mPbuf_stream_v != NULL)
+     {
+         if(mIOMMUEnabled) {
++#ifdef SOC_SCX35
++            mPmem_stream->free_mm_iova(mPbuf_stream_p, mPbuf_stream_size);
++#else
+             mPmem_stream->free_iova(mIOMMUID, mPbuf_stream_p, mPbuf_stream_size);
++#endif
+         }
+         mPmem_stream.clear();
+         mPbuf_stream_v = NULL;
+@@ -502,7 +529,11 @@ OMX_ERRORTYPE SPRDMPEG4Encoder::releaseEncoder() {
+     if (mPbuf_yuv_v != NULL)
+     {
+         if(mIOMMUEnabled) {
++#ifdef SOC_SCX35
++            mYUVInPmemHeap->free_mm_iova(mPbuf_yuv_p, mPbuf_yuv_size);
++#else
+             mYUVInPmemHeap->free_iova(mIOMMUID, mPbuf_yuv_p, mPbuf_yuv_size);
++#endif
+         }
+         mYUVInPmemHeap.clear();
+         mPbuf_yuv_v = NULL;
+@@ -1198,11 +1229,18 @@ void SPRDMPEG4Encoder::onQueueFilled(OMX_U32 portIndex) {
+                         unsigned long phy_addr;
+                         size_t buffer_size;
+ 
++#ifdef SOC_SCX35
++                        if(mIOMMUEnabled)
++                            ret = mYUVInPmemHeap->get_mm_iova((int *)&phy_addr, (int *)&buffer_size);
++                        else
++                            ret = mYUVInPmemHeap->get_phy_addr_from_ion((int *)&phy_addr, (int *)&buffer_size);
++#else
+                         if(mIOMMUEnabled) {
+                             ret = mYUVInPmemHeap->get_iova(mIOMMUID, &phy_addr, &buffer_size);
+                         } else {
+                             ret = mYUVInPmemHeap->get_phy_addr_from_ion(&phy_addr, &buffer_size);
+                         }
++#endif
+                         if(ret) {
+                             ALOGE("Failed to get_phy_addr_from_ion %d", ret);
+                             return;
+@@ -1235,11 +1273,18 @@ void SPRDMPEG4Encoder::onQueueFilled(OMX_U32 portIndex) {
+                                 int fd = private_h->share_fd;
+                                 int ret = 0;
+ 
++#ifdef SOC_SCX35
++                                if (mIOMMUEnabled)
++                                    ret = MemoryHeapIon::Get_mm_iova(fd, (int *)&py_addr, (int *)&buf_size);
++                                else
++                                    ret = MemoryHeapIon::Get_phy_addr_from_ion(fd, (int *)&py_addr, (int *)&buf_size);
++#else
+                                 if (mIOMMUEnabled) {
+                                     ret = MemoryHeapIon::Get_iova(ION_MM, fd,&py_addr,&buf_size);
+                                 } else {
+                                     ret = MemoryHeapIon::Get_phy_addr_from_ion(fd,&py_addr,&buf_size);
+                                 }
++#endif
+                                 if(ret) {
+                                     ALOGE("Failed to Get_iova or Get_phy_addr_from_ion %d", ret);
+                                     return;
+@@ -1266,6 +1311,15 @@ void SPRDMPEG4Encoder::onQueueFilled(OMX_U32 portIndex) {
+                             size_t ion_size=0;
+                             int fd = private_h->share_fd;
+ 
++#ifdef SOC_SCX35
++                            if (0  == mIOMMUEnabled) {
++                                if (0 != MemoryHeapIon::Get_phy_addr_from_ion(fd, (int *)&ion_addr, (int *)&ion_size))
++                                    return;
++                            } else {
++                                if (MemoryHeapIon::Get_mm_iova(fd, (int *)&ion_addr, (int *)&ion_size))
++                                    return;
++                            }
++#else
+                             if (0  == mIOMMUEnabled) {
+                                 if (0 != MemoryHeapIon::Get_phy_addr_from_ion(fd,&ion_addr,&ion_size)) {
+                                     return;
+@@ -1275,7 +1329,7 @@ void SPRDMPEG4Encoder::onQueueFilled(OMX_U32 portIndex) {
+                                     return;
+                                 }
+                             }
+-
++#endif
+                         if (mIOMMUEnabled) {
+                             needUnmap = true;
+                             bufFd = fd;
+@@ -1314,11 +1368,18 @@ void SPRDMPEG4Encoder::onQueueFilled(OMX_U32 portIndex) {
+                     unsigned long phy_addr;
+                     size_t buffer_size;
+ 
++#ifdef SOC_SCX35
++                    if(mIOMMUEnabled)
++                        ret = mYUVInPmemHeap->get_mm_iova((int *)&phy_addr, (int *)&buffer_size);
++                    else
++                        ret = mYUVInPmemHeap->get_phy_addr_from_ion((int *)&phy_addr, (int *)&buffer_size);
++#else
+                     if(mIOMMUEnabled) {
+                         ret = mYUVInPmemHeap->get_iova(mIOMMUID, &phy_addr, &buffer_size);
+                     } else {
+                         ret = mYUVInPmemHeap->get_phy_addr_from_ion(&phy_addr, &buffer_size);
+                     }
++#endif
+                     if(ret) {
+                         ALOGE("Failed to get_phy_addr_from_ion %d", ret);
+                         return;
+@@ -1381,7 +1442,11 @@ void SPRDMPEG4Encoder::onQueueFilled(OMX_U32 portIndex) {
+ 
+             if (needUnmap) {
+                 ALOGV("Free_iova, fd: %d, iova: 0x%lx, size: %zd", bufFd, iova, iovaLen);
++#ifdef SOC_SCX35
++                MemoryHeapIon::Free_mm_iova(bufFd, iova, iovaLen);
++#else
+                 MemoryHeapIon::Free_iova(mIOMMUID, bufFd, iova, iovaLen);
++#endif
+             }
+ 
+             if ((vid_out.strmSize < 0) || (ret != MMENC_OK)) {
+diff --git a/omx_components/video/m4v_h263_sprd/sc8830/enc/SPRDMPEG4Encoder.h b/omx_components/video/m4v_h263_sprd/sc8830/enc/SPRDMPEG4Encoder.h
+index 44e74bc..06bb8c2 100644
+--- a/omx_components/video/m4v_h263_sprd/sc8830/enc/SPRDMPEG4Encoder.h
++++ b/omx_components/video/m4v_h263_sprd/sc8830/enc/SPRDMPEG4Encoder.h
+@@ -55,6 +55,10 @@ protected:
+ 
+ private:
+     enum {
++#ifdef SOC_SCX35
++        kInputPortIndex   = 0,
++        kOutputPortIndex  = 1,
++#endif
+         kNumBuffers = 2,
+     };
+ 
+diff --git a/omx_components/video/vpx_sprd/Android.mk b/omx_components/video/vpx_sprd/Android.mk
+index d8ce13a..2b41021 100644
+--- a/omx_components/video/vpx_sprd/Android.mk
++++ b/omx_components/video/vpx_sprd/Android.mk
+@@ -18,9 +18,5 @@
+ LOCAL_PATH := $(call my-dir)
+ 
+ ifneq (,$(filter scx15 sc8830,$(TARGET_BOARD_PLATFORM)))
+-ifeq ($(SOC_SCX35),true)
+-include $(call all-named-subdir-makefiles, scx15)
+-else
+ include $(call all-named-subdir-makefiles,$(TARGET_BOARD_PLATFORM))
+ endif
+-endif
+diff --git a/omx_components/video/vpx_sprd/sc8830/dec/Android.mk b/omx_components/video/vpx_sprd/sc8830/dec/Android.mk
+index 86f8a09..ff5dd71 100644
+--- a/omx_components/video/vpx_sprd/sc8830/dec/Android.mk
++++ b/omx_components/video/vpx_sprd/sc8830/dec/Android.mk
+@@ -12,7 +12,6 @@ LOCAL_C_INCLUDES := \
+ 	frameworks/native/include/ui \
+ 	frameworks/native/include/utils \
+ 	frameworks/native/include/media/hardware \
+-	$(LOCAL_PATH)/../../../../../gralloc/$(TARGET_BOARD_PLATFORM) \
+ 	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/video
+ 
+ LOCAL_ADDITIONAL_DEPENDENCIES += \
+@@ -22,6 +21,15 @@ LOCAL_CFLAGS := \
+ 	-DOSCL_EXPORT_REF= \
+ 	-DOSCL_IMPORT_REF=
+ 
++ifeq ($(strip $(SOC_SCX35)),true)
++LOCAL_C_INCLUDES += \
++	$(LOCAL_PATH)/../../../../../gralloc/scx15
++LOCAL_CFLAGS += -DSOC_SCX35
++else
++LOCAL_C_INCLUDES += \
++	$(LOCAL_PATH)/../../../../../gralloc/$(TARGET_BOARD_PLATFORM)
++endif
++
+ LOCAL_ARM_MODE := arm
+ 
+ LOCAL_SHARED_LIBRARIES := \
+diff --git a/omx_components/video/vpx_sprd/sc8830/dec/SPRDVPXDecoder.cpp b/omx_components/video/vpx_sprd/sc8830/dec/SPRDVPXDecoder.cpp
+index 64b2acb..830762b 100644
+--- a/omx_components/video/vpx_sprd/sc8830/dec/SPRDVPXDecoder.cpp
++++ b/omx_components/video/vpx_sprd/sc8830/dec/SPRDVPXDecoder.cpp
+@@ -107,6 +107,10 @@ SPRDVPXDecoder::SPRDVPXDecoder(
+         mInitCheck = OMX_ErrorInsufficientResources;
+     }
+ 
++#ifdef SOC_SCX35
++    mIOMMUEnabled = MemoryHeapIon::Mm_iommu_is_enabled();
++    mIOMMUID = mIOMMUEnabled ? 1/*ION_MM*/ : -1;
++#else
+     if (MemoryHeapIon::IOMMU_is_enabled(ION_MM)) {
+         mIOMMUEnabled = true;
+         mIOMMUID = ION_MM;
+@@ -114,6 +118,7 @@ SPRDVPXDecoder::SPRDVPXDecoder(
+         mIOMMUEnabled = true;
+         mIOMMUID = ION_VSP;
+     }
++#endif
+     ALOGI("%s, is IOMMU enabled: %d, ID: %d", __FUNCTION__, mIOMMUEnabled, mIOMMUID);
+ 
+     if(initDecoder() != OK) {
+@@ -293,11 +298,18 @@ status_t SPRDVPXDecoder::initDecoder() {
+         return OMX_ErrorInsufficientResources;
+     } else {
+         int ret;
++#ifdef SOC_SCX35
++        if (mIOMMUEnabled)
++            ret = mPmem_stream->get_mm_iova((int *)&phy_addr, (int *)&size);
++        else
++            ret = mPmem_stream->get_phy_addr_from_ion((int *)&phy_addr, (int *)&size);
++#else
+         if (mIOMMUEnabled) {
+             ret = mPmem_stream->get_iova(mIOMMUID, &phy_addr, &size);
+         } else {
+             ret = mPmem_stream->get_phy_addr_from_ion(&phy_addr, &size);
+         }
++#endif
+         if (ret < 0) {
+             ALOGE("Failed to alloc bitstream pmem buffer, get phy addr failed");
+             return OMX_ErrorInsufficientResources;
+@@ -324,11 +336,18 @@ status_t SPRDVPXDecoder::initDecoder() {
+         return OMX_ErrorInsufficientResources;
+     } else {
+         int ret;
++#ifdef SOC_SCX35
++        if (mIOMMUEnabled)
++            ret = mPmem_extra->get_mm_iova((int *)&phy_addr, (int *)&size);
++        else
++            ret = mPmem_extra->get_phy_addr_from_ion((int *)&phy_addr, (int *)&size);
++#else
+         if (mIOMMUEnabled) {
+             ret = mPmem_extra->get_iova(mIOMMUID, &phy_addr, &size);
+         } else {
+             ret = mPmem_extra->get_phy_addr_from_ion(&phy_addr, &size);
+         }
++#endif
+         if (ret < 0) {
+             ALOGE("Failed to alloc extra pmem, get phy addr failed");
+             return OMX_ErrorInsufficientResources;
+@@ -371,7 +390,11 @@ void SPRDVPXDecoder::releaseDecoder()
+ 
+ 	    if (mPbuf_stream_v != NULL) {
+ 	        if (mIOMMUEnabled) {
++#ifdef SOC_SCX35
++	            mPmem_stream->free_mm_iova(mPbuf_stream_p, mPbuf_stream_size);
++#else
+ 	            mPmem_stream->free_iova(mIOMMUID, mPbuf_stream_p, mPbuf_stream_size);
++#endif
+ 	        }
+ 	        mPmem_stream.clear();
+ 	        mPbuf_stream_v = NULL;
+@@ -381,7 +404,11 @@ void SPRDVPXDecoder::releaseDecoder()
+ 
+ 	    if(mPbuf_extra_v != NULL) {
+ 	        if (mIOMMUEnabled) {
++#ifdef SOC_SCX35
++	            mPmem_extra->free_mm_iova(mPbuf_extra_p, mPbuf_extra_size);
++#else
+ 	            mPmem_extra->free_iova(mIOMMUID, mPbuf_extra_p, mPbuf_extra_size);
++#endif
+ 	        }
+ 	        mPmem_extra.clear();
+ 	        mPbuf_extra_v = NULL;
+@@ -624,7 +651,9 @@ OMX_ERRORTYPE SPRDVPXDecoder::internalUseBuffer(
+         CHECK((*header)->pOutputPortPrivate != NULL);
+         BufferCtrlStruct* pBufCtrl= (BufferCtrlStruct*)((*header)->pOutputPortPrivate);
+         pBufCtrl->iRefCount = 1; //init by1
++#ifndef SOC_SCX35
+         pBufCtrl->id = mIOMMUID;
++#endif
+         if(bufferPrivate != NULL) {
+             pBufCtrl->pMem = ((BufferPrivateStruct*)bufferPrivate)->pMem;
+             pBufCtrl->phyAddr = ((BufferPrivateStruct*)bufferPrivate)->phyAddr;
+@@ -636,7 +665,11 @@ OMX_ERRORTYPE SPRDVPXDecoder::internalUseBuffer(
+                 size_t bufferSize = 0;
+                 native_handle_t *pNativeHandle = (native_handle_t *)((*header)->pBuffer);
+                 struct private_handle_t *private_h = (struct private_handle_t *)pNativeHandle;
++#ifdef SOC_SCX35
++                MemoryHeapIon::Get_mm_iova(private_h->share_fd, (int *)&picPhyAddr, (int *)&bufferSize);
++#else
+                 MemoryHeapIon::Get_iova(mIOMMUID, private_h->share_fd, &picPhyAddr, &bufferSize);
++#endif
+ 
+                 pBufCtrl->pMem = NULL;
+                 pBufCtrl->bufferFd = private_h->share_fd;
+@@ -699,6 +732,19 @@ OMX_ERRORTYPE SPRDVPXDecoder::allocateBuffer(
+             return OMX_ErrorInsufficientResources;
+         }
+ 
++#ifdef SOC_SCX35
++        if (mIOMMUEnabled) {
++            if(pMem->get_mm_iova((int *)&phyAddr, (int *)&bufferSize)) {
++                ALOGE("get_mm_iova fail");
++                return OMX_ErrorInsufficientResources;
++            }
++        } else {
++            if(pMem->get_phy_addr_from_ion((int *)&phyAddr, (int *)&bufferSize)) {
++                ALOGE("get_phy_addr_from_ion fail");
++                return OMX_ErrorInsufficientResources;
++            }
++        }
++#else
+         if (mIOMMUEnabled) {
+             if(pMem->get_iova(mIOMMUID, &phyAddr, &bufferSize)) {
+                 ALOGE("get_mm_iova fail");
+@@ -710,6 +756,7 @@ OMX_ERRORTYPE SPRDVPXDecoder::allocateBuffer(
+                 return OMX_ErrorInsufficientResources;
+             }
+         }
++#endif
+ 
+         pBuffer = (OMX_U8 *)(pMem->getBase());
+         BufferPrivateStruct* bufferPrivate = new BufferPrivateStruct();
+@@ -745,7 +792,11 @@ OMX_ERRORTYPE SPRDVPXDecoder::freeBuffer(
+             if(pBufCtrl->pMem != NULL) {
+                 ALOGI("freeBuffer, phyAddr: 0x%lx", pBufCtrl->phyAddr);
+                 if (mIOMMUEnabled) {
++#ifdef SOC_SCX35
++                    pBufCtrl->pMem->free_mm_iova(pBufCtrl->phyAddr, pBufCtrl->bufferSize);
++#else
+                     pBufCtrl->pMem->free_iova(mIOMMUID, pBufCtrl->phyAddr, pBufCtrl->bufferSize);
++#endif
+                 }
+                 pBufCtrl->pMem.clear();
+             }
+@@ -860,7 +911,11 @@ void SPRDVPXDecoder::onQueueFilled(OMX_U32 portIndex) {
+                 native_handle_t *pNativeHandle = (native_handle_t *)outHeader->pBuffer;
+                 struct private_handle_t *private_h = (struct private_handle_t *)pNativeHandle;
+                 size_t bufferSize = 0;
++#ifdef SOC_SCX35
++                MemoryHeapIon::Get_phy_addr_from_ion(private_h->share_fd, (int *)&picPhyAddr, (int *)&bufferSize);
++#else
+                 MemoryHeapIon::Get_phy_addr_from_ion(private_h->share_fd, &picPhyAddr, &bufferSize);
++#endif
+                 pBufCtrl->phyAddr = picPhyAddr;
+             }
+         }
+diff --git a/omx_components/video/vpx_sprd/sc8830/dec/SPRDVPXDecoder.h b/omx_components/video/vpx_sprd/sc8830/dec/SPRDVPXDecoder.h
+index 91ed47e..d34209e 100644
+--- a/omx_components/video/vpx_sprd/sc8830/dec/SPRDVPXDecoder.h
++++ b/omx_components/video/vpx_sprd/sc8830/dec/SPRDVPXDecoder.h
+@@ -76,6 +76,10 @@ protected:
+ 
+ private:
+     enum {
++#ifdef SOC_SCX35
++        kInputPortIndex   = 0,
++        kOutputPortIndex  = 1,
++#endif
+         kNumBuffers = 4
+     };
+ 
+-- 
+2.17.1
+

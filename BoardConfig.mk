@@ -222,9 +222,14 @@ BOARD_SEPOLICY_DIRS += device/samsung/kanas/sepolicy
 # Extra shims
 TARGET_LD_SHIM_LIBS += \
        /system/vendor/bin/engpc|libengpc_shim.so \
-       /system/vendor/lib/libomx_avcenc_hw_sprd_newer.so|libvsp_shim.so \
-       /system/vendor/lib/libomx_avcdec_hw_sprd_newer.so|libvsp_shim.so \
 
+# VSP shim is only applied to those that actually use the vsp ioctls
+# Do not apply it to the *_sw_sprd.so versions
+TARGET_LD_SHIM_LIBS += \
+       /system/vendor/lib/libomx_avcenc_hw_sprd.so|libvsp_shim.so \
+       /system/vendor/lib/libomx_avcdec_hw_sprd.so|libvsp_shim.so \
+       /system/vendor/lib/libomx_m4vh263enc_hw_sprd.so|libvsp_shim.so \
+       /system/vendor/lib/libomx_m4vh263dec_hw_sprd.so|libvsp_shim.so \
 
 # Shims to the missing earlysuspend support in libsuspend
 # Use this shim if we're NOT USING the patch that reverts
