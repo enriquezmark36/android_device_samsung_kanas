@@ -97,6 +97,7 @@ TARGET_USES_HIDL_WORKAROUNDS := true
 # Audio
 # BOARD_USE_LIBATCHANNEL_WRAPPER := true
 # BOARD_USES_SS_VOIP := true
+TARGET_NEEDS_VBC_EQ_SYMLINK := true
 
 # HIDL
 # This version binderizes more components than the scx35-common

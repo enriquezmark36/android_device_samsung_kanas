@@ -95,6 +95,10 @@ PRODUCT_PACKAGES += \
 	camera.sc8830 \
 	camera2.sc8830
 
+# Audio
+PRODUCT_PACKAGES += \
+	audio_vbc_eq
+
 # Explicitly include mkf2fsuserimg.sh
 PRODUCT_PACKAGES += \
 	mkf2fsuserimg.sh \
