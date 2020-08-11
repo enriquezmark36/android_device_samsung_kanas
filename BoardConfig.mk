@@ -95,34 +95,14 @@ TARGET_FORCE_HWC_CONTIG := true
 # The sc8830 SPRDHWC can blend multiple layers but cannot simply be
 # backported to the scx15 one so I had to write it as an extension.
 GSP_MAX_OSD_LAYERS := 5
-# Fallback failed allocations to an extra carveout.
-# The kernel can be patched to have a bit of memory reserved, unused for
-# normal allocations  via the CONFIG_SPRD_ION_RESERVED_SIZE.
-# This memory will be a fallback when ever the main ION allocation fails
-# WARNING: This had compatibility problems with kernels without that patch.
-TARGET_HAS_RESERVED_CARVEOUT := false
-# Applies additional logic under the assumption that the ION_HEAP_ID_MASK_OVERLAY
-# is reserved. This sets up a fallback mechanism for ION_HEAP_ID_MASK_MM and
-# redirects GRALLOC_USAGE_OVERLAY_BUFFER to ION_HEAP_ID_MASK_MM. This also
-# sets up ION_HEAP_ID_MASK_MM as a fallback mechanism when HWC layers
-# cannot be allocated in the ION_HEAP_ID_MASK_OVERLAY.
+# Forces Gralloc to allocate GRALLOC_USAGE_OVERLAY_BUFFER on ION_HEAP_ID_MASK_MM
+# All other fallback mechanisms are implemented in-kernel.
 #
-# Background:
-# Using TARGET_FORCE_HWC_CONTIG will put pressure the CMA and will fail sooner
-# even if there's still a half of the CMA memory and the system is not under
-# memory pressure. Thus TARGET_HAS_RESERVED_CARVEOUT is born.
-#
-# Then in an observation, the allocation speeds in CMA and vmalloc are magnitudes
-# slower than the gen_pool_alloc used for carveout memory. CMA and vmalloc
-# works under few msec, gen_pool_alloc under some hundred usecs.
-#
-# In my mind was "Why not make SF allocate there and make the carveout large enough so
-# it can serve as a fallback for CMA?" Thus, TARGET_ION_OVERLAY_IS_CARVEOUT is born.
-#
-# Preliminary observations seems to point out that the allocation speed seems to be
-# consistent even in memory pressure. Nevertheless, compared to the flag
-# TARGET_HAS_RESERVED_CARVEOUT, this is harmless when enabled on a
-# kernel where ION_HEAP_ID_MASK_OVERLAY is in CMA.
+# Rationale:
+# TARGET_FORCE_HWC_CONTIG will put pressure on the CMA making it likely
+# that CMA will fail to allocate even in absence of memory pressure.
+# CMA and vmalloc works under few msec, gen_pool_alloc under some hundred usecs.
+# SurfaceFlinger, when TARGET_FORCE_HWC_CONTIG is true, often allocates using gralloc.
 TARGET_ION_OVERLAY_IS_CARVEOUT := true
 # Use the HWC2ON1 adapter to let SF run on HWC2
 # This will fix the LiveDisplay feature permanently disabling the HWC
