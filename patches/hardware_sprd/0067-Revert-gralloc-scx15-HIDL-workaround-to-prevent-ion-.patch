@@ -1,0 +1,177 @@
+From d880af953b5dc4d88e9a9a84eb1e16d895235f6c Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Sat, 1 Aug 2020 14:24:35 +0800
+Subject: [PATCH 1/4] Revert "gralloc: scx15: HIDL workaround to prevent ion
+ orphaned allocations [WIP]"
+
+This reverts commit 5bff68ae0e909512632e51817afbffd881954e99.
+
+The HIDL_DEFER_FREE workaround does not enable or fix any functionalities but
+it introduces a particularly scary memory leak when the ION buffer is used like this
+(I don't know if this is right.)
+copy0: ALLOC->FREE->END
+copy1:            ->REGISTER->...->UNREGISTER
+
+Since we only call ion_free on unregister and the original copy0 didn't even register,
+we effectively do not free the ion buffer and stays there untill the allocator dies.
+Usually the allocator is SurfaceFlinger.
+
+How to reproduce:
+1. Open up any web browser app of your choice
+2. Start noting the ION heap usage from this point.
+3. Load any website with a video. Preferrably with autoplay and multiple videos in a page.
+4. Wait until it finishes loading.
+5. Close the web browser app.
+6. Check the heap usage.
+7. Repeat steps 1 to 6 and watch the usage climb up, refusing to go down.
+
+For now, revert this patch.
+
+Change-Id: Idf21575a938ecff20adfdc3d6819a2d77db66af3
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ gralloc/scx15/Android.mk         |  4 ----
+ gralloc/scx15/alloc_device.cpp   | 30 ++++++++-------------------
+ gralloc/scx15/gralloc_module.cpp | 35 ++++----------------------------
+ 3 files changed, 12 insertions(+), 57 deletions(-)
+
+diff --git a/gralloc/scx15/Android.mk b/gralloc/scx15/Android.mk
+index e48343a..0c2ae86 100644
+--- a/gralloc/scx15/Android.mk
++++ b/gralloc/scx15/Android.mk
+@@ -82,10 +82,6 @@ LOCAL_CFLAGS += -DHIDL_INVALID_FD
+ # Prevent HIDL from "freeing" FB memory at all.
+ # Pun intended.
+ LOCAL_CFLAGS += -DHIDL_NO_FREE_FB
+-
+-# Defers gralloc ion free until the buffer unregister
+-# Patch still incomplete and incompatible with earlier Android versions
+-LOCAL_CFLAGS += -DHIDL_DEFER_FREE
+ endif
+ 
+ ##
+diff --git a/gralloc/scx15/alloc_device.cpp b/gralloc/scx15/alloc_device.cpp
+index 1bd0676..7c3d200 100644
+--- a/gralloc/scx15/alloc_device.cpp
++++ b/gralloc/scx15/alloc_device.cpp
+@@ -563,7 +563,7 @@ static int gralloc_alloc_framebuffer_locked(alloc_device_t* dev, size_t size, in
+ 			AINF("framebuffer accessed with dma buf (fd 0x%x)\n", (int)fb_dma_buf.fd);
+ 			hnd->share_fd = fb_dma_buf.fd;
+ 		}
+-	#elif defined(HIDL_INVALID_FD)
++	#elif HIDL_INVALID_FD
+ 		hnd->share_fd = dup(m->framebuffer->fd);
+ 		AINF("Working around the FD issue. Using %d instead, caveat emptor.\n", hnd->share_fd);
+ 	#endif
+@@ -808,13 +808,11 @@ static int alloc_device_free(alloc_device_t* dev, buffer_handle_t handle)
+ #endif
+ 	if (hnd->flags & private_handle_t::PRIV_FLAGS_FRAMEBUFFER)
+ 	{
+-	/*
+-	 * We won't actually free the FB when in when the workaround
+-	 * HIDL_NO_FREE_FB is active. The HIDL implementation will call
+-	 * free() the moment the allocation had succeeded.
+-	 * HIDL_DEFER_FREE also implements HIDL_NO_FREE_FB.
+-	 */
+-#if !defined(HIDL_DEFER_FREE) && !defined(HIDL_NO_FREE_FB)
++	// We won't actually free the FB when in when the
++	// workaround HIDL_NO_FREE_FB is active since the HIDL implementation
++	// will call free() the moment the allocation had succeeded then has been
++	// registered twice, one in this module, second in the HIDL implementation.
++#ifndef HIDL_NO_FREE_FB
+ 		// free this buffer
+ 		private_module_t* m = reinterpret_cast<private_module_t*>(dev->common.module);
+ 		const size_t bufferSize = m->finfo.line_length * m->info.yres;
+@@ -853,20 +851,8 @@ static int alloc_device_free(alloc_device_t* dev, buffer_handle_t handle)
+ 			ALOGV("%s the vadress 0x%x size of 0x%x will be free",__FUNCTION__,hnd->base,hnd->size);
+ 			if ( 0 != munmap( (void*)hnd->base, hnd->size ) ) AERR( "Failed to munmap handle 0x%x", (unsigned int)hnd );
+ 		}
+-		close( hnd->share_fd ); // close duplicated share_fd
+-
+-#ifndef HIDL_DEFER_FREE
+-		/*
+-		 * On HIDL, alloc_device_free() is almost always called after
+-		 * alloc_device_alloc() and duplicating the handle.
+-		 * gralloc_(un)register_buffer() on the duped handle WILL
+-		 * still work but will orphaned the allocation in ION
+-		 * because the handle is freed but there's still an mmap'ed
+-		 * memory.
+-		 */
+-		if (0 != ion_free( m->ion_client, hnd->ion_hnd ))
+-			AERR( "Failed to ion_free( ion_client: %d ion_hnd: %p )", m->ion_client, hnd->ion_hnd );
+-#endif
++		close( hnd->share_fd );
++		if ( 0 != ion_free( m->ion_client, hnd->ion_hnd ) ) AERR( "Failed to ion_free( ion_client: %d ion_hnd: %p )", m->ion_client, hnd->ion_hnd );
+ 		memset( (void*)hnd, 0, sizeof( *hnd ) );
+ #else 
+ 		AERR( "Can't free dma_buf memory for handle:0x%x. Not supported.", (unsigned int)hnd );
+diff --git a/gralloc/scx15/gralloc_module.cpp b/gralloc/scx15/gralloc_module.cpp
+index 124adea..a858562 100644
+--- a/gralloc/scx15/gralloc_module.cpp
++++ b/gralloc/scx15/gralloc_module.cpp
+@@ -81,9 +81,11 @@ static int gralloc_register_buffer(gralloc_module_t const *module, buffer_handle
+ #if HIDL_INVALID_FD
+ 	if (hnd->flags & private_handle_t::PRIV_FLAGS_FRAMEBUFFER)
+ 	{
++#if HIDL_INVALID_FD
+ 		AINF("Working around the FD issue Prt2. Closing %d; setting to -1.\n", hnd->share_fd);
+ 		close(hnd->share_fd);
+ 		hnd->share_fd = -1;
++#endif
+ 		return 0;
+ 	}
+ #endif
+@@ -241,27 +243,12 @@ static int gralloc_unregister_buffer(gralloc_module_t const *module, buffer_hand
+ 
+ 	private_handle_t *hnd = (private_handle_t *)handle;
+ 
+-#if defined(HIDL_INVALID_FD) || defined(HIDL_DEFER_FREE)
++#if HIDL_INVALID_FD
+ 	if (hnd->flags & private_handle_t::PRIV_FLAGS_FRAMEBUFFER)
+ 	{
+-#ifdef HIDL_INVALID_FD
++#if HIDL_INVALID_FD
+ 		AINF("Working around the FD issue Prt3. Silently ignore calls to unregister the FB: %p\n", handle);
+ #endif
+-
+-#ifdef HIDL_DEFER_FREE
+-		/*
+-		 * If we do unregister the FB memory, we'd close the file descriptor
+-		 * Mali will segfault when it uses this handle afterwards.
+-		 * As usual, check if it's the same client.
+-		 */
+-		private_module_t* m = (private_module_t*)(module);
+-		if (m->ion_client == hnd->ion_client) {
+-			const size_t bufferSize = m->finfo.line_length * m->info.yres;
+-			int index = (hnd->base - m->framebuffer->base) / bufferSize;
+-			m->bufferMask &= ~(1<<index);
+-			close(hnd->fd);
+-		}
+-#endif
+ 		return 0;
+ 	}
+ #endif
+@@ -298,20 +285,6 @@ static int gralloc_unregister_buffer(gralloc_module_t const *module, buffer_hand
+ 				AERR("Could not munmap base:0x%x size:%d '%s'", (unsigned int)base, size, strerror(errno));
+ 			}
+ 
+-#ifdef HIDL_DEFER_FREE
+-			/*
+-			 * alloc_device_free() won't be called anymore after this
+-			 * so call ion_free() now. Be warned though, this function
+-			 * will be called multiple times on the different copies of
+-			 * the same handle which is why we'd allowed multiple mmap
+-			 * and munmap. We will ONLY call ion_free() when the
+-			 * client is the creator of the allocation.
+-			 */
+-			if (((private_module_t*)(module))->ion_client == hnd->ion_client) {
+-				if (ion_free(hnd->ion_client, hnd->ion_hnd) != 0)
+-					AERR("Failed to ion_free(ion_client: %d ion_hnd: %p)", hnd->ion_client, hnd->ion_hnd);
+-			}
+-#endif
+ #else
+ 			AERR("Can't unregister DMA_BUF buffer for hnd %p. Not supported", hnd);
+ #endif
+-- 
+2.28.0
+
