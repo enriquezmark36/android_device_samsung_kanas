@@ -1,0 +1,92 @@
+From a562eb6888b9dbbd2a623a6b0338a60f8b570705 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Fri, 1 May 2020 16:58:29 +0800
+Subject: [PATCH 1/4] sepolicy: Convert all files to unix line endings
+
+This caused the mysterious warnings that goes like this:
+WARNING 'unrecognized character' at token '
+<actual line>;
+<next actual line>;
+'
+
+Makes you wonder how the heck does a multiline statements count for a token.
+Anyways, this policy is still incomplete though but should now compile
+without much fuss.
+
+Change-Id: I3a837f70bd8c38883fa2697b2d159e5e8782300a
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ BoardConfigCommon.mk    |  2 +-
+ sepolicy/audioserver.te | 10 +++++-----
+ sepolicy/mediacodec.te  |  4 ++--
+ sepolicy/modemd.te      | 10 +++++-----
+ sepolicy/toolbox.te     |  6 +++---
+ 5 files changed, 16 insertions(+), 16 deletions(-)
+
+diff --git a/BoardConfigCommon.mk b/BoardConfigCommon.mk
+index eae6dd2..bbe8ff5 100644
+--- a/BoardConfigCommon.mk
++++ b/BoardConfigCommon.mk
+@@ -106,4 +106,4 @@ PRODUCT_SYSTEM_SERVER_COMPILER_FILTER := speed
+ WITH_DEX_PREOPT_GENERATE_PROFILE := false
+ 
+ # SELinux policy
+-#BOARD_SEPOLICY_DIRS += device/samsung/scx35-common/sepolicy
++BOARD_SEPOLICY_DIRS += device/samsung/scx35-common/sepolicy
+diff --git a/sepolicy/audioserver.te b/sepolicy/audioserver.te
+index 16fa371..3c14a56 100644
+--- a/sepolicy/audioserver.te
++++ b/sepolicy/audioserver.te
+@@ -1,6 +1,6 @@
+-set_prop(audioserver, media_prop)
+-allow audioserver proc_pin_switch:file { read write open };
+-allow audioserver proc_pin_switch:dir search;
+-allow audioserver radio_device:chr_file { read write open };
+-allow audioserver rild:unix_stream_socket connectto;
++set_prop(audioserver, media_prop)
++allow audioserver proc_pin_switch:file { read write open };
++allow audioserver proc_pin_switch:dir search;
++allow audioserver radio_device:chr_file { read write open };
++allow audioserver rild:unix_stream_socket connectto;
+ allow audioserver system_file:file execmod;
+\ No newline at end of file
+diff --git a/sepolicy/mediacodec.te b/sepolicy/mediacodec.te
+index a9edb7d..22bc0b4 100644
+--- a/sepolicy/mediacodec.te
++++ b/sepolicy/mediacodec.te
+@@ -1,3 +1,3 @@
+-set_prop(mediacodec, media_prop)
+-allow mediacodec audio_device:chr_file { read write open ioctl };
++set_prop(mediacodec, media_prop)
++allow mediacodec audio_device:chr_file { read write open ioctl };
+ allow mediacodec system_file:file execmod;
+\ No newline at end of file
+diff --git a/sepolicy/modemd.te b/sepolicy/modemd.te
+index fccc71d..d74cefa 100644
+--- a/sepolicy/modemd.te
++++ b/sepolicy/modemd.te
+@@ -1,5 +1,5 @@
+-allow rild servicemanager:dir search;
+-allow rild servicemanager:file { read open };
+-allow rild system_app:dir search;
+-allow rild system_app:file { read open };
+-allow rild prod_file:dir search;
++allow rild servicemanager:dir search;
++allow rild servicemanager:file { read open };
++allow rild system_app:dir search;
++allow rild system_app:file { read open };
++allow rild prod_file:dir search;
+diff --git a/sepolicy/toolbox.te b/sepolicy/toolbox.te
+index cdacf87..428d813 100644
+--- a/sepolicy/toolbox.te
++++ b/sepolicy/toolbox.te
+@@ -1,3 +1,3 @@
+-allow toolbox media_device:dir { write add_name };
+-allow toolbox media_device:fifo_file create;
+-allow toolbox toolbox:capability dac_override;
++allow toolbox media_device:dir { write add_name };
++allow toolbox media_device:fifo_file create;
++allow toolbox toolbox:capability dac_override;
+-- 
+2.28.0
+

@@ -1,0 +1,34 @@
+From 9961abf40f2f5c0815ca6165d059fdbcc152acbd Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Fri, 26 Jun 2020 13:32:03 +0800
+Subject: [PATCH 4/4] power: Allow opt-out to compiling the PowerHAL module
+
+This two line patch will add a SCX35_COMMON_POWERHAL_OVERRIDE flag
+which if set to "true" will prevent building the powerhal module.
+
+I have my reasons.
+
+Change-Id: I7adb6fa1e8d62b016d65c7fcb60b532984920286
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ hidl.mk | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/hidl.mk b/hidl.mk
+index 8b33600..7cb7b4c 100644
+--- a/hidl.mk
++++ b/hidl.mk
+@@ -41,8 +41,10 @@ PRODUCT_PACKAGES += \
+ 	android.hardware.memtrack@1.0-impl
+ 
+ # PowerHAL
++ifneq ($(SCX35_COMMON_POWERHAL_OVERRIDE),true)
+ PRODUCT_PACKAGES += \
+ 	android.hardware.power@1.0-service.sc8830
++endif
+ 
+ # Sensors
+ PRODUCT_PACKAGES += \
+-- 
+2.28.0
+

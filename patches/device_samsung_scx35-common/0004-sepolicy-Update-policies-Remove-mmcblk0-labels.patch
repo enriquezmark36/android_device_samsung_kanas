@@ -1,0 +1,335 @@
+From 533c229899364a84f653c5c3b55e888ace661b3a Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Fri, 15 May 2020 17:26:40 +0800
+Subject: [PATCH 3/4] sepolicy: Update policies; Remove mmcblk0 labels
+
+This patch should update most rules and fixes some warnings due
+to having some files in dos line endings.
+
+mmcblk0p* labels are removed simply because not all SPRD devices
+have the same partition layout and causes some mislablings that still
+causes some AVC denials most notably to the fsck proccess.
+
+Move this type of block labelings to the device's policy.
+
+Change-Id: I845373ae5b65a4c0ae09b10158cb5afdfac1866c
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ rootdir/init.wifi.rc      |  1 +
+ sepolicy/engpc.te         | 11 +++++---
+ sepolicy/file.te          | 13 ++++++----
+ sepolicy/file_contexts    | 54 ++++++++++++++++++---------------------
+ sepolicy/gpsd.te          |  2 +-
+ sepolicy/macloader.te     |  2 +-
+ sepolicy/mediacodec.te    |  3 ++-
+ sepolicy/mediaprovider.te |  2 ++
+ sepolicy/mediaserver.te   |  1 +
+ sepolicy/modemd.te        | 17 ++++++++----
+ sepolicy/nvitemd.te       |  7 +++++
+ sepolicy/phoneserver.te   | 12 +++++++++
+ sepolicy/renotify.te      |  7 +++++
+ sepolicy/rild.te          |  2 +-
+ 14 files changed, 88 insertions(+), 46 deletions(-)
+ create mode 100644 sepolicy/mediaprovider.te
+ create mode 100644 sepolicy/nvitemd.te
+ create mode 100644 sepolicy/phoneserver.te
+ create mode 100644 sepolicy/renotify.te
+
+diff --git a/rootdir/init.wifi.rc b/rootdir/init.wifi.rc
+index 1615bd8..d305baa 100644
+--- a/rootdir/init.wifi.rc
++++ b/rootdir/init.wifi.rc
+@@ -17,6 +17,7 @@ on post-fs-data
+     write /data/.wifiver.info 0
+     chown system wifi /data/.wifiver.info
+     chmod 0664 /data/.wifiver.info
++    restorecon /data/.wifiver.info
+ 
+     # for WIFI Cert
+     chmod 0664 /data/.bustxglom.info
+diff --git a/sepolicy/engpc.te b/sepolicy/engpc.te
+index 67cd645..360a7f1 100644
+--- a/sepolicy/engpc.te
++++ b/sepolicy/engpc.te
+@@ -1,5 +1,5 @@
+ type engpc, domain;
+-type engpc_exec, exec_type, file_type;
++type engpc_exec, exec_type, vendor_file_type, file_type;
+ init_daemon_domain(engpc);
+ 
+ set_prop(engpc, radio_prop);
+@@ -10,10 +10,15 @@ allow engpc serial_device:chr_file { open read write ioctl };
+ allow engpc radio_device:chr_file { open read write ioctl };
+ allow engpc devpts:chr_file { setattr getattr };
+ allow engpc prod_file:dir { open search };
+-allow engpc prod_file:file { open read write getattr setattr lock };
++allow engpc prod_file:file { open read write getattr setattr lock ioctl };
+ allow engpc media_data_file:file { create open read write getattr setattr };
+ allow engpc media_data_file:dir { search open read write add_name };
+ allow engpc init:unix_stream_socket connectto;
+ allow engpc property_socket:sock_file write;
+-allow engpc shell_exec:file { open read execute execute_no_trans };
++allow engpc shell_exec:file { open read execute execute_no_trans getattr };
++allow engpc slog_device:chr_file { open read write };
++allow engpc toolbox_exec:file { execute execute_no_trans getattr open read };
+ allow engpc self:netlink_kobject_uevent_socket { create setopt bind read write };
++
++# /proc/cmdline
++allow engpc proc:file { open read };
+\ No newline at end of file
+diff --git a/sepolicy/file.te b/sepolicy/file.te
+index 317ad8b..cee9bf1 100644
+--- a/sepolicy/file.te
++++ b/sepolicy/file.te
+@@ -5,10 +5,13 @@ type proc_cpw, fs_type;
+ type proc_cpt, fs_type;
+ type sysfs_restart_cpc, fs_type, sysfs_type;
+ type sysfs_dynamic_pclk, fs_type, sysfs_type;
+-type at_distributor, exec_type;
+-type modemd, exec_type;
+-type nvitemd_exec, exec_type, file_type;
+-type refnotify_exec, exec_type, file_type;
++type at_distributor, exec_type, vendor_file_type, file_type;
++type modemd_exec, exec_type, vendor_file_type, file_type;
++type nvitemd_exec, exec_type, vendor_file_type, file_type;
++type refnotify_exec, exec_type, vendor_file_type, file_type;
++type phoneserver_exec, exec_type, vendor_file_type, file_type;
+ type gps_data_file, file_type, data_file_type;
+ type wpa, domain;
+-type wpa_exec, exec_type, file_type;
++type wpa_exec, exec_type, vendor_file_type, file_type;
++type sysfs_dmcfreq_set_freq, fs_type, sysfs_type;
++type sysfs_wait_for_fb, fs_type, sysfs_type;
+\ No newline at end of file
+diff --git a/sepolicy/file_contexts b/sepolicy/file_contexts
+index 671da21..153c639 100644
+--- a/sepolicy/file_contexts
++++ b/sepolicy/file_contexts
+@@ -28,30 +28,18 @@
+ 
+ /sys/power/restart_cpc       u:object_r:sysfs_restart_cpc:s0
+ 
+-/system/bin/at_distributor   u:object_r:rild_exec:s0
+-/system/bin/modemd           u:object_r:rild_exec:s0
+-/system/bin/nvitemd          u:object_r:nvitemd_exec:s0
+-/system/bin/phoneserver      u:object_r:rild_exec:s0
+-/system/bin/refnotify        u:object_r:refnotify_exec:s0
+-/system/bin/ext_data.sh      u:object_r:rild_exec:s0
+-/system/bin/ext_kill.sh      u:object_r:rild_exec:s0
+-/system/bin/ext_symlink.sh   u:object_r:rild_exec:s0
++/system/vendor/bin/at_distributor   u:object_r:rild_exec:s0
++/system/vendor/bin/modemd           u:object_r:modemd_exec:s0
++/system/vendor/bin/nvitemd          u:object_r:nvitemd_exec:s0
++/system/vendor/bin/phoneserver      u:object_r:phoneserver_exec:s0
++/system/vendor/bin/refnotify        u:object_r:refnotify_exec:s0
++/system/vendor/bin/ext_data.sh      u:object_r:rild_exec:s0
++/system/vendor/bin/ext_kill.sh      u:object_r:rild_exec:s0
++/system/vendor/bin/ext_symlink.sh   u:object_r:rild_exec:s0
+ 
+ /data/misc/radio(/.*)?       u:object_r:radio_data_file:s0
+ 
+ # Block labeling
+-/dev/block/mmcblk0p1         u:object_r:radio_block_device:s0
+-/dev/block/mmcblk0p2         u:object_r:radio_block_device:s0
+-/dev/block/mmcblk0p3         u:object_r:radio_block_device:s0
+-/dev/block/mmcblk0p4         u:object_r:radio_block_device:s0
+-
+-/dev/block/mmcblk0p5         u:object_r:prod_block_device:s0
+-/dev/block/mmcblk0p7         u:object_r:efs_block_device:s0
+-/dev/block/mmcblk0p10        u:object_r:param_block_device:s0
+-/dev/block/mmcblk0p17        u:object_r:cache_block_device:s0
+-/dev/block/mmcblk0p18        u:object_r:system_block_device:s0
+-/dev/block/mmcblk0p20        u:object_r:userdata_block_device:s0
+-
+ /dev/block/zram[0-9]+        u:object_r:swap_block_device:s0
+ 
+ # EFS
+@@ -60,7 +48,7 @@
+ # WiFi
+ /dev/rfkill                  u:object_r:rfkill_device:s0
+ 
+-/system/bin/macloader        u:object_r:macloader_exec:s0
++/system/vendor/bin/macloader        u:object_r:macloader_exec:s0
+ 
+ /data/.cid.info              u:object_r:wifi_data_file:s0
+ /efs/wifi(/.*)?              u:object_r:wifi_data_file:s0
+@@ -76,7 +64,7 @@
+ 
+ /data/system/gps(/\.*.*)?    u:object_r:gps_data_file:s0
+ 
+-/system/bin/gpsd             u:object_r:gpsd_exec:s0
++/system/vendor/bin/gpsd             u:object_r:gpsd_exec:s0
+ 
+ # GFX
+ /dev/mali[0-9]*              u:object_r:gpu_device:s0
+@@ -84,20 +72,28 @@
+ # Media
+ /dev/pipe(/.*)?              u:object_r:media_device:s0
+ 
+-/dev/sprd_dma_copy           u:object_r:audio_device:s0
+-/dev/sprd_jpg                u:object_r:audio_device:s0
+-/dev/sprd_rotation           u:object_r:audio_device:s0
+-/dev/sprd_scale              u:object_r:audio_device:s0
+-/dev/sprd_sensor             u:object_r:audio_device:s0
+-/dev/sprd_vsp                u:object_r:audio_device:s0
++/dev/sprd_dma_copy           u:object_r:camera_device:s0
++/dev/sprd_jpg                u:object_r:camera_device:s0
++/dev/sprd_rotation           u:object_r:camera_device:s0
++/dev/sprd_scale              u:object_r:camera_device:s0
++/dev/sprd_sensor             u:object_r:camera_device:s0
++/dev/sprd_vsp                u:object_r:video_device:s0
+ 
+ /data/local/media(/.*)?      u:object_r:media_data_file:s0
+ 
++
++/data/\.wifiver\.info          u:object_r:wifi_data_file:s0
+ # ENGPC
+-/system/bin/engpc            u:object_r:engpc_exec:s0
++/system/vendor/bin/engpc            u:object_r:engpc_exec:s0
+ 
+ # Gadget Serial
+ /dev/ttyGS[0-9]+             u:object_r:gadget_serial_device:s0
+ 
+ # Sysfs
+ /sys/devices/platform/sprd_fb.0/graphics/fb0/dynamic_pclk    u:object_r:sysfs_dynamic_pclk:s0
++/sys/devices/platform/scxx30-dmcfreq.0/devfreq/scxx30-dmcfreq.0/ondemand/set_freq  u:object_r:sysfs_dmcfreq_set_freq:s0
++/sys/power/wait_for_fb_sleep                                 u:object_r:sysfs_wait_for_fb:s0
++/sys/power/wait_for_fb_wake                                  u:object_r:sysfs_wait_for_fb:s0
++
++# Power hal has to have a SELinux context with labels
++/system/vendor/bin/hw/android\.hardware\.power@1\.0-service\.sc8830   u:object_r:hal_power_default_exec:s0
+diff --git a/sepolicy/gpsd.te b/sepolicy/gpsd.te
+index 369c8b0..24c92be 100644
+--- a/sepolicy/gpsd.te
++++ b/sepolicy/gpsd.te
+@@ -1,5 +1,5 @@
+ type gpsd, domain;
+-type gpsd_exec, exec_type, file_type;
++type gpsd_exec, exec_type, vendor_file_type, file_type;
+ 
+ allow gpsd radio_device:chr_file { read write ioctl open };
+ allow gpsd sysfs_wake_lock:file { read write open };
+diff --git a/sepolicy/macloader.te b/sepolicy/macloader.te
+index d351f92..89135e5 100644
+--- a/sepolicy/macloader.te
++++ b/sepolicy/macloader.te
+@@ -1,5 +1,5 @@
+ type macloader, domain;
+-type macloader_exec, exec_type, file_type;
++type macloader_exec, exec_type, vendor_file_type, file_type;
+ init_daemon_domain(macloader);
+ 
+ allow macloader efs_file:dir { read write search };
+diff --git a/sepolicy/mediacodec.te b/sepolicy/mediacodec.te
+index 22bc0b4..1c78de8 100644
+--- a/sepolicy/mediacodec.te
++++ b/sepolicy/mediacodec.te
+@@ -1,3 +1,4 @@
+ set_prop(mediacodec, media_prop)
++get_prop(mediacodec, media_prop)
++
+ allow mediacodec audio_device:chr_file { read write open ioctl };
+-allow mediacodec system_file:file execmod;
+\ No newline at end of file
+diff --git a/sepolicy/mediaprovider.te b/sepolicy/mediaprovider.te
+new file mode 100644
+index 0000000..d3db36d
+--- /dev/null
++++ b/sepolicy/mediaprovider.te
+@@ -0,0 +1,2 @@
++set_prop(mediaprovider, media_prop)
++get_prop(mediaprovider, media_prop)
+diff --git a/sepolicy/mediaserver.te b/sepolicy/mediaserver.te
+index a8633ed..ee7b557 100644
+--- a/sepolicy/mediaserver.te
++++ b/sepolicy/mediaserver.te
+@@ -1,5 +1,6 @@
+ set_prop(mediaserver, media_prop)
+ allow mediaserver audio_device:chr_file { read write ioctl open };
++allow mediaserver camera_device:chr_file { read write ioctl open };
+ allow mediaserver media_device:dir search;
+ allow mediaserver media_device:fifo_file { read write open };
+ allow mediaserver proc_pin_switch:dir search;
+diff --git a/sepolicy/modemd.te b/sepolicy/modemd.te
+index d74cefa..2682803 100644
+--- a/sepolicy/modemd.te
++++ b/sepolicy/modemd.te
+@@ -1,5 +1,12 @@
+-allow rild servicemanager:dir search;
+-allow rild servicemanager:file { read open };
+-allow rild system_app:dir search;
+-allow rild system_app:file { read open };
+-allow rild prod_file:dir search;
++type modemd, domain;
++
++init_daemon_domain(modemd);
++
++allow modemd init:unix_stream_socket connectto;
++allow modemd proc_cpw:dir search;
++allow modemd proc_cpw:file { open read };
++allow modemd property_socket:sock_file write;
++allow modemd spipe_device:chr_file { open read write };
++allow modemd tty_device:chr_file { open read write };
++allow modemd rild:unix_stream_socket connectto;
++allow modemd phoneserver:unix_stream_socket connectto;
+diff --git a/sepolicy/nvitemd.te b/sepolicy/nvitemd.te
+new file mode 100644
+index 0000000..9f80e6a
+--- /dev/null
++++ b/sepolicy/nvitemd.te
+@@ -0,0 +1,7 @@
++type nvitemd, domain;
++
++init_daemon_domain(nvitemd)
++
++allow nvitemd radio_block_device:blk_file { open read write };
++allow nvitemd spipe_device:chr_file { open read write };
++allow nvitemd block_device:dir search;
+\ No newline at end of file
+diff --git a/sepolicy/phoneserver.te b/sepolicy/phoneserver.te
+new file mode 100644
+index 0000000..c936fb6
+--- /dev/null
++++ b/sepolicy/phoneserver.te
+@@ -0,0 +1,12 @@
++type phoneserver, domain;
++
++init_daemon_domain(phoneserver)
++
++allow phoneserver device:dir { add_name write };
++allow phoneserver device:lnk_file create;
++allow phoneserver devpts:chr_file { ioctl open read setattr write };
++allow phoneserver init:unix_stream_socket connectto;
++allow phoneserver property_socket:sock_file write;
++allow phoneserver radio_device:chr_file { open read write };
++allow phoneserver self:capability setuid;
++allow phoneserver tty_device:chr_file { open read write };
+diff --git a/sepolicy/renotify.te b/sepolicy/renotify.te
+new file mode 100644
+index 0000000..c98fd10
+--- /dev/null
++++ b/sepolicy/renotify.te
+@@ -0,0 +1,7 @@
++type refnotify, domain;
++
++init_daemon_domain(refnotify)
++
++allow refnotify refnotify_device:chr_file { open read write };
++allow refnotify rtc_device:chr_file { ioctl open read write };
++allow refnotify sysfs_wait_for_fb:file { open read };
+diff --git a/sepolicy/rild.te b/sepolicy/rild.te
+index 739f67e..33ed617 100644
+--- a/sepolicy/rild.te
++++ b/sepolicy/rild.te
+@@ -3,7 +3,7 @@ set_prop(rild, ctl_engpc_prop);
+ set_prop(rild, system_prop);
+ 
+ allow rild radio_block_device:blk_file { open read write };
+-allow rild radio_data_file:dir { write remove_name add_name };
++allow rild radio_data_file:dir { write remove_name add_name search };
+ allow rild radio_data_file:file { open read write getattr setattr create unlink };
+ 
+ allow rild devpts:chr_file { open read write ioctl setattr getattr };
+-- 
+2.28.0
+
