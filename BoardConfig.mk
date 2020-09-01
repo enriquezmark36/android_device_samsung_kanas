@@ -217,6 +217,20 @@ TARGET_LD_SHIM_LIBS += \
 TARGET_POWERHAL_VARIANT := kanas
 SCX35_COMMON_POWERHAL_OVERRIDE := true
 
+# Some of the proprietary blobs we need have text relocations
+# This inlcudes all of our HW accelerated video encoders and decoders.
+# the fantastic HDR library by Morpho Inc, and the GPS hall blob.
+# NOTE: We need to figure out how to allow the GPS blob.
+#       As of now, we don't use android.hardware.gnss@1.0-service
+#       because the GPS HAL needs to communicate to the internet
+#       but the android.hardware.gnss@1.0-service is specifically
+#       written (including the sepolicy) to disallow such networking
+TARGET_PROCESS_SDK_VERSION_OVERRIDE += \
+        /system/vendor/bin/mediaserver=19 \
+        /system/vendor/bin/hw/android.hardware.camera.provider@2.4-service=19 \
+        /system/vendor/bin/hw/android.hardware.media.omx@1.0-service=19 \
+
+
 # Disable Charger since we would like having the lpm binary do it for us
 BOARD_CHARGER_NO_UI := true
 
