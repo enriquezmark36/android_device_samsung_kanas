@@ -104,11 +104,6 @@ GSP_MAX_OSD_LAYERS := 5
 # CMA and vmalloc works under few msec, gen_pool_alloc under some hundred usecs.
 # SurfaceFlinger, when TARGET_FORCE_HWC_CONTIG is true, often allocates using gralloc.
 TARGET_ION_OVERLAY_IS_CARVEOUT := true
-# Use the HWC2ON1 adapter to let SF run on HWC2
-# This will fix the LiveDisplay feature permanently disabling the HWC
-# but Client composition doesn't work as of now.
-# TARGET_USES_HWC2 := false
-
 
 # Audio
 # BOARD_USE_LIBATCHANNEL_WRAPPER := true

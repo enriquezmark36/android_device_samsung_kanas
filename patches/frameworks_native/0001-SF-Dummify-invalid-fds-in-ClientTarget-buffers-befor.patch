@@ -1,0 +1,100 @@
+From 6adde8505b93582d39812e41e5d686efb5533bf2 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Sun, 30 Aug 2020 17:36:23 +0800
+Subject: [PATCH] SF: Dummify invalid fds in ClientTarget buffers before
+ passing it to the HWC.
+
+Some gralloc implementations use -1 fd as an indication that a certain
+feature is unsupported and an alternate has to be used. This is not really
+a problem on KitKat but not when the native_handle_t has to be cloned or
+passed through binder since -1 cannot be duplicated. On HIDL, handles are
+often cloned so yeah as it extensively use binder for transport.
+
+This workaround of a patch creates a dummy fd from /dev/null only once.
+When FramebufferSurface has to pass a new ClientTarget layer, it will
+disect the native_handle_t object replacing every invalid fd with the
+dummy fd. When it's time to release the buffer, it would then replace all
+dummy fds with the invalid fd.
+
+This will fix a certain type of black screen problem when using the HWC2on1
+adapter on both Android 8 and Android 9.
+
+Change-Id: I4ea3ddc9a882472a2788003f0bcda30ca277e238
+[This is the Android 9 version]
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ .../DisplayHardware/FramebufferSurface.cpp    | 44 +++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+
+diff --git a/services/surfaceflinger/DisplayHardware/FramebufferSurface.cpp b/services/surfaceflinger/DisplayHardware/FramebufferSurface.cpp
+index e6d783434..16361d08d 100644
+--- a/services/surfaceflinger/DisplayHardware/FramebufferSurface.cpp
++++ b/services/surfaceflinger/DisplayHardware/FramebufferSurface.cpp
+@@ -111,6 +111,10 @@ status_t FramebufferSurface::nextBuffer(uint32_t& outSlot,
+ 
+     BufferItem item;
+     status_t err = acquireBufferLocked(&item, 0);
++
++    static int dummyFd = -1;
++    static bool hasDummyFd = false;
++
+     if (err == BufferQueue::NO_BUFFER_AVAILABLE) {
+         mHwcBufferCache.getHwcBuffer(mCurrentBufferSlot, mCurrentBuffer,
+                 &outSlot, &outBuffer);
+@@ -133,6 +137,23 @@ status_t FramebufferSurface::nextBuffer(uint32_t& outSlot,
+         mHasPendingRelease = true;
+         mPreviousBufferSlot = mCurrentBufferSlot;
+         mPreviousBuffer = mCurrentBuffer;
++
++        // If ever we filled in some -1 fds with our dummy fd, we need
++        // to undo the change. Some drivers may use the fd -1 as a trigger.
++        // For some drivers, we may need to revert it as soon as the transfer
++        // is complete. This is usually at composer HIDL but that's not
++        // covered in this workaround.
++        if (hasDummyFd && mPreviousBuffer.get() &&
++            mPreviousBuffer->getNativeBuffer()->handle) {
++
++            native_handle_t *h = (native_handle_t *) mPreviousBuffer->getNativeBuffer()->handle;
++            for (int i = h->numFds; i--; ) {
++                if (h->data[i] == dummyFd) {
++                    h->data[i] = -1;
++                    hasDummyFd = false;
++                }
++            }
++        }
+     }
+     mCurrentBufferSlot = item.mSlot;
+     mCurrentBuffer = mSlots[mCurrentBufferSlot].mGraphicBuffer;
+@@ -142,6 +163,29 @@ status_t FramebufferSurface::nextBuffer(uint32_t& outSlot,
+     mHwcBufferCache.getHwcBuffer(mCurrentBufferSlot, mCurrentBuffer,
+             &outSlot, &outBuffer);
+     outDataspace = static_cast<Dataspace>(item.mDataSpace);
++
++    // The native_handle_t we will pass through, binder or HIDL, will be
++    // cloned. Unfortunately, the native_handle_clone() function doesn't like
++    // -1 fds. Those fds will fail the dup() and eventually cause the entire
++    // cloning process to fail. Through binder, the kernel code does the
++    // duplicating there and also fails because -1 fd cannot be duplicated.
++    // resulting in a rather vague error that there are no more virtual memory.
++    // The workaround? Create a dummy fd.
++    if (outBuffer.get() && outBuffer->getNativeBuffer()->handle) {
++        native_handle_t *h = (native_handle_t *) outBuffer->getNativeBuffer()->handle;
++
++        if (dummyFd == -1)
++            dummyFd = open("/dev/null", O_RDWR);
++
++        if (dummyFd >= 0) {
++            for (int i = h->numFds; i--; ) {
++                    if (h->data[i] == -1)
++                        h->data[i] = dummyFd;
++            }
++            hasDummyFd = true;
++        }
++    }
++
+     status_t result =
+             mHwc.setClientTarget(mDisplayType, outSlot, outFence, outBuffer, outDataspace);
+     if (result != NO_ERROR) {
+-- 
+2.28.0
+
