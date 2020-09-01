@@ -1,4 +1,4 @@
-From 7cd5510a1889e151d5e03fd021efb0ed5f74c3b9 Mon Sep 17 00:00:00 2001
+From 88b2c772f24c817585ec9ca75685a818d8f3ed62 Mon Sep 17 00:00:00 2001
 From: Mark Enriquez <enriquezmark36@gmail.com>
 Date: Fri, 27 Sep 2019 22:04:29 +0800
 Subject: [PATCH] soong_config: Add BOARD_CANT_REALLOCATE_OMX_BUFFERS
@@ -11,39 +11,39 @@ Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
  2 files changed, 5 insertions(+)
 
 diff --git a/build/soong/android/variable.go b/build/soong/android/variable.go
-index d92ae929..2765a75a 100644
+index 29247c01..54bee93d 100644
 --- a/build/soong/android/variable.go
 +++ b/build/soong/android/variable.go
-@@ -6,6 +6,9 @@ type Product_variables struct {
- 	Needs_legacy_camera_hal1_dyn_native_handle struct {
- 		Cppflags []string
+@@ -12,6 +12,9 @@ type Product_variables struct {
+ 	Has_legacy_camera_hal1 struct {
+ 		Cflags []string
  	}
 +	Board_cant_reallocate_omx_buffers struct {
 +		Cppflags []string
 +	}
- 	Needs_text_relocations struct {
- 		Cppflags []string
+ 	Should_skip_waiting_for_qsee struct {
+ 		Cflags []string
  	}
-@@ -30,6 +33,7 @@ type Product_variables struct {
- type ProductVariables struct {
+@@ -75,6 +78,7 @@ type ProductVariables struct {
+ 	Apply_msm8974_1440p_egl_workaround  *bool `json:",omitempty"`
+ 	Bootloader_message_offset  *int `json:",omitempty"`
  	Has_legacy_camera_hal1  *bool `json:",omitempty"`
- 	Needs_legacy_camera_hal1_dyn_native_handle  *bool `json:",omitempty"`
 +	Board_cant_reallocate_omx_buffers  *bool `json:",omitempty"`
- 	Needs_text_relocations  *bool `json:",omitempty"`
+ 	Java_Source_Overlays *string `json:",omitempty"`
+ 	Should_skip_waiting_for_qsee  *bool `json:",omitempty"`
  	Specific_camera_parameter_library  *string `json:",omitempty"`
- 	Target_shim_libs  *string `json:",omitempty"`
 diff --git a/build/soong/soong_config.mk b/build/soong/soong_config.mk
-index 0c98c89c..65906d6d 100644
+index dda79782..546e61a1 100644
 --- a/build/soong/soong_config.mk
 +++ b/build/soong/soong_config.mk
-@@ -6,6 +6,7 @@ lineage_soong:
- 	echo '"Lineage": {'; \
- 	echo '    "Has_legacy_camera_hal1": $(if $(filter true,$(TARGET_HAS_LEGACY_CAMERA_HAL1)),true,false),'; \
- 	echo '    "Needs_legacy_camera_hal1_dyn_native_handle": $(if $(filter true,$(TARGET_NEEDS_LEGACY_CAMERA_HAL1_DYN_NATIVE_HANDLE)),true,false),'; \
-+	echo '    "Board_cant_reallocate_omx_buffers": $(if $(filter true,$(BOARD_CANT_REALLOCATE_OMX_BUFFERS)),true,false),'; \
- 	echo '    "Needs_text_relocations": $(if $(filter true,$(TARGET_NEEDS_PLATFORM_TEXT_RELOCATIONS)),true,false),'; \
- 	echo '    "Specific_camera_parameter_library": "$(TARGET_SPECIFIC_CAMERA_PARAMETER_LIBRARY)",'; \
- 	echo '    "Target_shim_libs": "$(subst $(space),:,$(TARGET_LD_SHIM_LIBS))",'; \
+@@ -8,6 +8,7 @@ $(call add_json_str_omitempty, Additional_gralloc_10_usage_bits, $(TARGET_ADDITI
+ $(call add_json_bool, Apply_msm8974_1440p_egl_workaround, $(filter true,$(TARGET_MSM8974_1440P_EGL_WORKAROUND)))
+ $(call add_json_val_default, Bootloader_message_offset, $(BOOTLOADER_MESSAGE_OFFSET), 0)
+ $(call add_json_bool, Has_legacy_camera_hal1, $(filter true,$(TARGET_HAS_LEGACY_CAMERA_HAL1)))
++$(call add_json_bool, Board_cant_reallocate_omx_buffers, $(filter true,$(BOARD_CANT_REALLOCATE_OMX_BUFFERS)))
+ $(call add_json_str, Java_Source_Overlays, $(JAVA_SOURCE_OVERLAYS))
+ $(call add_json_bool, Should_skip_waiting_for_qsee, $(filter true,$(TARGET_KEYMASTER_SKIP_WAITING_FOR_QSEE)))
+ $(call add_json_str, Specific_camera_parameter_library, $(TARGET_SPECIFIC_CAMERA_PARAMETER_LIBRARY))
 -- 
-2.23.0
+2.28.0
 

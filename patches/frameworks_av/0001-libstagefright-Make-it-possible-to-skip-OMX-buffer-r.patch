@@ -1,4 +1,4 @@
-From 965f15e36845d72b30681a35b6ef7f45ead61c26 Mon Sep 17 00:00:00 2001
+From bd6c1dca1e202ec5dbe42d6a2a9be99af3791dd3 Mon Sep 17 00:00:00 2001
 From: Mark Enriquez <enriquezmark36@gmail.com>
 Date: Fri, 27 Sep 2019 21:36:26 +0800
 Subject: [PATCH] libstagefright: Make it possible to skip OMX buffer
@@ -27,10 +27,10 @@ Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
  2 files changed, 14 insertions(+)
 
 diff --git a/media/libstagefright/ACodec.cpp b/media/libstagefright/ACodec.cpp
-index def8ada3c..52d69429e 100644
+index 0ecb8bdaa..233cbd7d3 100644
 --- a/media/libstagefright/ACodec.cpp
 +++ b/media/libstagefright/ACodec.cpp
-@@ -1182,6 +1182,12 @@ status_t ACodec::configureOutputBuffersFromNativeWindow(
+@@ -1176,6 +1176,12 @@ status_t ACodec::configureOutputBuffersFromNativeWindow(
      // 2. try to allocate two (2) additional buffers to reduce starvation from
      //    the consumer
      //    plus an extra buffer to account for incorrect minUndequeuedBufs
@@ -43,7 +43,7 @@ index def8ada3c..52d69429e 100644
      for (OMX_U32 extraBuffers = 2 + 1; /* condition inside loop */; extraBuffers--) {
          OMX_U32 newBufferCount =
              def.nBufferCountMin + *minUndequeuedBuffers + extraBuffers;
-@@ -1201,6 +1207,9 @@ status_t ACodec::configureOutputBuffersFromNativeWindow(
+@@ -1195,6 +1201,9 @@ status_t ACodec::configureOutputBuffersFromNativeWindow(
              return err;
          }
      }
@@ -54,10 +54,10 @@ index def8ada3c..52d69429e 100644
      err = native_window_set_buffer_count(
              mNativeWindow.get(), def.nBufferCountActual);
 diff --git a/media/libstagefright/Android.bp b/media/libstagefright/Android.bp
-index c8d4e4aaa..6ed11bf0a 100644
+index 924d46084..1600dc352 100644
 --- a/media/libstagefright/Android.bp
 +++ b/media/libstagefright/Android.bp
-@@ -146,6 +146,11 @@ cc_library_shared {
+@@ -213,6 +213,11 @@ cc_library_shared {
              // enable experiments only in userdebug and eng builds
              cflags: ["-DENABLE_STAGEFRIGHT_EXPERIMENTS"],
          },
@@ -70,5 +70,5 @@ index c8d4e4aaa..6ed11bf0a 100644
  
      sanitize: {
 -- 
-2.23.0
+2.28.0
 
