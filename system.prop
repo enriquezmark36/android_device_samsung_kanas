@@ -83,3 +83,6 @@ persist.sys.io.scheduler=bfq
 
 # EGL blobs crash on screen off
 ro.egl.destroy_after_detach=true
+
+# Use the non-aio compatibility since we haven't backported it
+sys.usb.ffs.aio_compat=true
