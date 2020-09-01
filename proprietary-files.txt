@@ -1,0 +1,113 @@
+# Proprietary files
+# Most of the files that have sha1 hashes have been hexedit'd.
+# The edits are simply changes most texts from '/system' -> to '/vendor'
+# except for some strings like '/system/bin/linker' which has to stay
+# as it is.
+
+# GPS
+etc/MSLConfig.txt:vendor/etc/MSLConfig.txt|5a361642ae094825eac72c4fc119c8f1429ecf92
+etc/mrvl_agps_default.conf:vendor/etc/mrvl_agps_default.conf|f56e03b0f44b4e15cb8967e490a850482d4e8a8b
+etc/pxa_testcfg.ini:vendor/etc/pxa_testcfg.ini|8f81b2f34de0d14a96afa2f7729f298d8754751b
+lib/libagps_hal.so:vendor/lib/libagps_hal.so|f175dbf6b55f428ee252f57a83cd91a914bac384
+etc/AGPS_CA.pem:vendor/etc/AGPS_CA.pem
+etc/license.key:vendor/etc/license.key
+etc/mrvl_gps_platform.conf:vendor/etc/mrvl_gps_platform.conf
+etc/plmn_delta.bin:vendor/etc/plmn_delta.bin
+etc/plmn_se13.bin:vendor/etc/plmn_se13.bin
+etc/rom.bin:vendor/etc/rom.bin
+etc/rxn_config_data:vendor/etc/rxn_config_data
+etc/security.key:vendor/etc/security.key
+lib/libsprd_agps_agent.so:vendor/lib/libsprd_agps_agent.so
+# The gps hal blob was also hexedit'd and renamed so that the wrapper can be used.
+lib/hw/gps.default.so:vendor/lib/hw/gps.vendor.sc8830.so|503f474f2b5cb2d9894e01a3d7337e046c2fa556
+lib/hw/gps.vendor.sc8830.so:vendor/lib/hw/gps.vendor.sc8830.so|503f474f2b5cb2d9894e01a3d7337e046c2fa556
+
+# Graphics
+lib/libMali.so:vendor/lib/libMali.so|ad42e1670e1edcecb3a508aa041d235b631a8fe6
+lib/egl/libEGL_mali.so:vendor/lib/egl/libEGL_mali.so
+lib/egl/libGLESv1_CM_mali.so:vendor/lib/egl/libGLESv1_CM_mali.so
+lib/egl/libGLESv2_mali.so:vendor/lib/egl/libGLESv2_mali.so
+
+
+# Uncategorized
+lib/libsecnativefeature.so:vendor/lib/libsecnativefeature.so
+
+# WiFi
+etc/wifi/bcmdhd_apsta.bin:vendor/etc/wifi/bcmdhd_apsta.bin
+etc/wifi/bcmdhd_mfg.bin:vendor/etc/wifi/bcmdhd_mfg.bin
+etc/wifi/bcmdhd_p2p.bin:vendor/etc/wifi/bcmdhd_p2p.bin
+etc/wifi/bcmdhd_sta.bin:vendor/etc/wifi/bcmdhd_sta.bin
+etc/wifi/nvram_net.txt:vendor/etc/wifi/nvram_net.txt
+etc/wifi/nvram_mfg.txt:vendor/etc/wifi/nvram_mfg.txt
+
+
+# Bluetooth
+vendor/firmware/BCM4330B1_002.001.003.1025.1303.hcd
+
+# RIL
+bin/at_distributor:vendor/bin/at_distributor|4ff02d623fb4b249fd2514009d912767fa6e50dd
+bin/engpc:vendor/bin/engpc|58b80c528cd75b6297e8125d6ee619d5f41d50a7
+lib/libfactoryutil.so:vendor/lib/libfactoryutil.so|d89f5531db5305b64d8a821197c193f14664b961
+lib/libreference-ril_sp.so:vendor/lib/libreference-ril_sp.so|df9e3de755e4ed1e479d10f1d0c0e613266cfef6
+bin/ext_data.sh:vendor/bin/ext_data.sh
+bin/ext_kill.sh:vendor/bin/ext_kill.sh
+bin/ext_symlink.sh:vendor/bin/ext_symlink.sh
+bin/macloader:vendor/bin/macloader
+bin/phoneserver:vendor/bin/phoneserver
+lib/libatparser.so:vendor/lib/libatparser.so
+lib/libboost.so:vendor/lib/libboost.so
+lib/libomission_avoidance.so:vendor/lib/libomission_avoidance.so
+
+# Sensors
+#lib/hw/sensors.sc8830.so:vendor/lib/hw/sensors.sc8830.so
+
+# Codecs
+# These hw codecs are 'kang'ed or borrowed from Samsung Core Prime or core33g
+# which should work with the sc8830 version in the hardware/sprd/ tree.
+lib/libomx_avcdec_hw_sprd.so:vendor/lib/libomx_avcdec_hw_sprd.so|b111be1cb906eadb6e6ff24af0ec1e5d6a348aed
+lib/libomx_avcdec_sw_sprd.so:vendor/lib/libomx_avcdec_sw_sprd.so|60162d2387a755da8bae25cff90b74d10dbbb28d
+lib/libomx_avcenc_hw_sprd.so:vendor/lib/libomx_avcenc_hw_sprd.so|f42ecf44c0479444d9ae48f57be5ceec0072ce07
+lib/libomx_m4vh263dec_hw_sprd.so:vendor/lib/libomx_m4vh263dec_hw_sprd.so|b1efd4676f1a9199869891ea3a6305bf127d693a
+lib/libomx_m4vh263dec_sw_sprd.so:vendor/lib/libomx_m4vh263dec_sw_sprd.so|f41b872305e538cd9451e2b05c7f10ef69993ab8
+lib/libomx_m4vh263enc_hw_sprd.so:vendor/lib/libomx_m4vh263enc_hw_sprd.so|8c95262297046e7f29fdaf237e14931c36dc642e
+lib/libomx_mp3dec_sprd.so:vendor/lib/libomx_mp3dec_sprd.so|654425524e5b096b450488f105e9da6edd2a7c28
+lib/libomx_vpxdec_hw_sprd.so:vendor/lib/libomx_vpxdec_hw_sprd.so|076a79bd0babd2609eb4e12d7c9934ce160eec8e
+lib/libomx_aacdec_sprd.so:vendor/lib/libomx_aacdec_sprd.so
+
+# DRM
+etc/permissions/com.google.widevine.software.drm.xml:vendor/etc/permissions/com.google.widevine.software.drm.xml
+framework/com.google.widevine.software.drm.jar:vendor/framework/com.google.widevine.software.drm.jar
+lib/libwvm.so:vendor/lib/libwvm.so
+vendor/lib/libWVStreamControlAPI_L3.so
+vendor/lib/libwvdrm_L3.so
+vendor/lib/mediadrm/libwvdrmengine.so
+
+
+# LPM
+bin/lpm:vendor/bin/lpm|0a2b8422bb9c9793ecd00c43368c5b9a4add0609
+lib/libQmageDecoder.so:vendor/lib/libQmageDecoder.so
+media/battery_charging_5.qmg:vendor/media/battery_charging_5.qmg
+media/battery_charging_10.qmg:vendor/media/battery_charging_10.qmg
+media/battery_charging_15.qmg:vendor/media/battery_charging_15.qmg
+media/battery_charging_20.qmg:vendor/media/battery_charging_20.qmg
+media/battery_charging_25.qmg:vendor/media/battery_charging_25.qmg
+media/battery_charging_30.qmg:vendor/media/battery_charging_30.qmg
+media/battery_charging_35.qmg:vendor/media/battery_charging_35.qmg
+media/battery_charging_40.qmg:vendor/media/battery_charging_40.qmg
+media/battery_charging_45.qmg:vendor/media/battery_charging_45.qmg
+media/battery_charging_50.qmg:vendor/media/battery_charging_50.qmg
+media/battery_charging_55.qmg:vendor/media/battery_charging_55.qmg
+media/battery_charging_60.qmg:vendor/media/battery_charging_60.qmg
+media/battery_charging_65.qmg:vendor/media/battery_charging_65.qmg
+media/battery_charging_70.qmg:vendor/media/battery_charging_70.qmg
+media/battery_charging_75.qmg:vendor/media/battery_charging_75.qmg
+media/battery_charging_80.qmg:vendor/media/battery_charging_80.qmg
+media/battery_charging_85.qmg:vendor/media/battery_charging_85.qmg
+media/battery_charging_90.qmg:vendor/media/battery_charging_90.qmg
+media/battery_charging_95.qmg:vendor/media/battery_charging_95.qmg
+media/battery_charging_100.qmg:vendor/media/battery_charging_100.qmg
+media/battery_batteryerror.qmg:vendor/media/battery_batteryerror.qmg
+media/battery_error.qmg:vendor/media/battery_error.qmg
+media/chargingwarning.qmg:vendor/media/chargingwarning.qmg
+media/Disconnected.qmg:vendor/media/Disconnected.qmg
+
