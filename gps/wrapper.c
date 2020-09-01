@@ -43,9 +43,6 @@ static GpsCallbacks_v1 my_gps_callbacks;
 static const AGpsInterface *real_agps_interface = NULL;
 static AGpsInterface my_agps_interface;
 
-static const AGpsCallbacks *real_agps_callbacks;
-static AGpsCallbacks my_agps_callbacks;
-
 static int wrapper_data_conn_open_with_apn_ip_type(const char *apn, ApnIpType apnIpType) {
 	ALOGW("[%s]: We shouldn't be here; we're using AGpsInterface_v1.", __func__);
 
@@ -55,6 +52,7 @@ static int wrapper_data_conn_open_with_apn_ip_type(const char *apn, ApnIpType ap
 	}
 
 	ALOGD("[%s]: Redirecting call to data_conn_open()", __func__);
+	(void) apnIpType;
 	return real_agps_interface->data_conn_open(apn);
 }
 static const void* wrapper_get_extension(const char* name) {
@@ -109,7 +107,6 @@ static int wrapper_open(__attribute__((unused)) const hw_module_t* module,
 	struct hw_module_t *hmi;
 	struct gps_device_t *my_gps_device;
 	int ret = -EINVAL;
-	GpsInterface* sGpsInterface = NULL;
 
 	ALOGI("[%s] Initializing wrapper for Marvell's GPS-HAL", __func__);
 
