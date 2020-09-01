@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.lineageos.settings.device_mod;
+package org.lineageos.settings.device;
 
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
