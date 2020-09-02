@@ -80,6 +80,10 @@ USE_OVERLAY_COMPOSER_GPU := false
 # Enables workarounds within Gralloc that allows it to work under HIDL
 # This is a must for compiling on Android O and above without the libui patch
 TARGET_USES_HIDL_WORKAROUNDS := true
+# Additional Gralloc 0 flags
+# Gralloc2 will probably flip out when it gets some invalid Gralloc1 flags
+# This will tell it not to do that.
+TARGET_ADDITIONAL_GRALLOC_10_USAGE_BITS := 0x07001400
 
 ##############################
 ## Experimental Graphics flags
