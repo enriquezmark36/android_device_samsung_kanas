@@ -1,5 +1,5 @@
 type gps_vendor_hal, domain;
-type gps_sirf, fs_type;
+type gps_sirf, fs_type, proc_type;
 #typealias vendor_file alias gps_vendor_hal_exec;
 
 #domain_auto_trans(hal_gnss_default, gps_vendor_hal_exec, gps_vendor_hal)
