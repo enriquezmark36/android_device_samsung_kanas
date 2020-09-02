@@ -42,6 +42,7 @@ using ::android::hardware::power::V1_0::PowerHint;
 using ::android::hardware::power::V1_0::IPower;
 using ::vendor::lineage::power::V1_0::ILineagePower;
 using ::vendor::lineage::power::V1_0::LineageFeature;
+using ::vendor::lineage::power::V1_0::LineagePowerHint;
 using ::android::hardware::Return;
 using ::android::hardware::Void;
 

@@ -34,6 +34,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <vendor/lineage/power/1.0/types.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -144,6 +146,10 @@
 #define IO_IS_BUSY_PATH         "io_is_busy"
 #define BOOSTPULSE_PATH         "boostpulse"
 
+//TODO: defs have been moved to an HIDL based build
+#define POWER_HINT_CPU_BOOST 272u
+#define POWER_HINT_SET_PROFILE 273u
+
 static char CPU_INTERACTIVE_PATH[80];
 char g_max_freq[PARAM_MAXLEN];
 char g_min_freq[PARAM_MAXLEN];
@@ -175,7 +181,7 @@ enum cpufreq_limit_e {
  *** HELPER FUNCTIONS
  **********************************************************/
 
-static int sysfs_read(char *path, char *s, int num_bytes)
+static int sysfs_read(const char *path, char *s, int num_bytes)
 {
 	char errno_str[64];
 	int len;
@@ -204,7 +210,7 @@ static int sysfs_read(char *path, char *s, int num_bytes)
 	return ret;
 }
 
-static void sysfs_write(const char *path, char *s) {
+static void sysfs_write(const char *path, const char *s) {
 
 	char errno_str[64];
 	int len;
@@ -234,7 +240,7 @@ static void sysfs_write(const char *path, char *s) {
  * Reverts the permission bits changes afterwards.
  * Assumes that this process belongs to the User or the Group.
  */
-static void sysfs_write_permissive(const char *path, char *s)
+static void sysfs_write_permissive(const char *path, const char *s)
 {
 	struct stat st;
 	if (stat(path, &st) == 0) {
@@ -258,7 +264,7 @@ static void sysfs_write_permissive(const char *path, char *s)
  * This function is written against those selfish apps.
  *
  */
-static inline void sysfs_write_patiently(const char *path, char *s) {
+static inline void sysfs_write_patiently(const char *path, const char *s) {
 	if (access(path, W_OK))
 		sysfs_write_permissive(SCALING_MAX_FREQ_PATH, s);
 	else
@@ -313,7 +319,7 @@ static void send_boostpulse(void)
 /**********************************************************
  *** POWER FUNCTIONS
  **********************************************************/
-static void set_cpufreq_limit(enum cpufreq_limit_e type, char *freq)
+static void set_cpufreq_limit(enum cpufreq_limit_e type, const char *freq)
 {
 	char temp_freq[PARAM_MAXLEN];
 
@@ -397,7 +403,7 @@ static void set_lcd_fps(int profile)
 
 static void set_gpu_core_scaler(int profile)
 {
-	char *target_util, *reserved_idle_power, *scaling_enabled;
+	const char *target_util, *reserved_idle_power, *scaling_enabled;
 	static int current_profile = PROFILE_MAX;
 	if (!g_has_gpu_core_scaler)
 		return;
@@ -562,7 +568,7 @@ static int check_earlysuspend_libsuspend(void)
  * startup, such as to set default cpufreq parameters.  This is called only by
  * the Power HAL instance loaded by PowerManagerService.
  */
-void power_init() {
+extern "C" void power_init() {
 	ALOGI("Initialized settings:");
 
 	get_cpu_interactive_paths();
@@ -620,7 +626,7 @@ void power_init() {
  * screen (if present), and called to enter interactive state prior to turning
  * on the screen.
  */
-void power_set_interactive(int on)
+extern "C" void power_set_interactive(int on)
 {
 	ALOGV("power_set_interactive: %d\n", on);
 
@@ -672,7 +678,7 @@ void power_set_interactive(int on)
  *     be boosted for a specific duration. The data parameter is an
  *     integer value of the boost duration in microseconds.
  */
-void power_hint(power_hint_t hint, void *data)
+extern "C" void power_hint(power_hint_t hint, void *data)
 {
 	// Check if the cpufreq governor has been changed
 	if (access(CPU_INTERACTIVE_PATH, F_OK)) {
@@ -680,10 +686,10 @@ void power_hint(power_hint_t hint, void *data)
 		get_cpu_interactive_paths();
 	}
 
-	switch (hint) {
+	switch ((int)hint) {
 		case POWER_HINT_LOW_POWER:
 			ALOGV("%s: POWER_HINT_LOW_POWER", __func__);
-			set_power_profile(data ? PROFILE_POWER_SAVE : PROFILE_BALANCED);
+			set_power_profile((enum power_profile_e)(data ? PROFILE_POWER_SAVE : PROFILE_BALANCED));
 			break;
 		case POWER_HINT_INTERACTION: {
 			if (current_power_profile == PROFILE_POWER_SAVE) {
@@ -705,7 +711,7 @@ void power_hint(power_hint_t hint, void *data)
 			int profile = *((intptr_t *)data);
 
 			ALOGV("%s: POWER_HINT_SET_PROFILE", __func__);
-			set_power_profile(profile);
+			set_power_profile((enum power_profile_e) profile);
 			break;
 		}
 		case POWER_HINT_VR_MODE:
