@@ -479,3 +479,7 @@ on late-fs
     # Also increase the amount of memory to be reclaimed on the
     # background by kswapd (also needs a kernel patch for v3.10)
     write /proc/sys/vm/watermark_scale_factor 20
+
+    # Disable user state logs from earlysuspend but enable
+    # the verbose and suspend logs
+    write /sys/module/earlysuspend/parameters/debug_mask 12
