@@ -20,6 +20,12 @@ TARGET_COPY_OUT_VENDOR := system/vendor
 # Inherit from SCX35 common configs
 -include device/samsung/scx35-common/BoardConfigCommon.mk
 
+# SCX35-common tree overrides
+WITH_DEXPREOPT_BOOT_IMG_AND_SYSTEM_SERVER_ONLY := false
+PRODUCT_DEXPREOPT_SPEED_APPS += \
+    SystemUI \
+    TrebuchetQuickStep
+
 # Inherit from the proprietary version
 -include vendor/samsung/kanas/BoardConfigVendor.mk
 
