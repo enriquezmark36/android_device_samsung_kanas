@@ -3,8 +3,6 @@ import /init.sc8830.usb.rc
 import /init.wifi.rc
 
 on early-init
-    mount debugfs debugfs /sys/kernel/debug
-
     # set core dump resource limit
     setrlimit 4 -1 -1
 
@@ -14,7 +12,8 @@ on early-init
     chown system system /sys/devices/platform/panel/backlight/panel/brightness
     chown system input /sys/class/input/event0/device/device/enable
     chmod 777 /sys/class/input/event0/device/device/enable
-    mount debugfs /sys/kernel/debug /sys/kernel/debug
+    mount debugfs debugfs /sys/kernel/debug
+    chmod 0755 /sys/kernel/debug
 
 
 on init
