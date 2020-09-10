@@ -198,6 +198,9 @@ PGO_ADDITIONAL_PROFILE_DIRS := device/samsung/kanas/pgo-profiles
 # Sensors
 TARGET_USES_SENSORS_WRAPPER := false
 
+# Light and LEDs
+TARGET_HAS_BACKLIT_KEYS := false
+
 # SELinux policy -- common for most SPRD devices
 BOARD_SEPOLICY_DIRS += device/samsung/kanas/sepolicy
 
