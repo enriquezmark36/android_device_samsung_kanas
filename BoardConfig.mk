@@ -154,6 +154,9 @@ MALLOC_SVELTE := true
 # Tell vold that we have a kernel based impl of exfat
 TARGET_EXFAT_DRIVER := exfat
 
+# Device and blobs are from KitKat release
+PRODUCT_SHIPPING_API_LEVEL := 19
+
 # Camera
 TARGET_BOARD_CAMERA_HAL_VERSION := HAL1.0
 TARGET_BOARD_CAMERA_ANDROID_ZSL_MODE := false
