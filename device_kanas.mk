@@ -20,6 +20,7 @@ $(call inherit-product, vendor/samsung/kanas/kanas-vendor.mk)
 
 # Add our overlay first as a matter of precedence
 DEVICE_PACKAGE_OVERLAYS += device/samsung/kanas/overlay
+DEVICE_PACKAGE_OVERLAYS += device/samsung/kanas/overlay-lineage
 
 # Thanks to Google's common kernel source
 # YACK should be capable of using sdcardfs on Android M and newer
