@@ -192,6 +192,9 @@ TARGET_NEEDS_LEGACY_CAMERA_HAL1_DYN_NATIVE_HANDLE := true
 # works without merging cameraserver and mediaserver.
 # TARGET_HAS_LEGACY_CAMERA_HAL1 := true
 
+# Use our profiles instead of Google's
+PGO_ADDITIONAL_PROFILE_DIRS := device/samsung/kanas/pgo-profiles
+
 # Sensors
 TARGET_USES_SENSORS_WRAPPER := false
 

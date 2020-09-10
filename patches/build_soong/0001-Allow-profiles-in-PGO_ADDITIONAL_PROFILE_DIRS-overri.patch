@@ -1,0 +1,38 @@
+From 6385aeb6ff144e816260fd5b0cdfc6613eb5c8fb Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Mon, 7 Sep 2020 22:39:54 +0800
+Subject: [PATCH] Allow profiles in PGO_ADDITIONAL_PROFILE_DIRS override the
+ those in the predefined paths
+
+On contrast with the commit 49540800f038de8b93411aa20b95215cb674ee42
+(Search for PGO profiles in PGO_ADDITIONAL_PROFILE_DIRS),
+the list of directories provided via the PGO_ADDITIONAL_PROFILE_DIRS
+variable will be searched first before going through the predefined paths
+in soong/cc/pgo.go allowing to use special profiles for devices.
+
+Test: Set this variable to a specific path and place a profile in it and
+a copy in one of the predefined paths. Verify that the profile in the
+specified path is used instead of the copy within the predefined paths.
+
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+Change-Id: I7fe463bdff040c86c305207d545cb308531ec9ad
+---
+ cc/pgo.go | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/cc/pgo.go b/cc/pgo.go
+index d39e4290..22b7ea63 100644
+--- a/cc/pgo.go
++++ b/cc/pgo.go
+@@ -42,7 +42,7 @@ const profileUseSamplingFormat = "-fprofile-sample-use=%s"
+ 
+ func getPgoProfileProjects(config android.DeviceConfig) []string {
+ 	return config.OnceStringSlice(pgoProfileProjectsConfigKey, func() []string {
+-		return append(globalPgoProfileProjects, config.PgoAdditionalProfileDirs()...)
++		return append(config.PgoAdditionalProfileDirs(), globalPgoProfileProjects...)
+ 	})
+ }
+ 
+-- 
+2.28.0
+
