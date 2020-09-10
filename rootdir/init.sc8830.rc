@@ -45,11 +45,15 @@ on init
     write /dev/cpuset/background/cpus 0
     write /dev/cpuset/system-background/cpus 0-2
 
+# Mount /system earlier than expected and allow /system/
+# and /vendor/ init scripts to be parsed before late-init
+    mount_all /fstab.sc8830 --early
+
 # SecEDS
     setprop ro.SecEDS.enable false
 
 on fs
-    mount_all /fstab.sc8830
+    mount_all /fstab.sc8830 --late
     mount pstore pstore /sys/fs/pstore
     symlink /system/res /res
     symlink /system/bin /bin
