@@ -146,10 +146,15 @@ INIT_FILES := \
 	device/samsung/kanas/system/etc/init/refnotify.rc \
 	device/samsung/kanas/system/etc/init/wpa_supplicant.rc
 
+# Additional Features/Services to enable within system_server
+PERMISSIONS_XML_FILES := \
+	frameworks/native/data/etc/android.software.picture_in_picture.xml \
+
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(MEDIA_CONFIGS),$(f):system/vendor/etc/$(notdir $(f))) \
 	$(foreach f,$(AUDIO_CONFIGS),$(f):system/vendor/etc/$(notdir $(f))) \
 	$(foreach f,$(WIFI_CONFIGS),$(f):system/vendor/etc/wifi/$(notdir $(f))) \
 	$(foreach f,$(RAMDISK_FILES),$(f):root/$(notdir $(f))) \
 	$(foreach f,$(INIT_FILES),$(f):system/vendor/etc/init/$(notdir $(f))) \
+	$(foreach f,$(PERMISSIONS_XML_FILES),$(f):system/vendor/etc/permissions/$(notdir $(f))) \
 
