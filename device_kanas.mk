@@ -37,6 +37,26 @@ PRODUCT_PROPERTY_OVERRIDES += \
 	ro.hwui.drop_shadow_cache_size=1 \
 	ro.hwui.r_buffer_cache_size=1 \
 
+# ART device props. overrides both go_defaults* and scx35-common tree
+PRODUCT_PROPERTY_OVERRIDES += \
+	dalvik.vm.image-dex2oat-filter=speed \
+	dalvik.vm.dex2oat-filter=space \
+	pm.dexopt.first-boot=quicken \
+	pm.dexopt.boot=verify \
+	pm.dexopt.install=quicken \
+	pm.dexopt.bg-dexopt=space-profile \
+	pm.dexopt.ab-ota=quicken \
+	pm.dexopt.inactive=verify \
+	pm.dexopt.shared=space \
+	dalvik.vm.image-dex2oat-threads=4 \
+	dalvik.vm.dex2oat-threads=4 \
+	dalvik.vm.dex2oat-swap=true \
+
+# Values from stock
+PRODUCT_PROPERTY_OVERRIDES += \
+	dalvik.vm.heapgrowthlimit=64m \
+	dalvik.vm.heapsize=96m \
+
 # Inherit from scx35-common device configuration
 $(call inherit-product, device/samsung/scx35-common/common.mk)
 
