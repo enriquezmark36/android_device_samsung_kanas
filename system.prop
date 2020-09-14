@@ -78,9 +78,6 @@ ro.config.swappiness=100
 # due to few buffers
 ro.sf.disable_triple_buffer=0
 
-# Use bfqio cgroups
-persist.sys.io.scheduler=bfq
-
 # EGL blobs crash on screen off
 ro.egl.destroy_after_detach=true
 
