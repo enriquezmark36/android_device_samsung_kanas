@@ -37,3 +37,8 @@ PRODUCT_PACKAGES += \
 #Power
  PRODUCT_PACKAGES += \
 	android.hardware.power@1.0-service.kanas
+
+#Usb
+# Remove the default usb service added by scx35-common before adding ours
+PRODUCT_PACKAGES := $(filter-out android.hardware.usb@1.0-service,$(PRODUCT_PACKAGES))
+PRODUCT_PACKAGES += android.hardware.usb@1.0-service.kanas
