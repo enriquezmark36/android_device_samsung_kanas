@@ -731,7 +731,7 @@ extern "C" void power_hint(power_hint_t hint, void *data)
 	}
 }
 
-int get_number_of_profiles()
+extern "C" int get_number_of_profiles()
 {
     return PROFILE_MAX;
 }
