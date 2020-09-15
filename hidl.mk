@@ -35,7 +35,8 @@ PRODUCT_PACKAGES += \
 	android.hardware.sensors@1.0-service \
 
 #Power
- PRODUCT_PACKAGES += \
+PRODUCT_PACKAGES := $(filter-out android.hardware.power@1.0-service.sc8830,$(PRODUCT_PACKAGES))
+PRODUCT_PACKAGES += \
 	android.hardware.power@1.0-service.kanas
 
 #Usb
