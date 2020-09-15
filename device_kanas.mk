@@ -48,6 +48,13 @@ PRODUCT_PROPERTY_OVERRIDES += \
 	dalvik.vm.heapgrowthlimit=64m \
 	dalvik.vm.heapsize=96m \
 
+# Go low ram mode! It's not that bad anymore compared to
+# earlier Android versions. We may lose splitscreen,
+# multiuser, multiprocess webview and voice recognition.
+# Why would you expect a ~700MB device do all of that?
+PRODUCT_PROPERTY_OVERRIDES += \
+	ro.config.low_ram=true
+
 # Inherit from scx35-common device configuration
 $(call inherit-product, device/samsung/scx35-common/common.mk)
 
