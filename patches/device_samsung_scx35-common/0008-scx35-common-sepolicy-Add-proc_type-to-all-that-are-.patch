@@ -1,0 +1,42 @@
+From 477300370225fdd32d729d348bee57d3014f5cf2 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Wed, 2 Sep 2020 14:09:07 +0800
+Subject: [PATCH 08/15] scx35-common: sepolicy: Add proc_type to all that are
+ in /proc/
+
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ sepolicy/file.te | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/sepolicy/file.te b/sepolicy/file.te
+index cee9bf1..4d19f9a 100644
+--- a/sepolicy/file.te
++++ b/sepolicy/file.te
+@@ -1,8 +1,8 @@
+ type prod_file, file_type;
+ type sock_file, file_type;
+-type proc_pin_switch, fs_type;
+-type proc_cpw, fs_type;
+-type proc_cpt, fs_type;
++type proc_pin_switch, fs_type, proc_type;
++type proc_cpw, fs_type, proc_type;
++type proc_cpt, fs_type, proc_type;
+ type sysfs_restart_cpc, fs_type, sysfs_type;
+ type sysfs_dynamic_pclk, fs_type, sysfs_type;
+ type at_distributor, exec_type, vendor_file_type, file_type;
+@@ -10,8 +10,8 @@ type modemd_exec, exec_type, vendor_file_type, file_type;
+ type nvitemd_exec, exec_type, vendor_file_type, file_type;
+ type refnotify_exec, exec_type, vendor_file_type, file_type;
+ type phoneserver_exec, exec_type, vendor_file_type, file_type;
+-type gps_data_file, file_type, data_file_type;
++type gps_data_file, file_type, data_file_type, core_data_file_type;
+ type wpa, domain;
+ type wpa_exec, exec_type, vendor_file_type, file_type;
+ type sysfs_dmcfreq_set_freq, fs_type, sysfs_type;
+-type sysfs_wait_for_fb, fs_type, sysfs_type;
+\ No newline at end of file
++type sysfs_wait_for_fb, fs_type, sysfs_type;
+-- 
+2.28.0
+

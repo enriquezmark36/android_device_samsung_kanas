@@ -1,0 +1,27 @@
+From 9e75967a2ca5886383804dffd5bde3e296163d1c Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Wed, 2 Sep 2020 14:04:48 +0800
+Subject: [PATCH 06/15] scx35-common: BoardConfig.mk: Replace ANDROID_BUILD_TOP
+ with $(shell pwd)
+
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ BoardConfigCommon.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/BoardConfigCommon.mk b/BoardConfigCommon.mk
+index bbe8ff5..207d6c8 100644
+--- a/BoardConfigCommon.mk
++++ b/BoardConfigCommon.mk
+@@ -58,7 +58,7 @@ BOARD_MKBOOTIMG_ARGS := --kernel_offset 0x00008000
+ BOARD_KERNEL_SEPARATED_DT := true
+ BOARD_KERNEL_IMAGE_NAME := zImage
+ TARGET_KERNEL_CROSS_COMPILE_PREFIX := arm-eabi-
+-KERNEL_TOOLCHAIN := $(ANDROID_BUILD_TOP)/prebuilts/gcc/linux-x86/arm/arm-eabi-4.8/bin
++KERNEL_TOOLCHAIN := $(shell pwd)/prebuilts/gcc/linux-x86/arm/arm-eabi-4.8/bin
+ 
+ # Include an expanded selection of fonts
+ EXTENDED_FONT_FOOTPRINT := true
+-- 
+2.28.0
+

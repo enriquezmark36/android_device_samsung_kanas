@@ -1,0 +1,298 @@
+From f565bed697b93a21660318275dabe3cac360bb54 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Thu, 3 Sep 2020 20:49:59 +0800
+Subject: [PATCH 14/15] scx35-common: init: Move usb related property triggers
+ to usb.rc
+
+Usually indicated by "property:sys.usb.config", move these block to
+the usb.rc which will reside in the /vendor/etc/init/ for a couple of
+reasons:
+
+1. Google has decided to move the configuration of USB ports/hubs away
+   from init. They have good reasons specially that init scripts are
+   limited.
+2. We (or at least I) need to test this usb configuration  thingy and
+   compiling a new boot image everytime is not a good idea.
+3. On Android P, we may need to have a USB hidl impl aside from the
+   default Google has provided. The thing is, that thing is written
+   for USB-C and will not work with the typical micro-b type USB 2
+   ports. I may be able to write one but with no support to OTG as
+   my device (SM-G355H doesn't seem to have one and I don't even know
+   how OTG works at all).
+
+All that's left in the init.sc8830.usb.rc is the essential ones like
+setting the IDs and setting up the ffs for use by adb (and maybe mtp
+and ptp later on).
+
+Cheers!
+
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ common.mk                  |   1 +
+ rootdir/init.sc8830.usb.rc | 107 -------------------------------------
+ system/etc/init/Android.mk |  10 +++-
+ system/etc/init/usb.rc     | 106 ++++++++++++++++++++++++++++++++++++
+ 4 files changed, 116 insertions(+), 108 deletions(-)
+ create mode 100644 system/etc/init/usb.rc
+
+diff --git a/common.mk b/common.mk
+index fa2ce64..fb741e8 100644
+--- a/common.mk
++++ b/common.mk
+@@ -129,6 +129,7 @@ PRODUCT_PACKAGES += \
+ 	set_mac.rc \
+ 	smd_symlink.rc \
+ 	swap.rc \
++	usb.rc \
+ 	wpa_supplicant.rc
+ 
+ # Rootdir files
+diff --git a/rootdir/init.sc8830.usb.rc b/rootdir/init.sc8830.usb.rc
+index 811d242..fadddb5 100644
+--- a/rootdir/init.sc8830.usb.rc
++++ b/rootdir/init.sc8830.usb.rc
+@@ -20,110 +20,3 @@ on fs
+ 
+ on init
+     write /sys/class/android_usb/android0/iSerial $ro.serialno
+-
+-on property:sys.usb.config=mtp
+-    write /sys/class/android_usb/android0/enable 0
+-    write /sys/class/android_usb/android0/idVendor 04E8
+-    write /sys/class/android_usb/android0/idProduct 6860
+-    write /sys/class/android_usb/android0/functions ${sys.usb.config}
+-    write /sys/class/android_usb/android0/f_acm/instances ${persist.sys.usb.sport}
+-    write /sys/class/android_usb/android0/enable 1
+-    setprop sys.usb.state ${sys.usb.config}
+-
+-on property:sys.usb.config=acm,adb
+-    write /sys/class/android_usb/android0/enable 0
+-    write /sys/class/android_usb/android0/idVendor 04E8
+-    write /sys/class/android_usb/android0/idProduct 685D
+-    write /sys/class/android_usb/android0/functions ${sys.usb.config}
+-    write /sys/class/android_usb/f_acm/instances 2
+-    write /sys/class/android_usb/android0/enable 1
+-    start adbd
+-    setprop sys.usb.state ${sys.usb.config}
+-
+-on property:sys.usb.config=dm,acm,adb
+-    write /sys/class/android_usb/android0/enable 0
+-    write /sys/class/android_usb/android0/idVendor 04E8
+-    write /sys/class/android_usb/android0/idProduct 685D
+-    write /sys/class/android_usb/android0/functions ${sys.usb.config}
+-    write /sys/class/android_usb/android0/enable 1
+-    start adbd
+-    setprop sys.usb.state ${sys.usb.config}
+-
+-on property:sys.usb.config=mtp,adb
+-    write /sys/class/android_usb/android0/enable 0
+-    write /sys/class/android_usb/android0/idVendor 04E8
+-    write /sys/class/android_usb/android0/idProduct 6860
+-    write /sys/class/android_usb/android0/functions ${sys.usb.config}
+-    write /sys/class/android_usb/android0/f_acm/instances ${persist.sys.usb.sport}
+-    write /sys/class/android_usb/android0/enable 1
+-    start adbd
+-    setprop sys.usb.state ${sys.usb.config}
+-
+-on property:sys.usb.config=ptp
+-    write /sys/class/android_usb/android0/enable 0
+-    write /sys/class/android_usb/android0/idVendor 04E8
+-    write /sys/class/android_usb/android0/idProduct 6865
+-    write /sys/class/android_usb/android0/functions ${sys.usb.config}
+-    write /sys/class/android_usb/android0/enable 1
+-    setprop sys.usb.state ${sys.usb.config}
+-
+-on property:sys.usb.config=ptp,adb
+-    write /sys/class/android_usb/android0/enable 0
+-    write /sys/class/android_usb/android0/idVendor 04E8
+-    write /sys/class/android_usb/android0/idProduct 6866
+-    write /sys/class/android_usb/android0/functions ${sys.usb.config}
+-    write /sys/class/android_usb/android0/f_acm/instances ${persist.sys.usb.sport}
+-    write /sys/class/android_usb/android0/enable 1
+-    start adbd
+-    setprop sys.usb.state ${sys.usb.config}
+-
+-on property:sys.usb.config=rndis
+-    write /sys/class/android_usb/android0/enable 0
+-    write /sys/class/android_usb/android0/idVendor 04E8
+-    write /sys/class/android_usb/android0/idProduct 6863
+-    write /sys/class/android_usb/android0/functions ${sys.usb.config}
+-    write /sys/class/android_usb/android0/bDeviceClass 2
+-    write /sys/class/android_usb/android0/bDeviceSubClass 0
+-    write /sys/class/android_usb/android0/bDeviceProtocol 0
+-    write /sys/class/android_usb/android0/enable 1
+-    setprop sys.usb.state ${sys.usb.config}
+-
+-on property:sys.usb.config=rndis,adb
+-    write /sys/class/android_usb/android0/enable 0
+-    write /sys/class/android_usb/android0/idVendor 04E8
+-    write /sys/class/android_usb/android0/idProduct 6864
+-    write /sys/class/android_usb/android0/functions ${sys.usb.config}
+-    write /sys/class/android_usb/android0/bDeviceClass 2
+-    write /sys/class/android_usb/android0/bDeviceSubClass 0
+-    write /sys/class/android_usb/android0/bDeviceProtocol 0
+-    write /sys/class/android_usb/android0/enable 1
+-    start adbd
+-    setprop sys.usb.state ${sys.usb.config}
+-
+-on property:sys.usb.config=rndis,dm
+-    write /sys/class/android_usb/android0/enable 0
+-    write /sys/class/android_usb/android0/idVendor 04e8
+-    write /sys/class/android_usb/android0/idProduct 6862
+-    write /sys/class/android_usb/android0/functions ${sys.usb.config}
+-    write /sys/class/android_usb/android0/f_acm/instances ${persist.sys.usb.sport}
+-    write /sys/class/android_usb/android0/enable 1
+-    setprop sys.usb.state ${sys.usb.config}
+-
+-on property:sys.usb.config=rndis,acm,dm
+-    write /sys/class/android_usb/android0/enable 0
+-    write /sys/class/android_usb/android0/idVendor 04e8
+-    write /sys/class/android_usb/android0/idProduct 6862
+-    write /sys/class/android_usb/android0/functions ${sys.usb.config}
+-    write /sys/class/android_usb/android0/f_acm/instances ${persist.sys.usb.sport}
+-    write /sys/class/android_usb/android0/enable 1
+-    setprop sys.usb.state ${sys.usb.config}
+-
+- on property:sys.usb.config=rndis,acm,dm,adb
+-    write /sys/class/android_usb/android0/enable 0
+-    write /sys/class/android_usb/android0/idVendor 04e8
+-    write /sys/class/android_usb/android0/idProduct 6864
+-    write /sys/class/android_usb/android0/functions ${sys.usb.config}
+-    write /sys/class/android_usb/android0/f_acm/instances ${persist.sys.usb.sport}
+-    write /sys/class/android_usb/android0/enable 1
+-    start adbd
+-    setprop sys.usb.state ${sys.usb.config}
+diff --git a/system/etc/init/Android.mk b/system/etc/init/Android.mk
+index 6aa1ed9..97f09df 100644
+--- a/system/etc/init/Android.mk
++++ b/system/etc/init/Android.mk
+@@ -150,4 +150,12 @@ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/init
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+-include $(BUILD_PREBUILT)
+\ No newline at end of file
++include $(BUILD_PREBUILT)
++
++include $(CLEAR_VARS)
++LOCAL_MODULE := usb.rc
++LOCAL_MODULE_TAGS := optional
++LOCAL_MODULE_CLASS := ETC
++LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/init
++LOCAL_SRC_FILES := $(LOCAL_MODULE)
++include $(BUILD_PREBUILT)
+diff --git a/system/etc/init/usb.rc b/system/etc/init/usb.rc
+new file mode 100644
+index 0000000..5c0533d
+--- /dev/null
++++ b/system/etc/init/usb.rc
+@@ -0,0 +1,106 @@
++on property:sys.usb.config=mtp
++    write /sys/class/android_usb/android0/enable 0
++    write /sys/class/android_usb/android0/idVendor 04E8
++    write /sys/class/android_usb/android0/idProduct 6860
++    write /sys/class/android_usb/android0/functions ${sys.usb.config}
++    write /sys/class/android_usb/android0/f_acm/instances ${persist.sys.usb.sport}
++    write /sys/class/android_usb/android0/enable 1
++    setprop sys.usb.state ${sys.usb.config}
++
++on property:sys.usb.config=acm,adb
++    write /sys/class/android_usb/android0/enable 0
++    write /sys/class/android_usb/android0/idVendor 04E8
++    write /sys/class/android_usb/android0/idProduct 685D
++    write /sys/class/android_usb/android0/functions ${sys.usb.config}
++    write /sys/class/android_usb/f_acm/instances 2
++    write /sys/class/android_usb/android0/enable 1
++    start adbd
++    setprop sys.usb.state ${sys.usb.config}
++
++on property:sys.usb.config=dm,acm,adb
++    write /sys/class/android_usb/android0/enable 0
++    write /sys/class/android_usb/android0/idVendor 04E8
++    write /sys/class/android_usb/android0/idProduct 685D
++    write /sys/class/android_usb/android0/functions ${sys.usb.config}
++    write /sys/class/android_usb/android0/enable 1
++    start adbd
++    setprop sys.usb.state ${sys.usb.config}
++
++on property:sys.usb.config=mtp,adb
++    write /sys/class/android_usb/android0/enable 0
++    write /sys/class/android_usb/android0/idVendor 04E8
++    write /sys/class/android_usb/android0/idProduct 6860
++    write /sys/class/android_usb/android0/functions ${sys.usb.config}
++    write /sys/class/android_usb/android0/f_acm/instances ${persist.sys.usb.sport}
++    write /sys/class/android_usb/android0/enable 1
++    start adbd
++    setprop sys.usb.state ${sys.usb.config}
++
++on property:sys.usb.config=ptp
++    write /sys/class/android_usb/android0/enable 0
++    write /sys/class/android_usb/android0/idVendor 04E8
++    write /sys/class/android_usb/android0/idProduct 6865
++    write /sys/class/android_usb/android0/functions ${sys.usb.config}
++    write /sys/class/android_usb/android0/enable 1
++    setprop sys.usb.state ${sys.usb.config}
++
++on property:sys.usb.config=ptp,adb
++    write /sys/class/android_usb/android0/enable 0
++    write /sys/class/android_usb/android0/idVendor 04E8
++    write /sys/class/android_usb/android0/idProduct 6866
++    write /sys/class/android_usb/android0/functions ${sys.usb.config}
++    write /sys/class/android_usb/android0/f_acm/instances ${persist.sys.usb.sport}
++    write /sys/class/android_usb/android0/enable 1
++    start adbd
++    setprop sys.usb.state ${sys.usb.config}
++
++on property:sys.usb.config=rndis
++    write /sys/class/android_usb/android0/enable 0
++    write /sys/class/android_usb/android0/idVendor 04E8
++    write /sys/class/android_usb/android0/idProduct 6863
++    write /sys/class/android_usb/android0/functions ${sys.usb.config}
++    write /sys/class/android_usb/android0/bDeviceClass 2
++    write /sys/class/android_usb/android0/bDeviceSubClass 0
++    write /sys/class/android_usb/android0/bDeviceProtocol 0
++    write /sys/class/android_usb/android0/enable 1
++    setprop sys.usb.state ${sys.usb.config}
++
++on property:sys.usb.config=rndis,adb
++    write /sys/class/android_usb/android0/enable 0
++    write /sys/class/android_usb/android0/idVendor 04E8
++    write /sys/class/android_usb/android0/idProduct 6864
++    write /sys/class/android_usb/android0/functions ${sys.usb.config}
++    write /sys/class/android_usb/android0/bDeviceClass 2
++    write /sys/class/android_usb/android0/bDeviceSubClass 0
++    write /sys/class/android_usb/android0/bDeviceProtocol 0
++    write /sys/class/android_usb/android0/enable 1
++    start adbd
++    setprop sys.usb.state ${sys.usb.config}
++
++on property:sys.usb.config=rndis,dm
++    write /sys/class/android_usb/android0/enable 0
++    write /sys/class/android_usb/android0/idVendor 04e8
++    write /sys/class/android_usb/android0/idProduct 6862
++    write /sys/class/android_usb/android0/functions ${sys.usb.config}
++    write /sys/class/android_usb/android0/f_acm/instances ${persist.sys.usb.sport}
++    write /sys/class/android_usb/android0/enable 1
++    setprop sys.usb.state ${sys.usb.config}
++
++on property:sys.usb.config=rndis,acm,dm
++    write /sys/class/android_usb/android0/enable 0
++    write /sys/class/android_usb/android0/idVendor 04e8
++    write /sys/class/android_usb/android0/idProduct 6862
++    write /sys/class/android_usb/android0/functions ${sys.usb.config}
++    write /sys/class/android_usb/android0/f_acm/instances ${persist.sys.usb.sport}
++    write /sys/class/android_usb/android0/enable 1
++    setprop sys.usb.state ${sys.usb.config}
++
++ on property:sys.usb.config=rndis,acm,dm,adb
++    write /sys/class/android_usb/android0/enable 0
++    write /sys/class/android_usb/android0/idVendor 04e8
++    write /sys/class/android_usb/android0/idProduct 6864
++    write /sys/class/android_usb/android0/functions ${sys.usb.config}
++    write /sys/class/android_usb/android0/f_acm/instances ${persist.sys.usb.sport}
++    write /sys/class/android_usb/android0/enable 1
++    start adbd
++    setprop sys.usb.state ${sys.usb.config}
+-- 
+2.28.0
+

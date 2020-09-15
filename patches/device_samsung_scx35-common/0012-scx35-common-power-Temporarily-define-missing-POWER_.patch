@@ -1,0 +1,45 @@
+From 96ad5b98a6b766928362b6cbbb978c7088b2d6e6 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Wed, 2 Sep 2020 16:10:51 +0800
+Subject: [PATCH 12/15] scx35-common: power: Temporarily define missing
+ POWER_HINT_*
+
+POWER_HINT_CPU_BOOST and POWER_HINT_SET_PROFILE are LineageOS extensions for
+the power hint callback but they have gone missing from the libhardware
+headers. They were moved to the HIDL interface which is in C++ meaning
+it would be non-trival to import the enum to the C code.
+
+Then? Let's just manually define it.
+
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ power/power_scx35.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/power/power_scx35.c b/power/power_scx35.c
+index 478b01b..a6dd972 100644
+--- a/power/power_scx35.c
++++ b/power/power_scx35.c
+@@ -52,6 +52,10 @@
+ #define IO_IS_BUSY_PATH         "/io_is_busy"
+ #define BOOSTPULSE_PATH         "/boostpulse"
+ 
++//TODO: defs have been moved to an HIDL based build
++#define POWER_HINT_CPU_BOOST 272u
++#define POWER_HINT_SET_PROFILE 273u
++
+ struct touch_path {
+ 	char* touchscreen_power_path;
+ 	char* touchkey_power_path;
+@@ -452,7 +456,7 @@ out:
+  */
+ void power_hint(power_hint_t hint, void *data)
+ {
+-	switch (hint) {
++	switch ((int)hint) {
+ 		case POWER_HINT_INTERACTION: {
+ 			if (current_power_profile == PROFILE_POWER_SAVE) {
+ 				return;
+-- 
+2.28.0
+

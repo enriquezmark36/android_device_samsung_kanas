@@ -1,0 +1,646 @@
+From 2cddf18665c346face0c382d9c215b129523e2ee Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Wed, 2 Sep 2020 15:56:55 +0800
+Subject: [PATCH 09/15] scx35-common: Remove Samsung Doze [HELP WANTED]
+
+This version of Samsung Doze will not work for Android Pie.
+So remove it until, someone finds and alternative... Yeah not me since my
+device (SM-G355H) was not made with a proximity sensor like its
+cousins like the Samsung Galaxy Core Prime does.
+
+The Accelerometer code in SM-G355H was instead, reverse engineered and had
+the SMD sensor support stubbed which unthinkably still made Doze work so...
+
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ doze/Android.mk                               |  38 ----
+ doze/AndroidManifest.xml                      |  45 ----
+ doze/proguard.flags                           |   9 -
+ doze/res/values/styles.xml                    |  56 -----
+ doze/res/xml/gesture_panel.xml                |  55 -----
+ .../device/BootCompletedReceiver.java         |  35 ---
+ .../settings/device/SamsungDozeActivity.java  |  31 ---
+ .../settings/device/SamsungDozeService.java   | 201 ------------------
+ .../device/TouchscreenGestureSettings.java    |  84 --------
+ 9 files changed, 554 deletions(-)
+ delete mode 100644 doze/Android.mk
+ delete mode 100644 doze/AndroidManifest.xml
+ delete mode 100644 doze/proguard.flags
+ delete mode 100644 doze/res/values/styles.xml
+ delete mode 100644 doze/res/xml/gesture_panel.xml
+ delete mode 100644 doze/src/org/lineageos/settings/device/BootCompletedReceiver.java
+ delete mode 100644 doze/src/org/lineageos/settings/device/SamsungDozeActivity.java
+ delete mode 100644 doze/src/org/lineageos/settings/device/SamsungDozeService.java
+ delete mode 100644 doze/src/org/lineageos/settings/device/TouchscreenGestureSettings.java
+
+diff --git a/doze/Android.mk b/doze/Android.mk
+deleted file mode 100644
+index 4f9f904..0000000
+--- a/doze/Android.mk
++++ /dev/null
+@@ -1,38 +0,0 @@
+-LOCAL_PATH:= $(call my-dir)
+-include $(CLEAR_VARS)
+-
+-LOCAL_MODULE_TAGS := optional
+-
+-LOCAL_SRC_FILES := $(call all-java-files-under, src)
+-
+-LOCAL_PACKAGE_NAME := SamsungDoze
+-LOCAL_CERTIFICATE := platform
+-LOCAL_PRIVILEGED_MODULE := true
+-
+-LOCAL_USE_AAPT2 := true
+-
+-LOCAL_STATIC_ANDROID_LIBRARIES := \
+-    android-support-v4 \
+-    android-support-v13 \
+-    android-support-v7-appcompat \
+-    android-support-v7-preference \
+-    android-support-v7-recyclerview \
+-    android-support-v14-preference
+-
+-LOCAL_STATIC_JAVA_LIBRARIES := \
+-    org.lineageos.platform.internal
+-
+-LOCAL_PROGUARD_FLAG_FILES := proguard.flags
+-
+-LOCAL_RESOURCE_DIR := \
+-    $(LOCAL_PATH)/res \
+-    $(TOP)/packages/resources/devicesettings/res
+-
+-ifneq ($(INCREMENTAL_BUILDS),)
+-    LOCAL_PROGUARD_ENABLED := disabled
+-    LOCAL_JACK_ENABLED := incremental
+-endif
+-
+-include $(BUILD_PACKAGE)
+-
+-include $(call all-makefiles-under,$(LOCAL_PATH))
+diff --git a/doze/AndroidManifest.xml b/doze/AndroidManifest.xml
+deleted file mode 100644
+index 060ad2c..0000000
+--- a/doze/AndroidManifest.xml
++++ /dev/null
+@@ -1,45 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+-    package="org.lineageos.settings.device"
+-    android:versionCode="1"
+-    android:versionName="1.0"
+-    android:sharedUserId="android.uid.system">
+-
+-    <uses-permission android:name="android.permission.DEVICE_POWER" />
+-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+-    <uses-permission android:name="android.permission.VIBRATE"/>
+-    <uses-permission android:name="android.permission.WAKE_LOCK" />
+-
+-    <protected-broadcast android:name="com.android.systemui.doze.pulse" />
+-
+-    <uses-sdk
+-        android:minSdkVersion="24"
+-        android:targetSdkVersion="26"/>
+-
+-    <application
+-        android:label="@string/device_settings_app_name"
+-        android:persistent="true">
+-
+-        <receiver android:name=".BootCompletedReceiver">
+-            <intent-filter>
+-                <action android:name="android.intent.action.BOOT_COMPLETED" />
+-                <category android:name="android.intent.category.DEFAULT" />
+-            </intent-filter>
+-        </receiver>
+-
+-        <service android:name=".SamsungDozeService"
+-                 android:permission="SamsungDozeService">
+-        </service>
+-
+-        <activity
+-            android:name=".SamsungDozeActivity"
+-            android:label="@string/ambient_display_title"
+-            android:theme="@style/Theme.Main">
+-            <intent-filter>
+-                <action android:name="org.lineageos.settings.device.DOZE_SETTINGS" />
+-                <category android:name="android.intent.category.DEFAULT" />
+-            </intent-filter>
+-        </activity>
+-
+-    </application>
+-</manifest>
+diff --git a/doze/proguard.flags b/doze/proguard.flags
+deleted file mode 100644
+index ca04a21..0000000
+--- a/doze/proguard.flags
++++ /dev/null
+@@ -1,9 +0,0 @@
+--keep class org.lineageos.settings.device.* {
+-  *;
+-}
+-
+--keepclasseswithmembers class * {
+-    public <init>(android.content.Context, android.util.AttributeSet);
+-}
+-
+--keep class ** extends android.support.v14.preference.PreferenceFragment
+diff --git a/doze/res/values/styles.xml b/doze/res/values/styles.xml
+deleted file mode 100644
+index 1ecca6c..0000000
+--- a/doze/res/values/styles.xml
++++ /dev/null
+@@ -1,56 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<!--
+-     Copyright (C) 2016 The CyanogenMod Project
+-
+-     Licensed under the Apache License, Version 2.0 (the "License");
+-     you may not use this file except in compliance with the License.
+-     You may obtain a copy of the License at
+-
+-          http://www.apache.org/licenses/LICENSE-2.0
+-
+-     Unless required by applicable law or agreed to in writing, software
+-     distributed under the License is distributed on an "AS IS" BASIS,
+-     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-     See the License for the specific language governing permissions and
+-     limitations under the License.
+--->
+-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+-    <style name="Theme.Main" parent="@android:style/Theme.DeviceDefault.Settings">
+-        <item name="dialogPreferenceStyle">@style/Theme.Main.DialogPreferenceStyle</item>
+-        <item name="preferenceCategoryStyle">@style/Theme.Main.PreferenceCategoryStyle</item>
+-        <item name="preferenceFragmentStyle">@style/Theme.Main.PreferenceFragmentStyle</item>
+-        <item name="preferenceStyle">@style/Theme.Main.PreferenceStyle</item>
+-        <item name="preferenceTheme">@style/Theme.Main.PreferenceTheme</item>
+-        <item name="switchPreferenceStyle">@style/Theme.Main.SwitchPreferenceStyle</item>
+-    </style>
+-
+-    <style name="Theme.Main.DialogPreferenceStyle" parent="@style/Theme.Main.PreferenceStyle">
+-    </style>
+-
+-    <style name="Theme.Main.PreferenceCategoryStyle" parent="@*android:style/Preference.DeviceDefault.Category">
+-        <item name="allowDividerAbove">true</item>
+-        <item name="allowDividerBelow">true</item>
+-        <item name="android:layout">@layout/preference_category_material_settings</item>
+-    </style>
+-
+-    <style name="Theme.Main.PreferenceFragmentStyle" parent="@*android:style/PreferenceFragment.Material">
+-        <item name="allowDividerAfterLastItem">false</item>
+-    </style>
+-
+-    <style name="Theme.Main.PreferenceStyle" parent="@*android:style/Preference.DeviceDefault">
+-        <item name="allowDividerAbove">false</item>
+-        <item name="allowDividerBelow">true</item>
+-        <item name="singleLineTitle">false</item>
+-        <item name="android:layout">@layout/preference_material_settings</item>
+-    </style>
+-
+-    <style name="Theme.Main.PreferenceTheme">
+-    </style>
+-
+-    <style name="Theme.Main.SwitchPreferenceStyle" parent="@style/Theme.Main.PreferenceStyle">
+-        <item name="widgetLayout">@*android:layout/preference_widget_switch</item>
+-    </style>
+-
+-    <style name="Theme.Main.SwitchBar" parent="@android:style/ThemeOverlay.Material.ActionBar">
+-    </style>
+-</resources>
+diff --git a/doze/res/xml/gesture_panel.xml b/doze/res/xml/gesture_panel.xml
+deleted file mode 100644
+index 1a063d1..0000000
+--- a/doze/res/xml/gesture_panel.xml
++++ /dev/null
+@@ -1,55 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<!--
+-     Copyright (C) 2015 The CyanogenMod Project
+-
+-     Licensed under the Apache License, Version 2.0 (the "License"
+-     you may not use this file except in compliance with the License.
+-     You may obtain a copy of the License at
+-
+-          http://www.apache.org/licenses/LICENSE-2.0
+-
+-     Unless required by applicable law or agreed to in writing, software
+-     distributed under the License is distributed on an "AS IS" BASIS,
+-     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-     See the License for the specific language governing permissions and
+-     limitations under the License.
+--->
+-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+-
+-    <PreferenceCategory
+-        android:key="ambient_display_key"
+-        android:title="@string/ambient_display_title">
+-
+-        <lineageos.preference.SecureSettingSwitchPreference
+-            android:key="doze_enabled"
+-            android:defaultValue="true"
+-            android:title="@string/ambient_display_enable_title"
+-            android:summary="@string/ambient_display_enable_summary" />
+-
+-        <SwitchPreference
+-            android:key="gesture_hand_wave"
+-            android:defaultValue="false"
+-            android:title="@string/hand_wave_gesture_title"
+-            android:summary="@string/hand_wave_gesture_summary"
+-            android:dependency="doze_enabled" />
+-
+-        <SwitchPreference
+-            android:key="gesture_pocket"
+-            android:defaultValue="false"
+-            android:title="@string/pocket_gesture_title"
+-            android:summary="@string/pocket_gesture_summary"
+-            android:dependency="doze_enabled" />
+-    </PreferenceCategory>
+-
+-    <PreferenceCategory
+-        android:key="proximity_wake_key"
+-        android:title="@string/proximity_wake_title">
+-
+-        <SwitchPreference
+-            android:key="proximity_wake_enable"
+-            android:defaultValue="false"
+-            android:title="@string/proximity_wake_enable_title"
+-            android:summary="@string/proximity_wake_enable_summary" />
+-    </PreferenceCategory>
+-
+-</PreferenceScreen>
+diff --git a/doze/src/org/lineageos/settings/device/BootCompletedReceiver.java b/doze/src/org/lineageos/settings/device/BootCompletedReceiver.java
+deleted file mode 100644
+index fa8de8e..0000000
+--- a/doze/src/org/lineageos/settings/device/BootCompletedReceiver.java
++++ /dev/null
+@@ -1,35 +0,0 @@
+-/*
+- * Copyright (c) 2015 The CyanogenMod Project
+- *
+- * Licensed under the Apache License, Version 2.0 (the "License");
+- * you may not use this file except in compliance with the License.
+- * You may obtain a copy of the License at
+- *
+- *      http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS,
+- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+- * See the License for the specific language governing permissions and
+- * limitations under the License.
+- */
+-
+-package org.lineageos.settings.device;
+-
+-import android.content.BroadcastReceiver;
+-import android.content.Context;
+-import android.content.Intent;
+-import android.util.Log;
+-
+-public class BootCompletedReceiver extends BroadcastReceiver {
+-
+-    private static final boolean DEBUG = false;
+-    private static final String TAG = "SamsungDoze";
+-
+-    @Override
+-    public void onReceive(final Context context, Intent intent) {
+-        if (DEBUG) Log.d(TAG, "Starting service");
+-        context.startService(new Intent(context, SamsungDozeService.class));
+-    }
+-
+-}
+diff --git a/doze/src/org/lineageos/settings/device/SamsungDozeActivity.java b/doze/src/org/lineageos/settings/device/SamsungDozeActivity.java
+deleted file mode 100644
+index 571f34a..0000000
+--- a/doze/src/org/lineageos/settings/device/SamsungDozeActivity.java
++++ /dev/null
+@@ -1,31 +0,0 @@
+-/*
+- * Copyright (c) 2016 The CyanogenMod Project
+- *
+- * Licensed under the Apache License, Version 2.0 (the "License");
+- * you may not use this file except in compliance with the License.
+- * You may obtain a copy of the License at
+- *
+- *      http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS,
+- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+- * See the License for the specific language governing permissions and
+- * limitations under the License.
+- */
+-package org.lineageos.settings.device;
+-
+-import android.os.Bundle;
+-import android.preference.PreferenceActivity;
+-
+-public class SamsungDozeActivity extends PreferenceActivity {
+-
+-    private static final String TAG = "samsung_doze";
+-
+-    protected void onCreate(Bundle savedInstanceState) {
+-        super.onCreate(savedInstanceState);
+-
+-        getFragmentManager().beginTransaction().replace(android.R.id.content,
+-                new TouchscreenGestureSettings(), TAG).commit();
+-    }
+-}
+diff --git a/doze/src/org/lineageos/settings/device/SamsungDozeService.java b/doze/src/org/lineageos/settings/device/SamsungDozeService.java
+deleted file mode 100644
+index fc3f2d0..0000000
+--- a/doze/src/org/lineageos/settings/device/SamsungDozeService.java
++++ /dev/null
+@@ -1,201 +0,0 @@
+-/*
+- * Copyright (c) 2015 The CyanogenMod Project
+- *
+- * Licensed under the Apache License, Version 2.0 (the "License");
+- * you may not use this file except in compliance with the License.
+- * You may obtain a copy of the License at
+- *
+- *      http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS,
+- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+- * See the License for the specific language governing permissions and
+- * limitations under the License.
+- */
+-
+-package org.lineageos.settings.device;
+-
+-import android.app.Service;
+-import android.content.BroadcastReceiver;
+-import android.content.Context;
+-import android.content.Intent;
+-import android.content.IntentFilter;
+-import android.content.SharedPreferences;
+-import android.hardware.Sensor;
+-import android.hardware.SensorEvent;
+-import android.hardware.SensorEventListener;
+-import android.hardware.SensorManager;
+-import android.os.IBinder;
+-import android.os.PowerManager;
+-import android.os.UserHandle;
+-import android.preference.PreferenceManager;
+-import android.provider.Settings;
+-import android.util.Log;
+-
+-import java.lang.System;
+-import java.util.ArrayList;
+-import java.util.concurrent.TimeUnit;
+-import java.util.List;
+-
+-public class SamsungDozeService extends Service {
+-    private static final String TAG = "SamsungDozeService";
+-    private static final boolean DEBUG = false;
+-
+-    private static final String DOZE_INTENT = "com.android.systemui.doze.pulse";
+-
+-    private static final String GESTURE_HAND_WAVE_KEY = "gesture_hand_wave";
+-    private static final String GESTURE_POCKET_KEY = "gesture_pocket";
+-    private static final String PROXIMITY_WAKE_KEY = "proximity_wake_enable";
+-
+-    private static final int POCKET_DELTA_NS = 1000 * 1000 * 1000;
+-
+-    private Context mContext;
+-    private SamsungProximitySensor mSensor;
+-    private PowerManager mPowerManager;
+-
+-    private boolean mHandwaveGestureEnabled = false;
+-    private boolean mPocketGestureEnabled = false;
+-    private boolean mProximityWakeEnabled = false;
+-
+-    class SamsungProximitySensor implements SensorEventListener {
+-        private SensorManager mSensorManager;
+-        private Sensor mSensor;
+-
+-        private boolean mSawNear = false;
+-        private long mInPocketTime = 0;
+-
+-        public SamsungProximitySensor(Context context) {
+-            mSensorManager = (SensorManager)context.getSystemService(Context.SENSOR_SERVICE);
+-            mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
+-        }
+-
+-        @Override
+-        public void onSensorChanged(SensorEvent event) {
+-            boolean isNear = event.values[0] < mSensor.getMaximumRange();
+-            if (mSawNear && !isNear) {
+-                if (shouldPulse(event.timestamp)) {
+-                    launchDozePulse();
+-                }
+-            } else {
+-                mInPocketTime = event.timestamp;
+-            }
+-            mSawNear = isNear;
+-        }
+-
+-        @Override
+-        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+-            /* Empty */
+-        }
+-
+-        private boolean shouldPulse(long timestamp) {
+-            long delta = timestamp - mInPocketTime;
+-
+-            if (mHandwaveGestureEnabled && mPocketGestureEnabled) {
+-                return true;
+-            } else if (mProximityWakeEnabled && (delta < POCKET_DELTA_NS)) {
+-                mPowerManager.wakeUp(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
+-                return false;
+-            } else if (mHandwaveGestureEnabled && !mPocketGestureEnabled) {
+-                return delta < POCKET_DELTA_NS;
+-            } else if (!mHandwaveGestureEnabled && mPocketGestureEnabled) {
+-                return delta >= POCKET_DELTA_NS;
+-            }
+-            return false;
+-        }
+-
+-        public void testAndEnable() {
+-            if ((isDozeEnabled() && (mHandwaveGestureEnabled || mPocketGestureEnabled)) ||
+-                    mProximityWakeEnabled) {
+-                mSensorManager.registerListener(this, mSensor, SensorManager.SENSOR_DELAY_NORMAL);
+-            }
+-        }
+-
+-        public void disable() {
+-            mSensorManager.unregisterListener(this, mSensor);
+-        }
+-    }
+-
+-    @Override
+-    public void onCreate() {
+-        if (DEBUG) Log.d(TAG, "SamsungDozeService Started");
+-        mContext = this;
+-        mPowerManager = (PowerManager)getSystemService(Context.POWER_SERVICE);
+-        mSensor = new SamsungProximitySensor(mContext);
+-        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mContext);
+-        loadPreferences(sharedPrefs);
+-        sharedPrefs.registerOnSharedPreferenceChangeListener(mPrefListener);
+-        if (!isInteractive()) {
+-            mSensor.testAndEnable();
+-        }
+-    }
+-
+-    @Override
+-    public int onStartCommand(Intent intent, int flags, int startId) {
+-        if (DEBUG) Log.d(TAG, "Starting service");
+-        IntentFilter screenStateFilter = new IntentFilter(Intent.ACTION_SCREEN_ON);
+-        screenStateFilter.addAction(Intent.ACTION_SCREEN_OFF);
+-        mContext.registerReceiver(mScreenStateReceiver, screenStateFilter);
+-        return START_STICKY;
+-    }
+-
+-    @Override
+-    public IBinder onBind(Intent intent) {
+-        return null;
+-    }
+-
+-    private void launchDozePulse() {
+-        mContext.sendBroadcastAsUser(new Intent(DOZE_INTENT),
+-                new UserHandle(UserHandle.USER_CURRENT));
+-    }
+-
+-    private boolean isInteractive() {
+-        return mPowerManager.isInteractive();
+-    }
+-
+-    private boolean isDozeEnabled() {
+-        return Settings.Secure.getInt(mContext.getContentResolver(),
+-                Settings.Secure.DOZE_ENABLED, 1) != 0;
+-    }
+-
+-    private void onDisplayOn() {
+-        if (DEBUG) Log.d(TAG, "Display on");
+-        mSensor.disable();
+-    }
+-
+-    private void onDisplayOff() {
+-        if (DEBUG) Log.d(TAG, "Display off");
+-        mSensor.testAndEnable();
+-    }
+-
+-    private void loadPreferences(SharedPreferences sharedPreferences) {
+-        mHandwaveGestureEnabled = sharedPreferences.getBoolean(GESTURE_HAND_WAVE_KEY, false);
+-        mPocketGestureEnabled = sharedPreferences.getBoolean(GESTURE_POCKET_KEY, false);
+-        mProximityWakeEnabled = sharedPreferences.getBoolean(PROXIMITY_WAKE_KEY, false);
+-    }
+-
+-    private BroadcastReceiver mScreenStateReceiver = new BroadcastReceiver() {
+-        @Override
+-        public void onReceive(Context context, Intent intent) {
+-            if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
+-                onDisplayOff();
+-            } else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
+-                onDisplayOn();
+-            }
+-        }
+-    };
+-
+-    private SharedPreferences.OnSharedPreferenceChangeListener mPrefListener =
+-            new SharedPreferences.OnSharedPreferenceChangeListener() {
+-        @Override
+-        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+-            if (GESTURE_HAND_WAVE_KEY.equals(key)) {
+-                mHandwaveGestureEnabled = sharedPreferences.getBoolean(GESTURE_HAND_WAVE_KEY, false);
+-            } else if (GESTURE_POCKET_KEY.equals(key)) {
+-                mPocketGestureEnabled = sharedPreferences.getBoolean(GESTURE_POCKET_KEY, false);
+-            } else if (PROXIMITY_WAKE_KEY.equals(key)) {
+-                mProximityWakeEnabled = sharedPreferences.getBoolean(PROXIMITY_WAKE_KEY, false);
+-            }
+-        }
+-    };
+-}
+diff --git a/doze/src/org/lineageos/settings/device/TouchscreenGestureSettings.java b/doze/src/org/lineageos/settings/device/TouchscreenGestureSettings.java
+deleted file mode 100644
+index 44c9b94..0000000
+--- a/doze/src/org/lineageos/settings/device/TouchscreenGestureSettings.java
++++ /dev/null
+@@ -1,84 +0,0 @@
+-/*
+- * Copyright (C) 2015 The CyanogenMod Project
+- *
+- * Licensed under the Apache License, Version 2.0 (the "License");
+- * you may not use this file except in compliance with the License.
+- * You may obtain a copy of the License at
+- *
+- *      http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS,
+- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+- * See the License for the specific language governing permissions and
+- * limitations under the License.
+- */
+-
+-package org.lineageos.settings.device;
+-
+-import android.app.ActionBar;
+-import android.os.Bundle;
+-import android.support.v14.preference.PreferenceFragment;
+-import android.support.v14.preference.SwitchPreference;
+-import android.support.v7.preference.Preference;
+-import android.provider.Settings;
+-import android.view.MenuItem;
+-
+-import org.lineageos.internal.util.ScreenType;
+-
+-public class TouchscreenGestureSettings extends PreferenceFragment {
+-
+-    private static final String KEY_HAND_WAVE = "gesture_hand_wave";
+-    private static final String KEY_PROXIMITY_WAKE = "proximity_wake_enable";
+-
+-    private SwitchPreference mHandwavePreference;
+-    private SwitchPreference mProximityWakePreference;
+-
+-    @Override
+-    public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
+-        addPreferencesFromResource(R.xml.gesture_panel);
+-        final ActionBar actionBar = getActivity().getActionBar();
+-        actionBar.setDisplayHomeAsUpEnabled(true);
+-
+-        mHandwavePreference =
+-            (SwitchPreference) findPreference(KEY_HAND_WAVE);
+-        mHandwavePreference.setOnPreferenceChangeListener(mProximityListener);
+-        mProximityWakePreference =
+-            (SwitchPreference) findPreference(KEY_PROXIMITY_WAKE);
+-        mProximityWakePreference.setOnPreferenceChangeListener(mProximityListener);
+-    }
+-
+-    @Override
+-    public void onResume() {
+-        super.onResume();
+-
+-        // If running on a phone, remove padding around the listview
+-        if (!ScreenType.isTablet(getContext())) {
+-            getListView().setPadding(0, 0, 0, 0);
+-        }
+-    }
+-
+-    private Preference.OnPreferenceChangeListener mProximityListener =
+-        new Preference.OnPreferenceChangeListener() {
+-        @Override
+-        public boolean onPreferenceChange(Preference preference, Object newValue) {
+-            if ((boolean) newValue) {
+-                if (preference.getKey().equals(KEY_HAND_WAVE)) {
+-                    mProximityWakePreference.setChecked(false);
+-                } else if (preference.getKey().equals(KEY_PROXIMITY_WAKE)) {
+-                    mHandwavePreference.setChecked(false);
+-                }
+-            }
+-            return true;
+-        }
+-    };
+-
+-    @Override
+-    public boolean onOptionsItemSelected(MenuItem item) {
+-        if (item.getItemId() == android.R.id.home) {
+-            getActivity().onBackPressed();
+-            return true;
+-        }
+-        return false;
+-    }
+-}
+-- 
+2.28.0
+

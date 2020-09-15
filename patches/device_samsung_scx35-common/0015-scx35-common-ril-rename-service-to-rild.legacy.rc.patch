@@ -1,0 +1,39 @@
+From a4eeb30c794e7d4e71482587ba5b2a3b2d60d458 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Tue, 15 Sep 2020 15:22:15 +0800
+Subject: [PATCH 15/15] scx35-common: ril: rename service to rild.legacy.rc
+
+The whole point here is to override what AOSP's rild.rc but as it turns out
+we have a new convention to name vendor services starting with "vendor."
+That's what the rild service name has become in rild.rc.
+The previous naming scheme is in rild.legacy.rc which will be used
+by default.
+
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+Change-Id: I1bc6ff6d2ba074ddcdc169242941e01414a74fff
+---
+ common.mk                                   | 2 +-
+ system/etc/init/{rild.rc => rild.legacy.rc} | 0
+ 2 files changed, 1 insertion(+), 1 deletion(-)
+ rename system/etc/init/{rild.rc => rild.legacy.rc} (100%)
+
+diff --git a/common.mk b/common.mk
+index fb741e8..d0c7bda 100644
+--- a/common.mk
++++ b/common.mk
+@@ -95,7 +95,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
+ 	rild.libpath=/system/vendor/lib/libsecril-shim.so
+ 
+ PRODUCT_COPY_FILES += \
+-	$(LOCAL_PATH)/system/etc/init/rild.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/rild.rc
++	$(LOCAL_PATH)/system/etc/init/rild.legacy.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/rild.legacy.rc
+ 
+ # GPS
+ PRODUCT_PACKAGES += \
+diff --git a/system/etc/init/rild.rc b/system/etc/init/rild.legacy.rc
+similarity index 100%
+rename from system/etc/init/rild.rc
+rename to system/etc/init/rild.legacy.rc
+-- 
+2.28.0
+

@@ -1,0 +1,53 @@
+From bb802bf5e579c2b75968af187db0842f54adc887 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Wed, 2 Sep 2020 16:07:14 +0800
+Subject: [PATCH 11/15] scx35-common: sepolicy: Fix up...
+
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ sepolicy/fsck.te      | 1 -
+ sepolicy/init.te      | 1 -
+ sepolicy/macloader.te | 1 -
+ sepolicy/toolbox.te   | 1 -
+ 4 files changed, 4 deletions(-)
+
+diff --git a/sepolicy/fsck.te b/sepolicy/fsck.te
+index 2b59b7d..8ada0f9 100644
+--- a/sepolicy/fsck.te
++++ b/sepolicy/fsck.te
+@@ -1,3 +1,2 @@
+-allow fsck self:capability { dac_read_search dac_override };
+ allow fsck efs_block_device:blk_file { open read write getattr setattr ioctl };
+ allow fsck prod_block_device:blk_file { open read write getattr setattr ioctl };
+diff --git a/sepolicy/init.te b/sepolicy/init.te
+index f74269c..af7a432 100644
+--- a/sepolicy/init.te
++++ b/sepolicy/init.te
+@@ -17,7 +17,6 @@ allow init radio_device:fifo_file create;
+ allow init clatd_exec:file getattr;
+ allow init dex2oat_exec:file getattr;
+ allow init dnsmasq_exec:file getattr;
+-allow init hostapd_exec:file getattr;
+ allow init ppp_exec:file getattr;
+ allow init runas_exec:file getattr;
+ allow init sdcardd_exec:file getattr;
+diff --git a/sepolicy/macloader.te b/sepolicy/macloader.te
+index 89135e5..7611e3f 100644
+--- a/sepolicy/macloader.te
++++ b/sepolicy/macloader.te
+@@ -8,4 +8,3 @@ allow macloader wifi_data_file:dir { read write search };
+ allow macloader wifi_data_file:file { read open };
+ allow macloader kmsg_device:chr_file { write open };
+ allow macloader shell_exec:file { read execute open execute_no_trans };
+-allow macloader self:capability dac_override;
+diff --git a/sepolicy/toolbox.te b/sepolicy/toolbox.te
+index 428d813..f222c76 100644
+--- a/sepolicy/toolbox.te
++++ b/sepolicy/toolbox.te
+@@ -1,3 +1,2 @@
+ allow toolbox media_device:dir { write add_name };
+ allow toolbox media_device:fifo_file create;
+-allow toolbox toolbox:capability dac_override;
+-- 
+2.28.0
+

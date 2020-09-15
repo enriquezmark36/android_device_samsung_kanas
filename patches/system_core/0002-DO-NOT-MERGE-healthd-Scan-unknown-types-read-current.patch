@@ -1,8 +1,8 @@
-From 540cdcd69f18a54fd29a32e6b2df88a0f014b876 Mon Sep 17 00:00:00 2001
+From 1c38f33e29f0e7dd8369adfe14bcc81d654c1c34 Mon Sep 17 00:00:00 2001
 From: Mark Enriquez <enriquezmark36@gmail.com>
 Date: Thu, 30 Apr 2020 12:42:17 +0800
-Subject: [PATCH 2/2] DO NOT MERGE healthd: Scan unknown types; read
- current_now before current_max
+Subject: [PATCH] DO NOT MERGE healthd: Scan unknown types; read current_now
+ before current_max
 
 This change is exclusive for SM-G355**, primarily for SM-G355H.
 
@@ -22,11 +22,11 @@ current_now rather than current_max converting units when needed.
 Change-Id: I564483db9888381894b79c5984e816c4f8a63477
 Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
 ---
- healthd/BatteryMonitor.cpp | 36 +++++++++++++++++++++++++++++++-----
- 1 file changed, 31 insertions(+), 5 deletions(-)
+ healthd/BatteryMonitor.cpp | 35 +++++++++++++++++++++++++++++++----
+ 1 file changed, 31 insertions(+), 4 deletions(-)
 
 diff --git a/healthd/BatteryMonitor.cpp b/healthd/BatteryMonitor.cpp
-index 5163ff6ec..36b8c7227 100644
+index 5163ff6ec..0756085b5 100644
 --- a/healthd/BatteryMonitor.cpp
 +++ b/healthd/BatteryMonitor.cpp
 @@ -265,6 +265,7 @@ bool BatteryMonitor::update(void) {
@@ -37,13 +37,10 @@ index 5163ff6ec..36b8c7227 100644
                  path.clear();
                  path.appendFormat("%s/%s/online", POWER_SUPPLY_SYSFS_PATH, name);
                  if (access(path.string(), R_OK) == 0)
-@@ -294,14 +295,39 @@ bool BatteryMonitor::update(void) {
+@@ -294,14 +295,40 @@ bool BatteryMonitor::update(void) {
              case ANDROID_POWER_SUPPLY_TYPE_WIRELESS:
                  props.chargerWirelessOnline = true;
                  break;
--            default:
--                KLOG_WARNING(LOG_TAG, "%s: Unknown power supply type\n",
--                             mChargerNames[i].string());
 +            /*
 +             * There are power supply classes that are "virtual", representing
 +             * the charger/regulator itself regardless of the source.
@@ -52,7 +49,10 @@ index 5163ff6ec..36b8c7227 100644
 +             * these usually hold the current/voltage information
 +             * rather than the usb/ac/wireless classes.
 +             */
-+            //default:
+             default:
+-                KLOG_WARNING(LOG_TAG, "%s: Unknown power supply type\n",
+-                             mChargerNames[i].string());
++                break;
 +            //    KLOG_WARNING(LOG_TAG, "%s: Unknown power supply type\n",
 +            //                 mChargerNames[i].string());
              }
@@ -60,7 +60,7 @@ index 5163ff6ec..36b8c7227 100644
 -            path.appendFormat("%s/%s/current_max", POWER_SUPPLY_SYSFS_PATH,
 +
 +            /*
-+            /* Try accessing current_now instead of current_max
++             * Try accessing current_now instead of current_max
 +             * Since on some devices, current_now holds the present current limit
 +             * while current_max holds the theoretical maximum.
 +             */

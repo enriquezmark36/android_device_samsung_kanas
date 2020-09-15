@@ -1,0 +1,43 @@
+From a338cae1889b585c11c59aafef6bcd691c5a75b2 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Wed, 2 Sep 2020 14:06:04 +0800
+Subject: [PATCH 07/15] scx35-common: wifi: Init /data/vendor/wifi directories
+ at boot
+
+On Pie, the framework seems to handle the wpa_supplicant's overlays and
+configuration files instead of having the wpa_supplicant init service
+hardcode it all. They also have remove the need to have entropy.bin
+mixed in.
+
+Nevertheless, they started saving some stuff at /data/vendo/wifir so follow
+suit. And on our sides, change our wpa_supplicant.rc or the service defn..
+
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+---
+ rootdir/init.wifi.rc | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/rootdir/init.wifi.rc b/rootdir/init.wifi.rc
+index d305baa..e5a5033 100644
+--- a/rootdir/init.wifi.rc
++++ b/rootdir/init.wifi.rc
+@@ -1,9 +1,12 @@
+ # Wi-Fi init file
+ on post-fs-data
+-    # give system access to wpa_supplicant.conf for backup and restore
+-    mkdir /data/misc/wifi 0770 wifi system
+-    chmod 0660 /data/misc/wifi/wpa_supplicant.conf
+-    mkdir /data/misc/wifi/sockets 0770 wifi wifi
++    mkdir /data/misc/wifi 0770 wifi wifi
++    mkdir /data/misc/wifi/wpa_supplicant 0770 wifi wifi
++    mkdir /data/vendor/wifi 0771 wifi wifi
++    mkdir /data/vendor/wifi/wpa 0770 wifi wifi
++    mkdir /data/vendor/wifi/wpa/sockets 0770 wifi wifi
++    mkdir /data/misc/dhcp 0770 dhcp dhcp
++    chown dhcp dhcp /data/misc/dhcp
+ 
+     # for WIFI TRP/TIS
+     chown system root /data/.psm.info
+-- 
+2.28.0
+
