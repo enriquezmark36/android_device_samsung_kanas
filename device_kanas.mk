@@ -55,8 +55,17 @@ PRODUCT_PROPERTY_OVERRIDES += \
 PRODUCT_PROPERTY_OVERRIDES += \
 	ro.config.low_ram=true
 
+# Android Go-ish ART profiles
+PRODUCT_COPY_FILES += \
+    device/samsung/kanas/configs/art/preloaded-classes:system/etc/preloaded-classes \
+    device/samsung/kanas/configs/art/preloaded-classes:system/etc/compiled-classes \
+    device/samsung/kanas/configs/art/dirty-image-objects:system/etc/dirty-image-objects
+
 # Inherit from scx35-common device configuration
 $(call inherit-product, device/samsung/scx35-common/common.mk)
+
+# Override Android Go profiles
+PRODUCT_DEX_PREOPT_BOOT_IMAGE_PROFILE_LOCATION := device/samsung/kanas/configs/art/boot-image-profile.txt
 
 # Boot animation
 TARGET_SCREEN_HEIGHT := 800
