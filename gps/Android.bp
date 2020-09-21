@@ -1,0 +1,12 @@
+cc_library_shared {
+    name: "gps.default",
+    vendor: true,
+    relative_install_path: "hw",
+    srcs: ["wrapper.c"],
+
+    shared_libs: [
+        "liblog",
+        "libcutils",
+        "libdl",
+    ],
+}
