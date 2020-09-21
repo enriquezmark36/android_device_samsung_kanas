@@ -77,6 +77,71 @@ static const void* wrapper_get_extension(const char* name) {
 	return ret;
 }
 
+void wrapper_gps_sv_status_callback (GpsSvStatus *sv_info) {
+	typedef struct {
+		size_t          size;
+		int     prn;
+		float   snr;
+		float   elevation;
+		float   azimuth;
+		int used; // WTH Samsung, used where ?!
+	} SamsungGpsSvInfo;
+
+	typedef struct {
+		size_t size;
+		int num_svs;
+		SamsungGpsSvInfo sv_list[GPS_MAX_SVS];
+		uint32_t ephemeris_mask;
+		uint32_t almanac_mask;
+		uint32_t used_in_fix_mask;
+	} SamsungGpsSvStatus;
+
+	/*
+	 * Since the newer GpsSvStatus is _smaller_ than of the newer one
+	 * We have to allocate memory to prevent overruns/overflows
+	 */
+	SamsungGpsSvStatus *inputType = (SamsungGpsSvStatus *)sv_info;
+	GpsSvStatus outputType; // stack allocation go brrrr
+
+	if (!sv_info) {
+		real_gps_callbacks->sv_status_cb(sv_info);
+		return;
+	}
+
+	// Verify if we really need to do a conversion
+	if (sizeof(GpsSvStatus) == sv_info->size) {
+		real_gps_callbacks->sv_status_cb(sv_info);
+		return;
+	}
+
+	if (sizeof(SamsungGpsSvStatus) != sv_info->size) {
+		ALOGE("[%s] Unexpected sv_info, neither of size %u or %u, instead its %u",
+		      __func__, sizeof (GpsSvStatus), sizeof(SamsungGpsSvStatus), sv_info->size);
+		real_gps_callbacks->sv_status_cb(sv_info); // live dangerously
+		return;
+	}
+
+	// Upon this stage, we need to do a conversion
+	// First copy the first two items: size_t, int
+	outputType.size = sizeof(GpsSvStatus);
+	outputType.num_svs = inputType->num_svs;
+	outputType.ephemeris_mask = inputType->ephemeris_mask;
+	outputType.almanac_mask = inputType->almanac_mask;
+	outputType.used_in_fix_mask = inputType->used_in_fix_mask;
+
+	// Second, copy the masks.
+	memcpy(&outputType.ephemeris_mask, &inputType->ephemeris_mask,
+	       sizeof(uint32_t)*3);
+
+	// Do a deep copy of the sv_list
+	for (int i = sv_info->num_svs; i-- > 0; )
+		memcpy(&outputType.sv_list[i], &inputType->sv_list[i],
+		       sizeof(GpsSvInfo));
+
+	// Conversion complete, run the original callback...
+	real_gps_callbacks->sv_status_cb((GpsSvStatus*) &outputType);
+}
+
 static int wrapper_init(GpsCallbacks* callbacks) {
 	real_gps_callbacks = callbacks;
 	memcpy(&my_gps_callbacks, callbacks, sizeof(GpsCallbacks_v1));
@@ -85,6 +150,7 @@ static int wrapper_init(GpsCallbacks* callbacks) {
 		" size changes from %d B => %d B",
 		__func__, sizeof(GpsCallbacks), my_gps_callbacks.size);
 
+	my_gps_callbacks.sv_status_cb = wrapper_gps_sv_status_callback;
 	return real_gps_interface->init((GpsCallbacks* )(&my_gps_callbacks));
 }
 
