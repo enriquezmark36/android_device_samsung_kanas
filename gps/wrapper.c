@@ -43,6 +43,9 @@ static GpsCallbacks_v1 my_gps_callbacks;
 static const AGpsInterface *real_agps_interface = NULL;
 static AGpsInterface my_agps_interface;
 
+// From libdl.so
+extern void android_set_application_target_sdk_version(int target);
+
 static int wrapper_data_conn_open_with_apn_ip_type(const char *apn, ApnIpType apnIpType) {
 	ALOGW("[%s]: We shouldn't be here; we're using AGpsInterface_v1.", __func__);
 
@@ -175,6 +178,11 @@ static int wrapper_open(__attribute__((unused)) const hw_module_t* module,
 	int ret = -EINVAL;
 
 	ALOGI("[%s] Initializing wrapper for Marvell's GPS-HAL", __func__);
+
+	// Marvell's GPS blob uses text relocations,
+	// Set this sdk version to 19 (KitKat) so we don't get smited by
+	// bionic libc.
+	android_set_application_target_sdk_version(19);
 
 	my_gps_device = calloc(1, sizeof(struct gps_device_t));
 	if (!my_gps_device) {
