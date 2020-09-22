@@ -262,17 +262,10 @@ SCX35_COMMON_POWERHAL_OVERRIDE := true
 # Some of the proprietary blobs we need have text relocations
 # This inlcudes all of our HW accelerated video encoders and decoders.
 # the fantastic HDR library by Morpho Inc, and the GPS hall blob.
-# NOTE: Okay, to make GPS work there are two ways
-#       1. Use android.hardware.gnss@1.0-service and make it run as 'root'
-#          Then we add an SDK override to that executable
-#       2. Let system_server handle it and add it to the SDK overrides
-#          Though, system_server is spawned by zygote which is also spawned by
-#          /system/bin/app_process
 TARGET_PROCESS_SDK_VERSION_OVERRIDE += \
         /system/vendor/bin/mediaserver=19 \
         /system/vendor/bin/hw/android.hardware.camera.provider@2.4-service=19 \
         /system/vendor/bin/hw/android.hardware.media.omx@1.0-service=19 \
-        /system/bin/app_process=19
 
 # Disable Charger since we would like having the lpm binary do it for us
 BOARD_CHARGER_NO_UI := true
