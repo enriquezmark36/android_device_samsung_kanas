@@ -120,6 +120,20 @@ GSP_MAX_OSD_LAYERS := 5
 # CMA and vmalloc works under few msec, gen_pool_alloc under some hundred usecs.
 # SurfaceFlinger, when TARGET_FORCE_HWC_CONTIG is true, often allocates using gralloc.
 TARGET_ION_OVERLAY_IS_CARVEOUT := true
+# This is a custom flag to gralloc that forces define or forces unset the
+# FBIOGET_DMABUF IOCTL. This would allow MALI to directly write onto
+# the framebuffer avoiding a copy from its internal buffers every frame.
+# That's the theory, though every libMali.so is different for each device
+# and that our Mali is already using the mmaped address of the FB.
+# This requires the FB_DMABUF kernel patchset applied.
+# The main benefit here is that we will never have an invalid fd in a
+# gralloc handle, not much about the performance.
+TARGET_HAS_FB_DMABUF := true
+# This is an experimental flag that allows gralloc to recreate handle
+# from the framebuffer for the HWC. These handles can then be used by GSP
+# to directly write to the framebuffer and bypassing DISPC's overlay feature.
+# FBIOGET_DMABUF IOCTL must be defined and supported by the kernel.
+TARGET_GSP_ONTO_FB := true
 
 # Audio
 # BOARD_USE_LIBATCHANNEL_WRAPPER := true
