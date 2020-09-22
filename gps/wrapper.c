@@ -43,6 +43,9 @@ static GpsCallbacks_v1 my_gps_callbacks;
 static const AGpsInterface *real_agps_interface = NULL;
 static AGpsInterface my_agps_interface;
 
+static const AGpsRilInterface *real_agps_ril_interface = NULL;
+static AGpsRilInterface my_agps_ril_interface;
+
 // From libdl.so
 extern void android_set_application_target_sdk_version(int target);
 
@@ -58,6 +61,53 @@ static int wrapper_data_conn_open_with_apn_ip_type(const char *apn, ApnIpType ap
 	(void) apnIpType;
 	return real_agps_interface->data_conn_open(apn);
 }
+
+static void wrapper_set_ref_location(const AGpsRefLocation *inputType, size_t sz_struct) {
+
+	typedef struct {
+		AGpsRefLocationType type;
+		uint16_t mcc;
+		uint16_t mnc;
+		uint16_t lac;
+		uint16_t psc;
+		uint32_t cid;
+		uint16_t tac;
+		uint16_t pcid;
+	} SamsungAGpsRefLocationCellID;
+
+	typedef struct {
+		AGpsRefLocationType type;
+		union {
+			SamsungAGpsRefLocationCellID cellID;
+			AGpsRefLocationMac mac;
+		} u;
+	} SamsungAGpsRefLocation;
+
+	if ((sz_struct == sizeof(AGpsRefLocationCellID)) &&
+	    (sz_struct != sizeof(SamsungAGpsRefLocationCellID))) {
+
+		SamsungAGpsRefLocation outputType;
+		outputType.type = inputType->type;
+		outputType.u.cellID = (SamsungAGpsRefLocationCellID) {
+			.type = inputType->u.cellID.type,
+			.mcc = inputType->u.cellID.mcc,
+			.mnc = inputType->u.cellID.mnc,
+			.lac = inputType->u.cellID.lac,
+			.psc = (uint16_t) -1,
+			.cid = inputType->u.cellID.cid,
+			.tac = inputType->u.cellID.tac,
+			.pcid = inputType->u.cellID.pcid,
+		};
+
+		real_agps_ril_interface->
+		     set_ref_location((AGpsRefLocation *)&outputType, sz_struct);
+
+		return;
+	}
+
+	real_agps_ril_interface->set_ref_location(inputType, sz_struct);
+}
+
 static const void* wrapper_get_extension(const char* name) {
 	const void *ret;
 
@@ -75,6 +125,12 @@ static const void* wrapper_get_extension(const char* name) {
 		__func__, name, real_agps_interface->size, sizeof(AGpsInterface_v1));
 
 		return &my_agps_interface;
+	} else if (strcmp(AGPS_RIL_INTERFACE, name) == 0) {
+		real_agps_ril_interface = (AGpsRilInterface *) ret;
+		memcpy(&my_agps_ril_interface, real_agps_ril_interface, sizeof(AGpsRilInterface));
+
+		my_agps_ril_interface.set_ref_location = wrapper_set_ref_location;
+		return &my_agps_ril_interface;
 	}
 
 	return ret;
