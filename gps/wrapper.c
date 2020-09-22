@@ -145,6 +145,22 @@ void wrapper_gps_sv_status_callback (GpsSvStatus *sv_info) {
 	real_gps_callbacks->sv_status_cb((GpsSvStatus*) &outputType);
 }
 
+static void wrapper_gps_location_callback (GpsLocation *location) {
+	/*
+	 * Account the GPS week rollover last August, 2019.
+	 * Compensate for the rollover in milliseconds time.
+	 *
+	 * NOTE: A total number of GPS weeks last exactly 1024 weeks but this
+	 * device for some reason always return a location timestamped
+	 * earlier than the present time.
+	 *
+	 * Let's try fixing the timestamp by using the offset
+	 * 619315173000 instead of 619315200000 (1024 weeks in milliseconds).
+	 */
+	location->timestamp += 619315173000;
+	real_gps_callbacks->location_cb(location);
+}
+
 static int wrapper_init(GpsCallbacks* callbacks) {
 	real_gps_callbacks = callbacks;
 	memcpy(&my_gps_callbacks, callbacks, sizeof(GpsCallbacks_v1));
@@ -154,6 +170,7 @@ static int wrapper_init(GpsCallbacks* callbacks) {
 		__func__, sizeof(GpsCallbacks), my_gps_callbacks.size);
 
 	my_gps_callbacks.sv_status_cb = wrapper_gps_sv_status_callback;
+	my_gps_callbacks.location_cb = wrapper_gps_location_callback;
 	return real_gps_interface->init((GpsCallbacks* )(&my_gps_callbacks));
 }
 
