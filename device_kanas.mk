@@ -138,6 +138,11 @@ PRODUCT_PACKAGES += \
 	libvsp_shim \
 	liblpm_shim \
 
+# wpa_supplicant.conf
+# This is where the wpa_supplicant.conf went from WIFI_CONFIGS.
+PRODUCT_PACKAGES += \
+	wpa_supplicant.conf
+
 # HIDL. (hide-el)
 # Build extra services not included in scx35-common
 include device/samsung/kanas/hidl.mk
@@ -160,7 +165,6 @@ AUDIO_CONFIGS := \
 WIFI_CONFIGS := \
 	device/samsung/kanas/configs/wifi/p2p_supplicant_overlay.conf \
 	device/samsung/kanas/configs/wifi/wpa_supplicant_overlay.conf \
-	device/samsung/kanas/configs/wifi/wpa_supplicant.conf
 
 RAMDISK_FILES := \
 	device/samsung/kanas/rootdir/ueventd.sc8830.rc \

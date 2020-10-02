@@ -83,3 +83,7 @@ ro.egl.destroy_after_detach=true
 
 # Use the non-aio compatibility since we haven't backported it
 sys.usb.ffs.aio_compat=true
+
+# WiFi parameters
+wifi.direct.interface=p2p-dev-wlan0
+wifi.interface=wlan0
