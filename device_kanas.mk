@@ -147,6 +147,10 @@ PRODUCT_PACKAGES += \
 # Build extra services not included in scx35-common
 include device/samsung/kanas/hidl.mk
 
+# Vendor security patch level -- G355HXXS0AQD1
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.lineage.build.vendor_security_patch=2017-04-07
+
 # Prebuilt targets overrides:
 # These files are declared as prebuilt targets in some Android.mk files
 # but need some device specific modifications.
