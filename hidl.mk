@@ -6,7 +6,7 @@ PRODUCT_PACKAGES += \
 # Used by some services like SurfaceFlinger to store
 # its configuration.
 PRODUCT_PACKAGES += \
-	android.hardware.configstore@1.0-service \
+	android.hardware.configstore@1.1-service \
 adafasd
 # Graphics
 # NOTE: SurfaceFlinger will start the allocator service via the
