@@ -7,7 +7,7 @@ PRODUCT_PACKAGES += \
 # its configuration.
 PRODUCT_PACKAGES += \
 	android.hardware.configstore@1.1-service \
-adafasd
+
 # Graphics
 # NOTE: SurfaceFlinger will start the allocator service via the
 # SF_START_GRAPHICS_ALLOCATOR_SERVICE := true
