@@ -61,6 +61,12 @@ PRODUCT_COPY_FILES += \
     device/samsung/kanas/configs/art/preloaded-classes:system/etc/compiled-classes \
     device/samsung/kanas/configs/art/dirty-image-objects:system/etc/dirty-image-objects
 
+# Only allow adb as default usb function on.
+# As it turns out, f_mtp does not work well with ffs
+# (adb works through ffs, f_mtp implements mtp)
+PRODUCT_PROPERTY_OVERRIDES += \
+	persist.sys.usb.config=adb
+
 # Inherit from scx35-common device configuration
 $(call inherit-product, device/samsung/scx35-common/common.mk)
 
