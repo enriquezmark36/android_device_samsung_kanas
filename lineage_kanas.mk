@@ -37,3 +37,12 @@ PRODUCT_BRAND := samsung
 PRODUCT_MODEL := SM-G355H
 PRODUCT_MANUFACTURER := samsung
 PRODUCT_CHARACTERISTICS := phone
+PRODUCT_GMS_CLIENTID_BASE := android-samsung
+
+PRODUCT_BUILD_PROP_OVERRIDES += \
+    PRODUCT_NAME=kanas3gxx \
+    PRIVATE_BUILD_DESC="kanas3gxx-user 4.4.2 KOT49H G355HXXS0AQD1 test-keys"
+
+# Build fingerprint
+BUILD_FINGERPRINT := samsung/kanas3gxx/kanas:4.4.2/KOT49H/G355HXXS0AQD1:user/release-keys
+
