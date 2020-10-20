@@ -43,3 +43,6 @@ PRODUCT_PACKAGES += \
 # Remove the default usb service added by scx35-common before adding ours
 PRODUCT_PACKAGES := $(filter-out android.hardware.usb@1.0-service,$(PRODUCT_PACKAGES))
 PRODUCT_PACKAGES += android.hardware.usb@1.0-service.kanas
+
+#USB Restrict
+PRODUCT_PACKAGES += lineage.trust@1.0-service
