@@ -135,6 +135,11 @@ TARGET_HAS_FB_DMABUF := true
 # FBIOGET_DMABUF IOCTL must be defined and supported by the kernel.
 TARGET_GSP_ONTO_FB := true
 
+# AAPT
+PRODUCT_AAPT_CONFIG := normal
+PRODUCT_AAPT_PREF_CONFIG := hdpi
+PRODUCT_AAPT_PREBUILT_DPI := hdpi mdpi
+
 # Audio
 # BOARD_USE_LIBATCHANNEL_WRAPPER := true
 # BOARD_USES_SS_VOIP := true
