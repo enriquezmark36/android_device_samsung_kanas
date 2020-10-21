@@ -35,4 +35,11 @@
     <!-- Maximum current the kernel reports is at 2000 mA; -->
     <!-- NOTE: There's no fast charging for SM-G355H; 1A, by default, is not attainable-->
     <integer name="config_chargingFastThreshold">5000000</integer>
+
+    <!-- Show mic or phone affordance on Keyguard -->
+    <bool name="config_keyguardShowLeftAffordance">true</bool>
+
+    <!-- Show camera affordance on Keyguard -->
+    <bool name="config_keyguardShowCameraAffordance">true</bool>
+
 </resources>
