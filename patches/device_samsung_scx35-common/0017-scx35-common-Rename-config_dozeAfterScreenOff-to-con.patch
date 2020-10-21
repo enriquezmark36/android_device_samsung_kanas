@@ -1,0 +1,28 @@
+From b98944752ff50d049705e918313db409f14dd2c9 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Wed, 21 Oct 2020 11:48:12 +0800
+Subject: [PATCH 2/2] scx35-common: Rename config_dozeAfterScreenOff to
+ config_dozeAfterScreenOffByDefault
+
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+Change-Id: Ifc14105be5687e9ce4eaaf938135990f80084b96
+---
+ overlay/frameworks/base/core/res/res/values/config.xml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/overlay/frameworks/base/core/res/res/values/config.xml b/overlay/frameworks/base/core/res/res/values/config.xml
+index e18147d..284f50e 100644
+--- a/overlay/frameworks/base/core/res/res/values/config.xml
++++ b/overlay/frameworks/base/core/res/res/values/config.xml
+@@ -197,7 +197,7 @@
+     <!-- Ambient display. -->
+     <integer name="config_screenBrightnessDoze">30</integer>
+     <string name="config_dozeComponent">com.android.systemui/com.android.systemui.doze.DozeService</string>
+-    <bool name="config_dozeAfterScreenOff">true</bool>
++    <bool name="config_dozeAfterScreenOffByDefault">true</bool>
+ 
+     <!-- Control whether the always on display mode is available. This should only be enabled on
+     devices where the display has be tuned to be power efficient in DOZE and/or DOZE_SUSPEND
+-- 
+2.28.0
+

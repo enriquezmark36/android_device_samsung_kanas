@@ -1,0 +1,28 @@
+From fc214655b6c394bf197a4e3d83ce6d20d737ff38 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Wed, 21 Oct 2020 11:46:54 +0800
+Subject: [PATCH 1/2] scx35-common: Use the go_defaults.mk rather than the
+ 512MB version
+
+The 512MB version is an aggressive cousin of the default Android Go
+configuration that will kill more apps that usual.
+
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+Change-Id: Ic024a02efb1a51b7972e115e6219184893b40198
+---
+ common.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/common.mk b/common.mk
+index d0c7bda..48a26de 100644
+--- a/common.mk
++++ b/common.mk
+@@ -237,4 +237,4 @@ PRODUCT_PROPERTY_OVERRIDES += \
+ PRODUCT_PROPERTY_OVERRIDES += \
+ 	ro.config.low_ram=false
+ 
+-$(call inherit-product, build/target/product/go_defaults_512.mk)
++$(call inherit-product, build/target/product/go_defaults.mk)
+-- 
+2.28.0
+
