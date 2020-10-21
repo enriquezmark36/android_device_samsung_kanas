@@ -264,6 +264,9 @@ TARGET_LD_SHIM_LIBS += \
 TARGET_POWERHAL_VARIANT := kanas
 SCX35_COMMON_POWERHAL_OVERRIDE := true
 
+# Network Routing
+TARGET_NEEDS_NETD_DIRECT_CONNECT_RULE := true
+
 # Some of the proprietary blobs we need have text relocations
 # This inlcudes all of our HW accelerated video encoders and decoders.
 # the fantastic HDR library by Morpho Inc, and the GPS hall blob.
