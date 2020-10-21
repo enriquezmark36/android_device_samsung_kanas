@@ -87,3 +87,8 @@ sys.usb.ffs.aio_compat=true
 # WiFi parameters
 wifi.direct.interface=p2p-dev-wlan0
 wifi.interface=wlan0
+
+# 2000 mAh may not be that of a large battery
+# Also given that after 5 years, the battery isn't at 2Ah
+# capacity anymore.
+ro.config.small_battery=true
