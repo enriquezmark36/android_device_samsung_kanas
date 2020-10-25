@@ -209,11 +209,10 @@ static void wrapper_gps_location_callback (GpsLocation *location) {
 	 * NOTE: A total number of GPS weeks last exactly 1024 weeks but this
 	 * device for some reason always return a location timestamped
 	 * earlier than the present time.
-	 *
-	 * Let's try fixing the timestamp by using the offset
-	 * 619315173000 instead of 619315200000 (1024 weeks in milliseconds).
+	 * NOTE: Ignore the last note, make it so that the GPS Time is about 18
+	 * seconds ahead of UTC.
 	 */
-	location->timestamp += 619315173000;
+	location->timestamp += 619315200000;
 	real_gps_callbacks->location_cb(location);
 }
 
