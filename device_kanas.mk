@@ -58,7 +58,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
 # Android Go-ish ART profiles
 PRODUCT_COPY_FILES += \
     device/samsung/kanas/configs/art/preloaded-classes:system/etc/preloaded-classes \
-    device/samsung/kanas/configs/art/preloaded-classes:system/etc/compiled-classes \
+    device/samsung/kanas/configs/art/compiled-classes:system/etc/compiled-classes \
     device/samsung/kanas/configs/art/dirty-image-objects:system/etc/dirty-image-objects
 
 # Only allow adb as default usb function on.
