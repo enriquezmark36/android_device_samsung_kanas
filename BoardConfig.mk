@@ -172,9 +172,6 @@ MALLOC_SVELTE := true
 # Tell vold that we have a kernel based impl of exfat
 TARGET_EXFAT_DRIVER := exfat
 
-# Device and blobs are from KitKat release
-PRODUCT_SHIPPING_API_LEVEL := 19
-
 # 64bit Binder
 TARGET_USES_64_BIT_BINDER := true
 
