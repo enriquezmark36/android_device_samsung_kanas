@@ -21,9 +21,6 @@ $(call inherit-product, vendor/lineage/config/telephony.mk)
 # Inherit some common Lineage stuff.
 $(call inherit-product, vendor/lineage/config/common_full_phone.mk)
 
-# Custom unofficial build tag
-TARGET_UNOFFICIAL_BUILD_ID := Built_by_$(shell whoami)
-
 # Override build date
 PRODUCT_BUILD_PROP_OVERRIDES += BUILD_UTC_DATE=0
 
