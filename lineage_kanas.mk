@@ -16,13 +16,10 @@
 
 # Inherit device configuration
 $(call inherit-product, $(LOCAL_PATH)/device_kanas.mk)
-
 # Specify phone tech before including full_phone
 $(call inherit-product, vendor/lineage/config/telephony.mk)
-
-# Inherit some common CM stuff.
+# Inherit some common Lineage stuff.
 $(call inherit-product, vendor/lineage/config/common_full_phone.mk)
-
 
 # Custom unofficial build tag
 TARGET_UNOFFICIAL_BUILD_ID := Built_by_$(shell whoami)
@@ -42,6 +39,9 @@ PRODUCT_GMS_CLIENTID_BASE := android-samsung
 PRODUCT_BUILD_PROP_OVERRIDES += \
     PRODUCT_NAME=kanas3gxx \
     PRIVATE_BUILD_DESC="kanas3gxx-user 4.4.2 KOT49H G355HXXS0AQD1 test-keys"
+
+# Inherit device post configuration, can be use to override anything from the earlier makefiles
+$(call inherit-product, $(LOCAL_PATH)/device_kanas_post.mk)
 
 # Build fingerprint
 BUILD_FINGERPRINT := samsung/kanas3gxx/kanas:4.4.2/KOT49H/G355HXXS0AQD1:user/release-keys
