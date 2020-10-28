@@ -15,3 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+PRODUCT_DIST_BOOT_AND_SYSTEM_JARS := true
+PRODUCT_SYSTEM_SERVER_APPS := \
+    SystemUI \
+
+PRODUCT_DEXPREOPT_SPEED_APPS += \
+    SystemUI \
+    TrebuchetQuickStep
+
