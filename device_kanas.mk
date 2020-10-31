@@ -157,6 +157,22 @@ include device/samsung/kanas/hidl.mk
 PRODUCT_PROPERTY_OVERRIDES += \
     ro.lineage.build.vendor_security_patch=2017-04-07
 
+PRODUCT_DIST_BOOT_AND_SYSTEM_JARS := true
+PRODUCT_SYSTEM_SERVER_APPS := \
+    SystemUI \
+
+PRODUCT_DEXPREOPT_SPEED_APPS += \
+    SystemUI \
+    TrebuchetQuickStep
+
+# AAPT
+PRODUCT_AAPT_CONFIG := normal
+PRODUCT_AAPT_PREF_CONFIG := hdpi
+PRODUCT_AAPT_PREBUILT_DPI := hdpi mdpi
+
+# Device and blobs are from KitKat release
+PRODUCT_SHIPPING_API_LEVEL := 19
+
 # Prebuilt targets overrides:
 # These files are declared as prebuilt targets in some Android.mk files
 # but need some device specific modifications.
