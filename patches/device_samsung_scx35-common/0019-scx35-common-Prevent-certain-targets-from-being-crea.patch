@@ -1,0 +1,423 @@
+From 2ed1ab128b095831727f2b979d55428da78912c4 Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Sun, 1 Nov 2020 17:15:03 +0800
+Subject: [PATCH 2/6] scx35-common: Prevent certain targets from being created
+ via SCX35_IGNORE_TARGETS
+
+This is not really an issue, for now anyways, but there will be cases where
+a specific device configuration (like in kanas) will have to override some
+configuration files, for example the audio_hw.xml file.
+
+We can't just create another audio_hw.xml target since AOSP build system will
+spit at you with a disgrace of an error. So we, eventually use
+PRODUCT_COPY_FILES which only shows a warning that some targets are being
+overwritten.
+
+If ever you want to clear the warnings or if ever Google decides to
+make these warnings as errors (which may happen on Android 10),
+You can use the SCX35_IGNORE_TARGETS.
+
+How to use:
+Specify SCX35_IGNORE_TARGETS in your device specific BoardConfig.mk
+with all of the targets in scx35-common that will not be created.
+
+In my case I would need to specify,
+
+SCX35_IGNORE_TARGETS := \
+    audio_hw.xml
+
+And, either write a target or leave my addition in PRODUCT_COPY_FILES
+as it is.
+
+Fancy stuff.
+
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+Change-Id: I69b29e5e40693b9fe2830b6bb8b01d588af2dd2e
+---
+ configs/audio/Android.mk   | 12 ++++++++++++
+ configs/gps/Android.mk     |  4 ++++
+ configs/media/Android.mk   |  4 +++-
+ configs/wifi/Android.mk    |  6 +++++-
+ rootdir/Android.mk         | 12 +++++++++++-
+ system/etc/init/Android.mk | 36 ++++++++++++++++++++++++++++++++++++
+ 6 files changed, 71 insertions(+), 3 deletions(-)
+
+diff --git a/configs/audio/Android.mk b/configs/audio/Android.mk
+index e59790f..2373c29 100644
+--- a/configs/audio/Android.mk
++++ b/configs/audio/Android.mk
+@@ -18,48 +18,60 @@ LOCAL_PATH := $(my-dir)
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := audio_hw.xml
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := audio_para
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := audio_effects_vendor.conf
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := audio_policy.conf
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_ETC)
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := codec_pga.xml
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := tiny_hw.xml
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+diff --git a/configs/gps/Android.mk b/configs/gps/Android.mk
+index 33bc141..917b409 100644
+--- a/configs/gps/Android.mk
++++ b/configs/gps/Android.mk
+@@ -18,16 +18,20 @@ LOCAL_PATH := $(my-dir)
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := gps.conf
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := gps.xml
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+diff --git a/configs/media/Android.mk b/configs/media/Android.mk
+index 03d2ac7..23a0998 100644
+--- a/configs/media/Android.mk
++++ b/configs/media/Android.mk
+@@ -18,8 +18,10 @@ LOCAL_PATH := $(my-dir)
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := media_codecs.xml
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+-include $(BUILD_PREBUILT)
+\ No newline at end of file
++include $(BUILD_PREBUILT)
++endif
+diff --git a/configs/wifi/Android.mk b/configs/wifi/Android.mk
+index 2013e03..3c21d8d 100644
+--- a/configs/wifi/Android.mk
++++ b/configs/wifi/Android.mk
+@@ -18,16 +18,20 @@ LOCAL_PATH := $(my-dir)
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := p2p_supplicant_overlay.conf
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/wifi
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := wpa_supplicant_overlay.conf
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/wifi
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+-include $(BUILD_PREBUILT)
+\ No newline at end of file
++include $(BUILD_PREBUILT)
++endif
+diff --git a/rootdir/Android.mk b/rootdir/Android.mk
+index f4c6008..9110a1b 100644
+--- a/rootdir/Android.mk
++++ b/rootdir/Android.mk
+@@ -18,40 +18,50 @@ LOCAL_PATH := $(my-dir)
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := init.board.rc
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_ROOT_OUT)
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := init.wifi.rc
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_ROOT_OUT)
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := init.sc8830.rc
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_ROOT_OUT)
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE :=	init.sc8830.usb.rc
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_ROOT_OUT)
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := ueventd.sc8830.rc
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_ROOT_OUT)
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+-include $(BUILD_PREBUILT)
+\ No newline at end of file
++include $(BUILD_PREBUILT)
++endif
+diff --git a/system/etc/init/Android.mk b/system/etc/init/Android.mk
+index 97f09df..9ccf3bb 100644
+--- a/system/etc/init/Android.mk
++++ b/system/etc/init/Android.mk
+@@ -18,144 +18,180 @@ LOCAL_PATH := $(my-dir)
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := at_distributor.rc
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/init
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := chown_service.rc
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/init
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := data.rc
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/init
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := dns.rc
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/init
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := engpc.rc
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/init
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := gpsd.rc
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/init
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := kill_phone.rc
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/init
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := macloader.rc
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/init
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := modem_control.rc
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/init
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := modemd.rc
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/init
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := nvitemd.rc
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/init
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := wpa_supplicant.rc
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/init
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := phoneserver.rc
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/init
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := refnotify.rc
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/init
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := set_mac.rc
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/init
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := smd_symlink.rc
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/init
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := swap.rc
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/init
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := usb.rc
++ifeq (,$(filter $(LOCAL_MODULE), $(SCX35_IGNORE_TARGETS)))
+ LOCAL_MODULE_TAGS := optional
+ LOCAL_MODULE_CLASS := ETC
+ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/init
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
++endif
+-- 
+2.28.0
+

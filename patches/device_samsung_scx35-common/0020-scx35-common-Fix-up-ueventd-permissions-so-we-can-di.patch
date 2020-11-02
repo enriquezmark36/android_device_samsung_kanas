@@ -1,0 +1,88 @@
+From bb4b753c644245b9603510d7145516c221bdafaa Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Sun, 1 Nov 2020 17:34:51 +0800
+Subject: [PATCH 3/6] scx35-common: Fix up ueventd  permissions so we can ditch
+ *media*.rc
+
+We override android.hardware.media.omx@1.0-service.rc and
+mediaserver.rc init files because we need to authorize these
+daemon/services access to some SPRD modules (accessible as character
+devices) and for some reason, they are owned by system and shared with the
+audio group. These SPRD modules are actually implemented on hardware outside
+of the CPU.
+
+This patch only changes some of audio group to camera group, the reason why
+is below
+
+Here the run down of permissions changed
+/dev/sprd_dma_copy - Used by libcamera to offload a buffer one-copy to DMA
+/dev/sprd_scale - Used by libcamera to do some really simple scaling
+/dev/sprd_rotation - Used by libcamera to rotate images
+/dev/sprd_image - Used libcamera, I think to retrieve image buffers?
+/dev/sprd_isp - Used by libcamera for some RGB sensors without an ISP
+/dev/sprd_vsp - Used by sprd hw decoders and encoders, *see NOTE1
+/dev/sprd_jpg - Used by libcamera to encode YUV images to JPEG
+/dev/sprd_vpp - ?; probably same with sprd_vsp
+/dev/sprd_coda7l - ?; also probably same with sprd_vsp but much better
+/dev/sprd_sensor - Used by libcamera for sensor multiplexing and IC control
+
+*NOTE1: The group should actually be mediacodec, but I'm not net sure if
+that's the right group, it could be just media. I have no idea if enabling
+Treble on media omx will cause this to fail. This should also be
+the case with vpp and coda7l.
+
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+Change-Id: Ifd17ad1374e6ad19c11cc34fe525d19632656217
+---
+ common.mk                 |  4 ----
+ rootdir/ueventd.sc8830.rc | 20 ++++++++++----------
+ 2 files changed, 10 insertions(+), 14 deletions(-)
+
+diff --git a/common.mk b/common.mk
+index 48a26de..a6520ad 100644
+--- a/common.mk
++++ b/common.mk
+@@ -68,10 +68,6 @@ MEDIA_XML_CONFIGS := \
+ PRODUCT_COPY_FILES += \
+ 	$(foreach f,$(MEDIA_XML_CONFIGS),$(f):$(TARGET_COPY_OUT_VENDOR)/etc/$(notdir $(f)))
+ 
+-PRODUCT_COPY_FILES += \
+-	$(LOCAL_PATH)/system/etc/init/android.hardware.media.omx@1.0-service.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/android.hardware.media.omx@1.0-service.rc \
+-	$(LOCAL_PATH)/system/etc/init/mediaserver.rc:$(TARGET_COPY_OUT_SYSTEM)/etc/init/mediaserver.rc
+-
+ # Common libs
+ PRODUCT_PACKAGES += \
+ 	libstlport \
+diff --git a/rootdir/ueventd.sc8830.rc b/rootdir/ueventd.sc8830.rc
+index bc9608a..d79d91f 100644
+--- a/rootdir/ueventd.sc8830.rc
++++ b/rootdir/ueventd.sc8830.rc
+@@ -1,15 +1,15 @@
+ 
+-/dev/sprd_dma_copy      0660     system      audio
+-/dev/sprd_scale         0660     system      audio
+-/dev/sprd_rotation      0660     system      audio
+-/dev/sprd_image         0660     system      audio
++/dev/sprd_dma_copy      0660     system      camera
++/dev/sprd_scale         0660     system      camera
++/dev/sprd_rotation      0660     system      camera
++/dev/sprd_image         0660     system      camera
+ /dev/sprd_gsp         	0660     system      graphics
+-/dev/sprd_isp           0660     system      audio
+-/dev/sprd_vsp           0660     system      audio
+-/dev/sprd_jpg           0660     system      audio
+-/dev/sprd_vpp           0660     system      audio
+-/dev/sprd_coda7l        0660     system      audio
+-/dev/sprd_sensor        0660     system      audio
++/dev/sprd_isp           0660     system      camera
++/dev/sprd_vsp           0660     system      camera
++/dev/sprd_jpg           0660     system      camera
++/dev/sprd_vpp           0660     system      camera
++/dev/sprd_coda7l        0660     system      camera
++/dev/sprd_sensor        0660     system      camera
+ /dev/ion                0666     system      graphics
+ /dev/mali0              0666     system      graphics
+ 
+-- 
+2.28.0
+

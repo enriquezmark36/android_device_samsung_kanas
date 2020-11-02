@@ -1,0 +1,140 @@
+From 88009e68102d70acd77b1063169550ed27837a5f Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Sun, 1 Nov 2020 18:52:49 +0800
+Subject: [PATCH 5/6] scx35-common: Workaround not being 'legally' able to
+ override rild.legacy.rc
+
+We used to abuse PRODUCT_COPY_FILES to override targets since it only
+causes warnings on make. Eventually, on Android 10 specifically, it should
+be barred and should cause an error.
+
+This patch will introduce a workaround that goes something like this.
+
+Set ENABLE_VENDOR_RIL_SERVICE to true.
+Wrap the rild's Android.mk.
+Change the LOCAL_INIT_RC variable to our rild.legacy.rc
+
+ENABLE_VENDOR_RIL_SERVICE is made before to allow vendors to write their
+own rild, though in our case, we're using literally everything in AOSP's
+rild code and just overriding that damned init rc file. When
+ENABLE_VENDOR_RIL_SERVICE is defined, AOSP will not include or allow
+building it's own rild.
+
+Usually upon defining ENABLE_VENDOR_RIL_SERVICE, TARGET_RIL_VARIANT is
+also defined. But in our case, we just need to prevent rild's Android.mk
+from registering a rild target and it's init rc.
+
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+Change-Id: Iadedaf0d78d409170c4e4b8ef433a2d5f43bc8ab
+---
+ BoardConfigCommon.mk       |  4 ++++
+ common.mk                  |  6 +++++-
+ system/etc/init/Android.mk |  3 +++
+ system/etc/init/none.mk    |  1 +
+ system/etc/init/rild.mk    | 43 ++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 56 insertions(+), 1 deletion(-)
+ create mode 100644 system/etc/init/none.mk
+ create mode 100644 system/etc/init/rild.mk
+
+diff --git a/BoardConfigCommon.mk b/BoardConfigCommon.mk
+index 207d6c8..408ebaf 100644
+--- a/BoardConfigCommon.mk
++++ b/BoardConfigCommon.mk
+@@ -48,6 +48,10 @@ BOARD_CANT_REALLOCATE_OMX_BUFFERS := true
+ # seccomp
+ #BOARD_SECCOMP_POLICY := device/samsung/scx35-common/seccomp # This flag is dead?
+ 
++# If we ever need to override rild.legacy.rc, let's try blocking rild's Android.mk
++# via this flag then recreate it in system/etc/init/Android.mk
++ENABLE_VENDOR_RIL_SERVICE := true
++
+ # Kernel
+ BOARD_CUSTOM_BOOTIMG_MK := device/samsung/scx35-common/mkbootimg.mk
+ BOARD_KERNEL_BASE := 0x00000000
+diff --git a/common.mk b/common.mk
+index 5879a78..0286559 100644
+--- a/common.mk
++++ b/common.mk
+@@ -90,7 +90,11 @@ PRODUCT_PROPERTY_OVERRIDES += \
+ 	ro.radio.modemtype=w \
+ 	rild.libpath=/system/vendor/lib/libsecril-shim.so
+ 
+-PRODUCT_COPY_FILES += \
++# If ever AOSP build system rejects the idea of (ab)using this to override some targets
++# like this rild.legacy.rc, there's a workaround here that instead overrides the
++# rild's Android.mk by defining ENABLE_VENDOR_RIL_SERVICE to true and having the
++# system/etc/init/rild.mk take its place.
++#PRODUCT_COPY_FILES += \
+ 	$(LOCAL_PATH)/system/etc/init/rild.legacy.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/rild.legacy.rc
+ 
+ # GPS
+diff --git a/system/etc/init/Android.mk b/system/etc/init/Android.mk
+index 9ccf3bb..8e22132 100644
+--- a/system/etc/init/Android.mk
++++ b/system/etc/init/Android.mk
+@@ -195,3 +195,6 @@ LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/init
+ LOCAL_SRC_FILES := $(LOCAL_MODULE)
+ include $(BUILD_PREBUILT)
+ endif
++
++# rild's Android.mk wrapper
++include $(LOCAL_PATH)/rild.mk
+diff --git a/system/etc/init/none.mk b/system/etc/init/none.mk
+new file mode 100644
+index 0000000..8d1c8b6
+--- /dev/null
++++ b/system/etc/init/none.mk
+@@ -0,0 +1 @@
++ 
+diff --git a/system/etc/init/rild.mk b/system/etc/init/rild.mk
+new file mode 100644
+index 0000000..68bb559
+--- /dev/null
++++ b/system/etc/init/rild.mk
+@@ -0,0 +1,43 @@
++#
++# Copyright (C) 2006 The Android Open Source Project
++# Copyright (C) 2017 The Lineage Project
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#      http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++# This wraps around the Android.mk of AOSP rild with an
++# intention of overiding the LOCAL_INIT_RC
++
++LOCAL_PATH_REAL := $(call my-dir)
++
++BUILD_EXECUTABLE_REAL := $(BUILD_EXECUTABLE)
++ENABLE_VENDOR_RIL_SERVICE_REAL := $(ENABLE_VENDOR_RIL_SERVICE)
++include $(CLEAR_VARS)
++
++BUILD_EXECUTABLE := $(LOCAL_PATH_REAL)/none.mk
++ENABLE_VENDOR_RIL_SERVICE :=
++include hardware/ril/rild/Android.mk
++
++ENABLE_VENDOR_RIL_SERVICE := $(ENABLE_VENDOR_RIL_SERVICE_REAL)
++BUILD_EXECUTABLE := $(BUILD_EXECUTABLE_REAL)
++
++# Inject our rild.rc or rild.legacy.rc
++# Do note that LOCAL_INIT_RC is relative to LOCAL_PATH
++# which is probably set to hardware/ril/rild/
++ifeq ($(PRODUCT_COMPATIBLE_PROPERTY),true)
++LOCAL_INIT_RC := ../../../$(LOCAL_PATH_REAL)/rild.rc
++else
++LOCAL_INIT_RC := ../../../$(LOCAL_PATH_REAL)/rild.legacy.rc
++endif
++
++include $(BUILD_EXECUTABLE)
+-- 
+2.28.0
+

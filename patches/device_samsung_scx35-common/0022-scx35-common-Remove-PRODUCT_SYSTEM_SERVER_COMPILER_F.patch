@@ -1,0 +1,36 @@
+From dc94adc4d397272b811915373c3c35967b887d9e Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Mon, 2 Nov 2020 12:25:50 +0800
+Subject: [PATCH 6/6] scx35-common: Remove
+ PRODUCT_SYSTEM_SERVER_COMPILER_FILTER from BoardConfigCommon.mk
+
+This should be modified on common.mk but also is changed by the android go
+makefile. Let's go with Android Go this time.
+
+For comparison, in BoardConfigCommon.mk
+PRODUCT_SYSTEM_SERVER_COMPILER_FILTER := speed
+
+But on go_defaults_common.mk, we have this (and also a comment why this is set)
+PRODUCT_SYSTEM_SERVER_COMPILER_FILTER := speed-profile
+
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+Change-Id: I0fee52e12b400bedea7489620c66b2675ead85a4
+---
+ BoardConfigCommon.mk | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/BoardConfigCommon.mk b/BoardConfigCommon.mk
+index 408ebaf..95f1f72 100644
+--- a/BoardConfigCommon.mk
++++ b/BoardConfigCommon.mk
+@@ -106,7 +106,6 @@ BACKLIGHT_PATH := /sys/class/backlight/panel/brightness
+ WITH_DEXPREOPT := true
+ WITH_DEXPREOPT_BOOT_IMG_AND_SYSTEM_SERVER_ONLY := true
+ PRODUCT_DEX_PREOPT_BOOT_FLAGS += --compiler-filter=speed
+-PRODUCT_SYSTEM_SERVER_COMPILER_FILTER := speed
+ WITH_DEX_PREOPT_GENERATE_PROFILE := false
+ 
+ # SELinux policy
+-- 
+2.28.0
+

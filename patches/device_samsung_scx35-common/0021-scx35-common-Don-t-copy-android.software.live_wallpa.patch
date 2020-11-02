@@ -1,0 +1,29 @@
+From e2cf0c374c25cd77ed7311511bb859cb9c0756ab Mon Sep 17 00:00:00 2001
+From: Mark Enriquez <enriquezmark36@gmail.com>
+Date: Sun, 1 Nov 2020 17:51:00 +0800
+Subject: [PATCH 4/6] scx35-common: Don't copy
+ android.software.live_wallpaper.xml
+
+Not needed anymore, rectify me and revert this if I'm wrong.
+
+Signed-off-by: Mark Enriquez <enriquezmark36@gmail.com>
+Change-Id: Ic2c7af42e00442080ebd267c7d7bdd3b1c6da515
+---
+ common.mk | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/common.mk b/common.mk
+index a6520ad..5879a78 100644
+--- a/common.mk
++++ b/common.mk
+@@ -200,7 +200,6 @@ PERMISSIONS_XML_FILES := \
+ 	frameworks/native/data/etc/android.hardware.sensor.proximity.xml \
+ 	frameworks/native/data/etc/android.hardware.sensor.light.xml \
+ 	frameworks/native/data/etc/android.software.midi.xml \
+-	packages/wallpapers/LivePicker/android.software.live_wallpaper.xml
+ 
+ PRODUCT_COPY_FILES += \
+ 	$(foreach f,$(PERMISSIONS_XML_FILES),$(f):$(TARGET_COPY_OUT_SYSTEM)/etc/permissions/$(notdir $(f)))
+-- 
+2.28.0
+
