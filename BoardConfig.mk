@@ -32,7 +32,6 @@ SCX35_IGNORE_TARGETS := \
 	ueventd.sc8830.rc \
 	kill_phone.rc \
 	refnotify.rc \
-	wpa_supplicant.rc
 
 # Inherit from SCX35 common configs
 -include device/samsung/scx35-common/BoardConfigCommon.mk
