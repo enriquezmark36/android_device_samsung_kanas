@@ -17,6 +17,23 @@
 # not actually copying their files.
 TARGET_COPY_OUT_VENDOR := system/vendor
 
+# Prevent scx35-common from creating these targets
+SCX35_IGNORE_TARGETS := \
+	audio_hw.xml \
+	audio_para \
+	audio_policy.conf \
+	codec_pga.xml \
+	tiny_hw.xml \
+	wpa_supplicant_overlay.conf \
+	p2p_supplicant_overlay.conf \
+	fstab.sc8830 \
+	init.board.rc \
+	init.sc8830.rc \
+	ueventd.sc8830.rc \
+	kill_phone.rc \
+	refnotify.rc \
+	wpa_supplicant.rc
+
 # Inherit from SCX35 common configs
 -include device/samsung/scx35-common/BoardConfigCommon.mk
 

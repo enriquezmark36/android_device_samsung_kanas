@@ -16,20 +16,18 @@
 
 LOCAL_PATH := $(my-dir)
 
-define create
 include $(CLEAR_VARS)
-LOCAL_MODULE := $1
+LOCAL_MODULE := p2p_supplicant_overlay.conf
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := ETC
-LOCAL_MODULE_PATH := $(TARGET_ROOT_OUT)
-LOCAL_SRC_FILES := $1
+LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/wifi
+LOCAL_SRC_FILES := $(LOCAL_MODULE)
 include $(BUILD_PREBUILT)
-endef
 
-init_files := \
-	fstab.sc8830 \
-	init.board.rc \
-	init.sc8830.rc \
-	ueventd.sc8830.rc \
-
-$(foreach p,$(init_files),$(eval $(call create,$(p))))
+include $(CLEAR_VARS)
+LOCAL_MODULE := wpa_supplicant_overlay.conf
+LOCAL_MODULE_TAGS := optional
+LOCAL_MODULE_CLASS := ETC
+LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_ETC)/wifi
+LOCAL_SRC_FILES := $(LOCAL_MODULE)
+include $(BUILD_PREBUILT)

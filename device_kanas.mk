@@ -122,7 +122,8 @@ PRODUCT_PACKAGES += \
 # Cell Radio
 PRODUCT_PACKAGES += \
 	refnotify \
-	nvitemd
+	nvitemd \
+	rild_scx15.rc
 
 # Camera
 PRODUCT_PACKAGES += \
@@ -173,35 +174,9 @@ PRODUCT_AAPT_PREBUILT_DPI := hdpi mdpi
 # Device and blobs are from KitKat release
 PRODUCT_SHIPPING_API_LEVEL := 19
 
-# Prebuilt targets overrides:
-# These files are declared as prebuilt targets in some Android.mk files
-# but need some device specific modifications.
-# Creating a new target for these files would result in an error so we do this instead.
-# This would produce some warning about targets being overridden.
+# Camcorder profiles and media encoder limits, the configuration file.
 MEDIA_CONFIGS := \
 	device/samsung/kanas/configs/media/media_profiles_V1_0.xml
-
-AUDIO_CONFIGS := \
-	device/samsung/kanas/configs/audio/audio_hw.xml \
-	device/samsung/kanas/configs/audio/audio_para \
-	device/samsung/kanas/configs/audio/audio_policy.conf\
-	device/samsung/kanas/configs/audio/codec_pga.xml \
-	device/samsung/kanas/configs/audio/tiny_hw.xml
-
-WIFI_CONFIGS := \
-	device/samsung/kanas/configs/wifi/p2p_supplicant_overlay.conf \
-	device/samsung/kanas/configs/wifi/wpa_supplicant_overlay.conf \
-
-RAMDISK_FILES := \
-	device/samsung/kanas/rootdir/ueventd.sc8830.rc \
-	device/samsung/kanas/rootdir/init.board.rc \
-	device/samsung/kanas/rootdir/init.sc8830.rc
-
-INIT_FILES := \
-	device/samsung/kanas/system/etc/init/rild_scx15.rc \
-	device/samsung/kanas/system/etc/init/kill_phone.rc \
-	device/samsung/kanas/system/etc/init/refnotify.rc \
-	device/samsung/kanas/system/etc/init/wpa_supplicant.rc
 
 # Additional Features/Services to enable within system_server
 PERMISSIONS_XML_FILES := \
@@ -209,9 +184,5 @@ PERMISSIONS_XML_FILES := \
 
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(MEDIA_CONFIGS),$(f):system/vendor/etc/$(notdir $(f))) \
-	$(foreach f,$(AUDIO_CONFIGS),$(f):system/vendor/etc/$(notdir $(f))) \
-	$(foreach f,$(WIFI_CONFIGS),$(f):system/vendor/etc/wifi/$(notdir $(f))) \
-	$(foreach f,$(RAMDISK_FILES),$(f):root/$(notdir $(f))) \
-	$(foreach f,$(INIT_FILES),$(f):system/vendor/etc/init/$(notdir $(f))) \
 	$(foreach f,$(PERMISSIONS_XML_FILES),$(f):system/vendor/etc/permissions/$(notdir $(f))) \
 
