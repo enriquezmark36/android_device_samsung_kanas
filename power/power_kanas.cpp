@@ -600,7 +600,7 @@ extern "C" void power_init() {
 	// Check if we have libsuspend patched with earlysuspend
 	if (check_earlysuspend_libsuspend())
 		g_need_lateresume = 1;
-	ALOGI("Trigger lateresume: %s", g_need_lateresume? "Yes" : "No");
+	ALOGI("Trigger lateresume and earlysuspend: %s", g_need_lateresume? "Yes" : "No");
 }
 
 /*
@@ -628,15 +628,21 @@ extern "C" void power_init() {
  */
 extern "C" void power_set_interactive(int on)
 {
+	char buff[6];
+
 	ALOGV("power_set_interactive: %d\n", on);
 
 	if (!access(IO_IS_BUSY_PATH, W_OK | F_OK))
 		sysfs_write(IO_IS_BUSY_PATH, on ? "1" : "0");
 
-	if (g_need_lateresume && on) {
-		char buff[6];
-		sysfs_write(EARLYSUSPEND_SYS_POWER_STATE, "on"); // issue request
-		sysfs_read(EARLYSUSPEND_WAIT_FOR_FB_WAKE, buff, sizeof(buff)); // wait
+	if (g_need_lateresume) {
+		if (on) {
+			sysfs_write(EARLYSUSPEND_SYS_POWER_STATE, "on"); // issue request
+			sysfs_read(EARLYSUSPEND_WAIT_FOR_FB_WAKE, buff, sizeof(buff)); // wait
+		} else {
+			sysfs_write(EARLYSUSPEND_SYS_POWER_STATE, "mem");
+			sysfs_read(EARLYSUSPEND_WAIT_FOR_FB_SLEEP, buff, sizeof(buff));
+		}
 	}
 
 	ALOGV("power_set_interactive: %d done\n", on);
