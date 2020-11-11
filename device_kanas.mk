@@ -134,6 +134,22 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	audio_vbc_eq
 
+# If we are using the new Audio Policy xml configuration format
+# Set USE_XML_AUDIO_POLICY_CONF to 1 on BoardConfig.mk, then
+# Change the "ifeq (true, false)" to "ifeq (true, true)"
+AUDIO_CONFIGS :=
+ifeq (true, false)
+PRODUCT_PACKAGES += \
+	audio_policy_configuration.xml
+
+AUDIO_CONFIGS += \
+	frameworks/av/services/audiopolicy/config/a2dp_audio_policy_configuration.xml \
+	frameworks/av/services/audiopolicy/config/r_submix_audio_policy_configuration.xml \
+	frameworks/av/services/audiopolicy/config/usb_audio_policy_configuration.xml \
+	frameworks/av/services/audiopolicy/config/default_volume_tables.xml \
+	frameworks/av/services/audiopolicy/config/audio_policy_volumes.xml
+endif
+
 # Explicitly include mkf2fsuserimg.sh
 PRODUCT_PACKAGES += \
 	mkf2fsuserimg.sh \
@@ -184,5 +200,6 @@ PERMISSIONS_XML_FILES := \
 
 PRODUCT_COPY_FILES += \
 	$(foreach f,$(MEDIA_CONFIGS),$(f):system/vendor/etc/$(notdir $(f))) \
+	$(foreach f,$(AUDIO_CONFIGS),$(f):system/vendor/etc/$(notdir $(f))) \
 	$(foreach f,$(PERMISSIONS_XML_FILES),$(f):system/vendor/etc/permissions/$(notdir $(f))) \
 

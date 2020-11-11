@@ -147,6 +147,10 @@ TARGET_GSP_ONTO_FB := true
 # BOARD_USE_LIBATCHANNEL_WRAPPER := true
 # BOARD_USES_SS_VOIP := true
 TARGET_NEEDS_VBC_EQ_SYMLINK := true
+# If we are using the new Audio Policy xml configuration format
+# Set USE_XML_AUDIO_POLICY_CONF to 1 below, then
+# Change the "ifeq (true, false)" to "ifeq (true, true)" in device_kanas.mk
+#USE_XML_AUDIO_POLICY_CONF := 1
 
 # HIDL
 # This version binderizes more components than the scx35-common
